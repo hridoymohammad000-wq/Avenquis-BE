@@ -8,3 +8,7 @@ build/
 .DS_Store
 coverage/
 .pnpm-debug.log
+
+# Allow production bundle for Render deploy
+!apps/api/dist/
+!apps/api/dist/index.js
