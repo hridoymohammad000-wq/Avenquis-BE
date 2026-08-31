@@ -180,7 +180,6 @@ healthRouter.get("/", (req, res) => {
 var import_express3 = require("express");
 var import_zod2 = require("zod");
 var import_database2 = require("@avenquis/database");
-var import_drizzle_orm = require("drizzle-orm");
 
 // apps/api/src/services/auth.service.ts
 var import_bcryptjs = __toESM(require("bcryptjs"));
@@ -305,7 +304,7 @@ authRouter.post("/register", async (req, res, next) => {
     }
     const { email, password, fullName } = parseResult.data;
     const existing = await import_database2.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.email, email)
+      where: (0, import_database2.eq)(import_database2.userProfiles.email, email)
     });
     if (existing) {
       throw new ApiError(
@@ -362,7 +361,7 @@ authRouter.post("/login", async (req, res, next) => {
     }
     const { email, password } = parseResult.data;
     const user = await import_database2.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.email, email)
+      where: (0, import_database2.eq)(import_database2.userProfiles.email, email)
     });
     if (!user || !user.passwordHash) {
       throw new ApiError(
@@ -433,7 +432,7 @@ authRouter.post("/login", async (req, res, next) => {
 authRouter.get("/me", authenticate, async (req, res, next) => {
   try {
     const user = await import_database2.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.id, req.user.id)
+      where: (0, import_database2.eq)(import_database2.userProfiles.id, req.user.id)
     });
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
@@ -468,19 +467,19 @@ var import_express4 = require("express");
 var import_zod3 = require("zod");
 var import_qrcode = __toESM(require("qrcode"));
 var import_database3 = require("@avenquis/database");
-var import_drizzle_orm2 = require("drizzle-orm");
+var import_drizzle_orm = require("drizzle-orm");
 var mfaRouter = (0, import_express4.Router)();
 mfaRouter.post("/setup", authenticate, async (req, res, next) => {
   try {
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
     }
     const { secret, otpauthUrl } = AuthService.generateMfaSecret(user.email);
     const qrCodeDataUrl = await import_qrcode.default.toDataURL(otpauthUrl);
-    await import_database3.db.update(import_database3.userProfiles).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
+    await import_database3.db.update(import_database3.userProfiles).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
     res.json({
       success: true,
       data: {
@@ -502,7 +501,7 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       throw new ApiError(400, "Invalid MFA token", "VALIDATION_ERROR");
     }
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaSecret) {
       throw new ApiError(
@@ -527,7 +526,7 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       mfaEnabled: true,
       mfaBackupCodes: backupCodes,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
+    }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
     const tokens = AuthService.generateTokens({
       userId: user.id,
       email: user.email,
@@ -561,7 +560,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
       throw new ApiError(400, "Invalid MFA token format", "VALIDATION_ERROR");
     }
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new ApiError(
@@ -582,7 +581,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
         isValid = true;
         const updatedBackupCodes = [...user.mfaBackupCodes];
         updatedBackupCodes.splice(backupIndex, 1);
-        await import_database3.db.update(import_database3.userProfiles).set({ mfaBackupCodes: updatedBackupCodes }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
+        await import_database3.db.update(import_database3.userProfiles).set({ mfaBackupCodes: updatedBackupCodes }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
       }
     }
     if (!isValid) {
@@ -3332,47 +3331,46 @@ var import_zod11 = require("zod");
 
 // apps/api/src/services/working-paper.service.ts
 var import_database10 = require("@avenquis/database");
-var import_drizzle_orm3 = require("drizzle-orm");
 var WorkingPaperService = class {
   static async listWorkingPapers(tenantId, engagementId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const conditions = [
-      (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
-      (0, import_drizzle_orm3.eq)(import_database10.workingPapers.engagementId, engagementId)
+      (0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId),
+      (0, import_database10.eq)(import_database10.workingPapers.engagementId, engagementId)
     ];
     if (options?.section) {
-      conditions.push((0, import_drizzle_orm3.eq)(import_database10.workingPapers.section, options.section));
+      conditions.push((0, import_database10.eq)(import_database10.workingPapers.section, options.section));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm3.eq)(import_database10.workingPapers.status, options.status));
+      conditions.push((0, import_database10.eq)(import_database10.workingPapers.status, options.status));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = (0, import_drizzle_orm3.or)(
-        (0, import_drizzle_orm3.ilike)(import_database10.workingPapers.title, searchPattern),
-        (0, import_drizzle_orm3.ilike)(import_database10.workingPapers.wpCode, searchPattern)
+      const condOr = (0, import_database10.or)(
+        (0, import_database10.ilike)(import_database10.workingPapers.title, searchPattern),
+        (0, import_database10.ilike)(import_database10.workingPapers.wpCode, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await import_database10.db.select().from(import_database10.workingPapers).where((0, import_drizzle_orm3.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm3.desc)(import_database10.workingPapers.createdAt));
+    const rows = await import_database10.db.select().from(import_database10.workingPapers).where((0, import_database10.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database10.desc)(import_database10.workingPapers.createdAt));
     return rows;
   }
   static async createWorkingPaper(tenantId, data) {
     const engagement = await import_database10.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.engagements.id, data.engagementId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const existing = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.engagementId, data.engagementId),
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.wpCode, data.wpCode)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.workingPapers.engagementId, data.engagementId),
+        (0, import_database10.eq)(import_database10.workingPapers.wpCode, data.wpCode)
       )
     });
     if (existing) {
@@ -3397,9 +3395,9 @@ var WorkingPaperService = class {
   }
   static async getWorkingPaperById(tenantId, wpId) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3420,20 +3418,20 @@ var WorkingPaperService = class {
       createdAt: import_database10.reviewNotes.createdAt
     }).from(import_database10.reviewNotes).innerJoin(
       import_database10.memberships,
-      (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.authorMembershipId, import_database10.memberships.id)
-    ).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where(
-      (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.workingPaperId, wpId)
+      (0, import_database10.eq)(import_database10.reviewNotes.authorMembershipId, import_database10.memberships.id)
+    ).innerJoin(import_database10.userProfiles, (0, import_database10.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where(
+      (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.reviewNotes.workingPaperId, wpId)
       )
-    ).orderBy((0, import_drizzle_orm3.desc)(import_database10.reviewNotes.createdAt));
+    ).orderBy((0, import_database10.desc)(import_database10.reviewNotes.createdAt));
     let preparer = null;
     if (wp.preparedByMembershipId) {
       const [p] = await import_database10.db.select({
         membershipId: import_database10.memberships.id,
         fullName: import_database10.userProfiles.fullName,
         email: import_database10.userProfiles.email
-      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm3.eq)(import_database10.memberships.id, wp.preparedByMembershipId));
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_database10.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_database10.eq)(import_database10.memberships.id, wp.preparedByMembershipId));
       preparer = p ?? null;
     }
     let reviewer = null;
@@ -3442,7 +3440,7 @@ var WorkingPaperService = class {
         membershipId: import_database10.memberships.id,
         fullName: import_database10.userProfiles.fullName,
         email: import_database10.userProfiles.email
-      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm3.eq)(import_database10.memberships.id, wp.reviewedByMembershipId));
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_database10.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_database10.eq)(import_database10.memberships.id, wp.reviewedByMembershipId));
       reviewer = r ?? null;
     }
     return {
@@ -3454,9 +3452,9 @@ var WorkingPaperService = class {
   }
   static async signoffWorkingPaper(tenantId, wpId, action, membershipId, remarks) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3493,15 +3491,15 @@ var WorkingPaperService = class {
       remarks: remarks ?? wp.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId), (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId))
+      (0, import_database10.and)((0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId), (0, import_database10.eq)(import_database10.workingPapers.id, wpId))
     ).returning();
     return updated;
   }
   static async addReviewNote(tenantId, wpId, authorMembershipId, content) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3522,9 +3520,9 @@ var WorkingPaperService = class {
   }
   static async updateReviewNoteStatus(tenantId, noteId, action, membershipId) {
     const note = await import_database10.db.query.reviewNotes.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.id, noteId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.reviewNotes.id, noteId)
       )
     });
     if (!note) {
@@ -3552,24 +3550,24 @@ var WorkingPaperService = class {
       clearedAt,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId), (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.id, noteId))
+      (0, import_database10.and)((0, import_database10.eq)(import_database10.reviewNotes.tenantId, tenantId), (0, import_database10.eq)(import_database10.reviewNotes.id, noteId))
     ).returning();
     return updated;
   }
   static async listDocumentRequests(tenantId, engagementId) {
     const requests = await import_database10.db.select().from(import_database10.clientDocumentRequests).where(
-      (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.engagementId, engagementId)
+      (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.engagementId, engagementId)
       )
-    ).orderBy((0, import_drizzle_orm3.desc)(import_database10.clientDocumentRequests.createdAt));
+    ).orderBy((0, import_database10.desc)(import_database10.clientDocumentRequests.createdAt));
     return requests;
   }
   static async createDocumentRequest(tenantId, data) {
     const engagement = await import_database10.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.engagements.id, data.engagementId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
@@ -3587,9 +3585,9 @@ var WorkingPaperService = class {
   }
   static async fulfillDocumentRequest(tenantId, requestId, uploadedFileUrl) {
     const req = await import_database10.db.query.clientDocumentRequests.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.id, requestId)
+      where: (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     });
     if (!req) {
@@ -3605,9 +3603,9 @@ var WorkingPaperService = class {
       submittedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.id, requestId)
+      (0, import_database10.and)(
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_database10.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     ).returning();
     return updated;
@@ -4143,20 +4141,19 @@ var import_zod13 = require("zod");
 
 // apps/api/src/services/timesheet.service.ts
 var import_database12 = require("@avenquis/database");
-var import_drizzle_orm4 = require("drizzle-orm");
 var TimesheetService = class {
   static async listTimesheets(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId)];
+    const conditions = [(0, import_database12.eq)(import_database12.timesheetEntries.tenantId, tenantId)];
     if (options?.membershipId) {
-      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.membershipId, options.membershipId));
+      conditions.push((0, import_database12.eq)(import_database12.timesheetEntries.membershipId, options.membershipId));
     }
     if (options?.engagementId) {
-      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.engagementId, options.engagementId));
+      conditions.push((0, import_database12.eq)(import_database12.timesheetEntries.engagementId, options.engagementId));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.status, options.status));
+      conditions.push((0, import_database12.eq)(import_database12.timesheetEntries.status, options.status));
     }
     const rows = await import_database12.db.select({
       id: import_database12.timesheetEntries.id,
@@ -4172,7 +4169,7 @@ var TimesheetService = class {
       description: import_database12.timesheetEntries.description,
       status: import_database12.timesheetEntries.status,
       createdAt: import_database12.timesheetEntries.createdAt
-    }).from(import_database12.timesheetEntries).innerJoin(import_database12.memberships, (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.membershipId, import_database12.memberships.id)).innerJoin(import_database12.userProfiles, (0, import_drizzle_orm4.eq)(import_database12.memberships.userId, import_database12.userProfiles.id)).leftJoin(import_database12.engagements, (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.engagementId, import_database12.engagements.id)).where((0, import_drizzle_orm4.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm4.desc)(import_database12.timesheetEntries.workDate));
+    }).from(import_database12.timesheetEntries).innerJoin(import_database12.memberships, (0, import_database12.eq)(import_database12.timesheetEntries.membershipId, import_database12.memberships.id)).innerJoin(import_database12.userProfiles, (0, import_database12.eq)(import_database12.memberships.userId, import_database12.userProfiles.id)).leftJoin(import_database12.engagements, (0, import_database12.eq)(import_database12.timesheetEntries.engagementId, import_database12.engagements.id)).where((0, import_database12.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database12.desc)(import_database12.timesheetEntries.workDate));
     return rows;
   }
   static async logTimesheet(tenantId, membershipId, data) {
@@ -4189,19 +4186,19 @@ var TimesheetService = class {
     }).returning();
     if (data.taskId) {
       const task = await import_database12.db.query.tasks.findFirst({
-        where: (0, import_drizzle_orm4.eq)(import_database12.tasks.id, data.taskId)
+        where: (0, import_database12.eq)(import_database12.tasks.id, data.taskId)
       });
       if (task) {
-        await import_database12.db.update(import_database12.tasks).set({ actualHours: task.actualHours + data.hours }).where((0, import_drizzle_orm4.eq)(import_database12.tasks.id, data.taskId));
+        await import_database12.db.update(import_database12.tasks).set({ actualHours: task.actualHours + data.hours }).where((0, import_database12.eq)(import_database12.tasks.id, data.taskId));
       }
     }
     return entry;
   }
   static async approveTimesheet(tenantId, timesheetId, approverMembershipId, status) {
     const entry = await import_database12.db.query.timesheetEntries.findFirst({
-      where: (0, import_drizzle_orm4.and)(
-        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId),
-        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.id, timesheetId)
+      where: (0, import_database12.and)(
+        (0, import_database12.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_database12.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     });
     if (!entry) {
@@ -4217,9 +4214,9 @@ var TimesheetService = class {
       approvedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm4.and)(
-        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId),
-        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.id, timesheetId)
+      (0, import_database12.and)(
+        (0, import_database12.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_database12.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     ).returning();
     return updated;
@@ -5671,9 +5668,10 @@ function startServer() {
     logger.error({ reason }, "Unhandled Rejection caught in background");
   });
   const app = createApp();
-  const server = app.listen(env.PORT, "0.0.0.0", () => {
+  const port = Number(process.env.PORT) || env.PORT || 3e3;
+  const server = app.listen(port, "0.0.0.0", () => {
     logger.info(
-      `AVENQUIS API listening on port ${env.PORT} in ${env.NODE_ENV} mode`
+      `AVENQUIS API listening on port ${port} in ${env.NODE_ENV} mode`
     );
   });
   setupGracefulShutdown(server);

@@ -14,9 +14,10 @@ export function startServer(): Server {
 
   const app = createApp();
 
-  const server = app.listen(env.PORT, "0.0.0.0", () => {
+  const port = Number(process.env.PORT) || env.PORT || 3000;
+  const server = app.listen(port, "0.0.0.0", () => {
     logger.info(
-      `AVENQUIS API listening on port ${env.PORT} in ${env.NODE_ENV} mode`,
+      `AVENQUIS API listening on port ${port} in ${env.NODE_ENV} mode`,
     );
   });
 
