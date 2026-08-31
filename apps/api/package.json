@@ -1,21 +1,14 @@
 {
-  "name": "api",
-  "version": "0.0.0",
+  "name": "avenquis-backend-api",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run --dir src"
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@avenquis/database": "workspace:*",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
-    "drizzle-orm": "^0.33.0",
     "express": "^4.21.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
@@ -23,21 +16,6 @@
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
     "postgres": "^3.4.4",
-    "qrcode": "^1.5.4",
-    "typescript": "^5.6.2",
-    "zod": "^4.5.4"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/cookie-parser": "^1.4.8",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^22.5.5",
-    "@types/qrcode": "^1.5.5",
-    "@types/supertest": "^7.2.1",
-    "supertest": "^7.2.2",
-    "tsx": "^4.23.13",
-    "typescript": "^5.6.2",
-    "vitest": "^4.1.11"
+    "qrcode": "^1.5.4"
   }
 }
