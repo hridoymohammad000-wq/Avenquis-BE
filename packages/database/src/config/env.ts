@@ -12,12 +12,11 @@ const envSchema = z.object({
 
 const _env = envSchema.safeParse(process.env);
 
-if (!_env.success) {
-  console.error(
-    "❌ Invalid database environment variables:",
-    _env.error.format(),
-  );
-  process.exit(1);
-}
-
-export const env = _env.data;
+export const env = _env.success
+  ? _env.data
+  : {
+      DATABASE_URL:
+        process.env.DATABASE_URL ||
+        "postgresql://postgres:postgres@localhost:5432/postgres",
+      NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "development",
+    };

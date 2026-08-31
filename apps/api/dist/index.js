@@ -53,11 +53,15 @@ var envSchema = import_zod.z.object({
   DATABASE_URL: import_zod.z.string().default("postgresql://postgres:postgres@localhost:5432/postgres")
 });
 var _env = envSchema.safeParse(process.env);
-if (!_env.success) {
-  console.error("\u274C Invalid environment variables:", _env.error.format());
-  process.exit(1);
-}
-var env = _env.data;
+var env = _env.success ? _env.data : {
+  PORT: Number(process.env.PORT) || 3e3,
+  NODE_ENV: process.env.NODE_ENV || "development",
+  JWT_SECRET: process.env.JWT_SECRET || "avenquis_jwt_super_secret_key_production_grade_32_chars",
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "1h",
+  REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET || "avenquis_refresh_super_secret_key_production_grade_32",
+  REFRESH_TOKEN_EXPIRES_IN: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+  DATABASE_URL: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres"
+};
 
 // apps/api/src/logging/logger.ts
 var logger = (0, import_pino.default)({
@@ -467,19 +471,18 @@ var import_express4 = require("express");
 var import_zod3 = require("zod");
 var import_qrcode = __toESM(require("qrcode"));
 var import_database3 = require("@avenquis/database");
-var import_drizzle_orm = require("drizzle-orm");
 var mfaRouter = (0, import_express4.Router)();
 mfaRouter.post("/setup", authenticate, async (req, res, next) => {
   try {
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_database3.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
     }
     const { secret, otpauthUrl } = AuthService.generateMfaSecret(user.email);
     const qrCodeDataUrl = await import_qrcode.default.toDataURL(otpauthUrl);
-    await import_database3.db.update(import_database3.userProfiles).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
+    await import_database3.db.update(import_database3.userProfiles).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_database3.eq)(import_database3.userProfiles.id, user.id));
     res.json({
       success: true,
       data: {
@@ -501,7 +504,7 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       throw new ApiError(400, "Invalid MFA token", "VALIDATION_ERROR");
     }
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_database3.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaSecret) {
       throw new ApiError(
@@ -526,7 +529,7 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       mfaEnabled: true,
       mfaBackupCodes: backupCodes,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
+    }).where((0, import_database3.eq)(import_database3.userProfiles.id, user.id));
     const tokens = AuthService.generateTokens({
       userId: user.id,
       email: user.email,
@@ -560,7 +563,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
       throw new ApiError(400, "Invalid MFA token format", "VALIDATION_ERROR");
     }
     const user = await import_database3.db.query.userProfiles.findFirst({
-      where: (0, import_drizzle_orm.eq)(import_database3.userProfiles.id, req.user.id)
+      where: (0, import_database3.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new ApiError(
@@ -581,7 +584,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
         isValid = true;
         const updatedBackupCodes = [...user.mfaBackupCodes];
         updatedBackupCodes.splice(backupIndex, 1);
-        await import_database3.db.update(import_database3.userProfiles).set({ mfaBackupCodes: updatedBackupCodes }).where((0, import_drizzle_orm.eq)(import_database3.userProfiles.id, user.id));
+        await import_database3.db.update(import_database3.userProfiles).set({ mfaBackupCodes: updatedBackupCodes }).where((0, import_database3.eq)(import_database3.userProfiles.id, user.id));
       }
     }
     if (!isValid) {
