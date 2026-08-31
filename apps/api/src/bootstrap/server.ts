@@ -6,7 +6,7 @@ import { logger } from "../logging/logger.js";
 export function startServer(): Server {
   const app = createApp();
 
-  const server = app.listen(env.PORT, () => {
+  const server = app.listen(env.PORT, "0.0.0.0", () => {
     logger.info(
       `AVENQUIS API listening on port ${env.PORT} in ${env.NODE_ENV} mode`,
     );

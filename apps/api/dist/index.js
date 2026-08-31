@@ -30723,7 +30723,7 @@ function createApp(testRouter) {
 // apps/api/src/bootstrap/server.ts
 function startServer() {
   const app = createApp();
-  const server = app.listen(env.PORT, () => {
+  const server = app.listen(env.PORT, "0.0.0.0", () => {
     logger.info(
       `AVENQUIS API listening on port ${env.PORT} in ${env.NODE_ENV} mode`
     );
