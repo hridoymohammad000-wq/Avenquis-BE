@@ -12,7 +12,7 @@
     "test": "vitest run --dir src"
   },
   "dependencies": {
-    "@avenquis/database": "file:../../packages/database",
+    "@avenquis/database": "workspace:*",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.33.0",
