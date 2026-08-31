@@ -18,6 +18,8 @@ import { taskRouter } from "./routes/tasks.js";
 import { timesheetRouter } from "./routes/timesheets.js";
 import { billingRouter } from "./routes/billing.js";
 import { certificateRouter } from "./routes/certificates.js";
+import { notificationRouter } from "./routes/notifications.js";
+import { analyticsRouter } from "./routes/analytics.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -32,6 +34,9 @@ export function createApp(testRouter?: express.Router) {
   app.use(securityMiddlewares);
 
   // 4. Routes
+  app.get("/", (_req, res) => {
+    res.status(200).json({ status: "ok", service: "avenquis-api" });
+  });
   app.use("/health", healthRouter);
   app.use("/api/v1/auth/mfa", mfaRouter);
   app.use("/api/v1/auth", authRouter);
@@ -47,6 +52,8 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/timesheets", timesheetRouter);
   app.use("/api/v1/billing", billingRouter);
   app.use("/api/v1/certificates", certificateRouter);
+  app.use("/api/v1/notifications", notificationRouter);
+  app.use("/api/v1/analytics", analyticsRouter);
 
   if (testRouter) {
     app.use("/test", testRouter);

@@ -5527,6 +5527,9 @@ function createApp(testRouter) {
   app.use(requestIdMiddleware);
   app.use(loggingMiddleware);
   app.use(securityMiddlewares);
+  app.get("/", (_req, res) => {
+    res.status(200).json({ status: "ok", service: "avenquis-api" });
+  });
   app.use("/health", healthRouter);
   app.use("/api/v1/auth/mfa", mfaRouter);
   app.use("/api/v1/auth", authRouter);
