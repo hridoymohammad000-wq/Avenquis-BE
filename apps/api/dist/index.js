@@ -627,7 +627,6 @@ var import_zod4 = require("zod");
 
 // apps/api/src/services/tenant.service.ts
 var import_database4 = require("@avenquis/database");
-var import_drizzle_orm3 = require("drizzle-orm");
 var TenantService = class {
   static async getUserMemberships(userId) {
     return import_database4.db.select({
@@ -638,24 +637,24 @@ var TenantService = class {
       status: import_database4.memberships.status,
       startAt: import_database4.memberships.startAt,
       expiresAt: import_database4.memberships.expiresAt
-    }).from(import_database4.memberships).innerJoin(import_database4.tenants, (0, import_drizzle_orm3.eq)(import_database4.memberships.tenantId, import_database4.tenants.id)).where(
-      (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database4.memberships.userId, userId),
-        (0, import_drizzle_orm3.eq)(import_database4.memberships.status, "active"),
-        (0, import_drizzle_orm3.eq)(import_database4.tenants.status, "active"),
-        (0, import_drizzle_orm3.lte)(import_database4.memberships.startAt, /* @__PURE__ */ new Date()),
-        (0, import_drizzle_orm3.or)(
-          (0, import_drizzle_orm3.isNull)(import_database4.memberships.expiresAt),
-          (0, import_drizzle_orm3.gt)(import_database4.memberships.expiresAt, /* @__PURE__ */ new Date())
+    }).from(import_database4.memberships).innerJoin(import_database4.tenants, (0, import_database4.eq)(import_database4.memberships.tenantId, import_database4.tenants.id)).where(
+      (0, import_database4.and)(
+        (0, import_database4.eq)(import_database4.memberships.userId, userId),
+        (0, import_database4.eq)(import_database4.memberships.status, "active"),
+        (0, import_database4.eq)(import_database4.tenants.status, "active"),
+        (0, import_database4.lte)(import_database4.memberships.startAt, /* @__PURE__ */ new Date()),
+        (0, import_database4.or)(
+          (0, import_database4.isNull)(import_database4.memberships.expiresAt),
+          (0, import_database4.gt)(import_database4.memberships.expiresAt, /* @__PURE__ */ new Date())
         )
       )
     );
   }
   static async validateTenantMembership(userId, tenantId) {
     const membership = await import_database4.db.query.memberships.findFirst({
-      where: (0, import_drizzle_orm3.and)(
-        (0, import_drizzle_orm3.eq)(import_database4.memberships.userId, userId),
-        (0, import_drizzle_orm3.eq)(import_database4.memberships.tenantId, tenantId)
+      where: (0, import_database4.and)(
+        (0, import_database4.eq)(import_database4.memberships.userId, userId),
+        (0, import_database4.eq)(import_database4.memberships.tenantId, tenantId)
       )
     });
     if (!membership) {
@@ -688,7 +687,7 @@ var TenantService = class {
       );
     }
     const tenant = await import_database4.db.query.tenants.findFirst({
-      where: (0, import_drizzle_orm3.eq)(import_database4.tenants.id, tenantId)
+      where: (0, import_database4.eq)(import_database4.tenants.id, tenantId)
     });
     if (!tenant || tenant.status !== "active") {
       throw new ApiError(
@@ -712,7 +711,7 @@ var TenantService = class {
         status: "active"
       }).returning();
       let adminRole = await tx.query.roles.findFirst({
-        where: (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database4.roles.tenantId, newTenant.id), (0, import_drizzle_orm3.eq)(import_database4.roles.code, "admin"))
+        where: (0, import_database4.and)((0, import_database4.eq)(import_database4.roles.tenantId, newTenant.id), (0, import_database4.eq)(import_database4.roles.code, "admin"))
       });
       if (!adminRole) {
         const [createdRole] = await tx.insert(import_database4.roles).values({
@@ -735,21 +734,20 @@ var TenantService = class {
 
 // apps/api/src/services/permission.service.ts
 var import_database5 = require("@avenquis/database");
-var import_drizzle_orm4 = require("drizzle-orm");
 var PermissionService = class {
   static async getMembershipPermissions(membershipId) {
-    const assignedRoles = await import_database5.db.select({ roleId: import_database5.membershipRoles.roleId }).from(import_database5.membershipRoles).where((0, import_drizzle_orm4.eq)(import_database5.membershipRoles.membershipId, membershipId));
+    const assignedRoles = await import_database5.db.select({ roleId: import_database5.membershipRoles.roleId }).from(import_database5.membershipRoles).where((0, import_database5.eq)(import_database5.membershipRoles.membershipId, membershipId));
     if (assignedRoles.length === 0) {
       return [];
     }
     const roleIds = assignedRoles.map((r) => r.roleId);
-    const roleDetails = await import_database5.db.select({ code: import_database5.roles.code }).from(import_database5.roles).where((0, import_drizzle_orm4.inArray)(import_database5.roles.id, roleIds));
+    const roleDetails = await import_database5.db.select({ code: import_database5.roles.code }).from(import_database5.roles).where((0, import_database5.inArray)(import_database5.roles.id, roleIds));
     if (roleDetails.some(
       (r) => r.code === "admin" || r.code === "owner" || r.code === "system_admin"
     )) {
       return ["*"];
     }
-    const perms = await import_database5.db.select({ code: import_database5.permissions.code }).from(import_database5.rolePermissions).innerJoin(import_database5.permissions, (0, import_drizzle_orm4.eq)(import_database5.rolePermissions.permissionId, import_database5.permissions.id)).where((0, import_drizzle_orm4.inArray)(import_database5.rolePermissions.roleId, roleIds));
+    const perms = await import_database5.db.select({ code: import_database5.permissions.code }).from(import_database5.rolePermissions).innerJoin(import_database5.permissions, (0, import_database5.eq)(import_database5.rolePermissions.permissionId, import_database5.permissions.id)).where((0, import_database5.inArray)(import_database5.rolePermissions.roleId, roleIds));
     return Array.from(new Set(perms.map((p) => p.code)));
   }
   static hasPermission(userPermissions, requiredPermission) {
@@ -975,17 +973,16 @@ var import_zod5 = require("zod");
 
 // apps/api/src/services/staff.service.ts
 var import_database6 = require("@avenquis/database");
-var import_drizzle_orm5 = require("drizzle-orm");
 var StaffService = class {
   // --- Departments ---
   static async listDepartments(tenantId) {
-    return import_database6.db.select().from(import_database6.departments).where((0, import_drizzle_orm5.eq)(import_database6.departments.tenantId, tenantId)).orderBy(import_database6.departments.name);
+    return import_database6.db.select().from(import_database6.departments).where((0, import_database6.eq)(import_database6.departments.tenantId, tenantId)).orderBy(import_database6.departments.name);
   }
   static async createDepartment(tenantId, data) {
     const existing = await import_database6.db.query.departments.findFirst({
-      where: (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.departments.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.departments.code, data.code.toUpperCase())
+      where: (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.departments.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.departments.code, data.code.toUpperCase())
       )
     });
     if (existing) {
@@ -1006,13 +1003,13 @@ var StaffService = class {
   }
   // --- Designations ---
   static async listDesignations(tenantId) {
-    return import_database6.db.select().from(import_database6.designations).where((0, import_drizzle_orm5.eq)(import_database6.designations.tenantId, tenantId)).orderBy((0, import_drizzle_orm5.desc)(import_database6.designations.level), import_database6.designations.name);
+    return import_database6.db.select().from(import_database6.designations).where((0, import_database6.eq)(import_database6.designations.tenantId, tenantId)).orderBy((0, import_database6.desc)(import_database6.designations.level), import_database6.designations.name);
   }
   static async createDesignation(tenantId, data) {
     const existing = await import_database6.db.query.designations.findFirst({
-      where: (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.designations.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.designations.code, data.code.toUpperCase())
+      where: (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.designations.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.designations.code, data.code.toUpperCase())
       )
     });
     if (existing) {
@@ -1035,23 +1032,23 @@ var StaffService = class {
   static async listStaff(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId)];
+    const conditions = [(0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId)];
     if (options?.departmentId) {
-      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, options.departmentId));
+      conditions.push((0, import_database6.eq)(import_database6.staffProfiles.departmentId, options.departmentId));
     }
     if (options?.designationId) {
-      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, options.designationId));
+      conditions.push((0, import_database6.eq)(import_database6.staffProfiles.designationId, options.designationId));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.status, options.status));
+      conditions.push((0, import_database6.eq)(import_database6.staffProfiles.status, options.status));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
       conditions.push(
-        (0, import_drizzle_orm5.or)(
-          (0, import_drizzle_orm5.ilike)(import_database6.staffProfiles.employeeCode, searchPattern),
-          (0, import_drizzle_orm5.ilike)(import_database6.userProfiles.fullName, searchPattern),
-          (0, import_drizzle_orm5.ilike)(import_database6.userProfiles.email, searchPattern)
+        (0, import_database6.or)(
+          (0, import_database6.ilike)(import_database6.staffProfiles.employeeCode, searchPattern),
+          (0, import_database6.ilike)(import_database6.userProfiles.fullName, searchPattern),
+          (0, import_database6.ilike)(import_database6.userProfiles.email, searchPattern)
         )
       );
     }
@@ -1075,7 +1072,7 @@ var StaffService = class {
       email: import_database6.userProfiles.email,
       avatarUrl: import_database6.userProfiles.avatarUrl,
       createdAt: import_database6.staffProfiles.createdAt
-    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_drizzle_orm5.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where((0, import_drizzle_orm5.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database6.staffProfiles.employeeCode);
+    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_database6.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_database6.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_database6.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_database6.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where((0, import_database6.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database6.staffProfiles.employeeCode);
     return rows;
   }
   static async getStaffById(tenantId, staffId) {
@@ -1101,29 +1098,29 @@ var StaffService = class {
       avatarUrl: import_database6.userProfiles.avatarUrl,
       createdAt: import_database6.staffProfiles.createdAt,
       updatedAt: import_database6.staffProfiles.updatedAt
-    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_drizzle_orm5.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where(
-      (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
+    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_database6.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_database6.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_database6.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_database6.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where(
+      (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.staffProfiles.id, staffId)
       )
     );
     if (!staff) {
       throw new ApiError(404, "Staff profile not found", "STAFF_NOT_FOUND");
     }
     const history = await import_database6.db.select().from(import_database6.staffLifecycleEvents).where(
-      (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.staffLifecycleEvents.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.staffLifecycleEvents.staffId, staffId)
+      (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.staffLifecycleEvents.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.staffLifecycleEvents.staffId, staffId)
       )
-    ).orderBy((0, import_drizzle_orm5.desc)(import_database6.staffLifecycleEvents.effectiveDate));
+    ).orderBy((0, import_database6.desc)(import_database6.staffLifecycleEvents.effectiveDate));
     return { ...staff, lifecycleHistory: history };
   }
   static async createStaff(tenantId, data) {
     return import_database6.db.transaction(async (tx) => {
       const existingCode = await tx.query.staffProfiles.findFirst({
-        where: (0, import_drizzle_orm5.and)(
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.employeeCode, data.employeeCode)
+        where: (0, import_database6.and)(
+          (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_database6.eq)(import_database6.staffProfiles.employeeCode, data.employeeCode)
         )
       });
       if (existingCode) {
@@ -1160,9 +1157,9 @@ var StaffService = class {
   }
   static async updateStaff(tenantId, staffId, data) {
     const existing = await import_database6.db.query.staffProfiles.findFirst({
-      where: (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
+      where: (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.staffProfiles.id, staffId)
       )
     });
     if (!existing) {
@@ -1172,9 +1169,9 @@ var StaffService = class {
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm5.and)(
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
+      (0, import_database6.and)(
+        (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_database6.eq)(import_database6.staffProfiles.id, staffId)
       )
     ).returning();
     return updated;
@@ -1182,9 +1179,9 @@ var StaffService = class {
   static async recordLifecycleEvent(tenantId, staffId, data) {
     return import_database6.db.transaction(async (tx) => {
       const staff = await tx.query.staffProfiles.findFirst({
-        where: (0, import_drizzle_orm5.and)(
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
+        where: (0, import_database6.and)(
+          (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_database6.eq)(import_database6.staffProfiles.id, staffId)
         )
       });
       if (!staff) {
@@ -1219,9 +1216,9 @@ var StaffService = class {
         updates.designationId = data.newDesignationId;
       }
       await tx.update(import_database6.staffProfiles).set(updates).where(
-        (0, import_drizzle_orm5.and)(
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
-          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
+        (0, import_database6.and)(
+          (0, import_database6.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_database6.eq)(import_database6.staffProfiles.id, staffId)
         )
       );
       return event;
@@ -1581,21 +1578,20 @@ var import_zod8 = require("zod");
 
 // apps/api/src/services/student.service.ts
 var import_database7 = require("@avenquis/database");
-var import_drizzle_orm6 = require("drizzle-orm");
 var StudentService = class {
   static async listStudents(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId)];
+    const conditions = [(0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId)];
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.status, options.status));
+      conditions.push((0, import_database7.eq)(import_database7.studentProfiles.status, options.status));
     }
     if (options?.courseLevel) {
-      conditions.push((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.courseLevel, options.courseLevel));
+      conditions.push((0, import_database7.eq)(import_database7.studentProfiles.courseLevel, options.courseLevel));
     }
     if (options?.principalMembershipId) {
       conditions.push(
-        (0, import_drizzle_orm6.eq)(
+        (0, import_database7.eq)(
           import_database7.studentProfiles.principalMembershipId,
           options.principalMembershipId
         )
@@ -1604,10 +1600,10 @@ var StudentService = class {
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
       conditions.push(
-        (0, import_drizzle_orm6.or)(
-          (0, import_drizzle_orm6.ilike)(import_database7.studentProfiles.registrationNumber, searchPattern),
-          (0, import_drizzle_orm6.ilike)(import_database7.userProfiles.fullName, searchPattern),
-          (0, import_drizzle_orm6.ilike)(import_database7.userProfiles.email, searchPattern)
+        (0, import_database7.or)(
+          (0, import_database7.ilike)(import_database7.studentProfiles.registrationNumber, searchPattern),
+          (0, import_database7.ilike)(import_database7.userProfiles.fullName, searchPattern),
+          (0, import_database7.ilike)(import_database7.userProfiles.email, searchPattern)
         )
       );
     }
@@ -1625,7 +1621,7 @@ var StudentService = class {
       email: import_database7.userProfiles.email,
       avatarUrl: import_database7.userProfiles.avatarUrl,
       createdAt: import_database7.studentProfiles.createdAt
-    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_drizzle_orm6.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where((0, import_drizzle_orm6.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database7.studentProfiles.registrationNumber);
+    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_database7.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_database7.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where((0, import_database7.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database7.studentProfiles.registrationNumber);
     return rows;
   }
   static async getStudentById(tenantId, studentId) {
@@ -1646,39 +1642,39 @@ var StudentService = class {
       avatarUrl: import_database7.userProfiles.avatarUrl,
       createdAt: import_database7.studentProfiles.createdAt,
       updatedAt: import_database7.studentProfiles.updatedAt
-    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_drizzle_orm6.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_database7.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_database7.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where(
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     );
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
     const trainingRecords = await import_database7.db.select().from(import_database7.studentTrainingRecords).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentTrainingRecords.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentTrainingRecords.studentId, studentId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentTrainingRecords.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentTrainingRecords.studentId, studentId)
       )
-    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentTrainingRecords.createdAt));
+    ).orderBy((0, import_database7.desc)(import_database7.studentTrainingRecords.createdAt));
     const leaveRecords = await import_database7.db.select().from(import_database7.studentLeaveRecords).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.studentId, studentId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.studentId, studentId)
       )
-    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentLeaveRecords.startDate));
+    ).orderBy((0, import_database7.desc)(import_database7.studentLeaveRecords.startDate));
     const examRecords = await import_database7.db.select().from(import_database7.studentExamRecords).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentExamRecords.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentExamRecords.studentId, studentId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentExamRecords.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentExamRecords.studentId, studentId)
       )
-    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentExamRecords.createdAt));
+    ).orderBy((0, import_database7.desc)(import_database7.studentExamRecords.createdAt));
     const assignmentHistory = await import_database7.db.select().from(import_database7.studentAssignmentHistory).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentAssignmentHistory.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentAssignmentHistory.studentId, studentId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentAssignmentHistory.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentAssignmentHistory.studentId, studentId)
       )
-    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentAssignmentHistory.startDate));
+    ).orderBy((0, import_database7.desc)(import_database7.studentAssignmentHistory.startDate));
     return {
       ...student,
       trainingRecords,
@@ -1742,9 +1738,9 @@ var StudentService = class {
   }
   static async createStudent(tenantId, data) {
     const existing = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.registrationNumber, data.registrationNumber)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.registrationNumber, data.registrationNumber)
       )
     });
     if (existing) {
@@ -1770,9 +1766,9 @@ var StudentService = class {
   }
   static async updateStudent(tenantId, studentId, data) {
     const existing = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!existing) {
@@ -1782,18 +1778,18 @@ var StudentService = class {
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     ).returning();
     return updated;
   }
   static async logTraining(tenantId, studentId, data) {
     const student = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
@@ -1812,9 +1808,9 @@ var StudentService = class {
   }
   static async applyLeave(tenantId, studentId, data) {
     const student = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
@@ -1834,9 +1830,9 @@ var StudentService = class {
   }
   static async updateLeaveStatus(tenantId, leaveId, data) {
     const existing = await import_database7.db.query.studentLeaveRecords.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.id, leaveId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.id, leaveId)
       )
     });
     if (!existing) {
@@ -1848,18 +1844,18 @@ var StudentService = class {
       remarks: data.remarks ?? existing.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.id, leaveId)
+      (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentLeaveRecords.id, leaveId)
       )
     ).returning();
     return updated;
   }
   static async recordExamResult(tenantId, studentId, data) {
     const student = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
@@ -1876,15 +1872,15 @@ var StudentService = class {
       examDate: data.examDate
     }).returning();
     if (data.resultStatus === "passed" && data.level === "knowledge") {
-      await import_database7.db.update(import_database7.studentProfiles).set({ courseLevel: "application", updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId));
+      await import_database7.db.update(import_database7.studentProfiles).set({ courseLevel: "application", updatedAt: /* @__PURE__ */ new Date() }).where((0, import_database7.eq)(import_database7.studentProfiles.id, studentId));
     }
     return exam;
   }
   static async logAssignment(tenantId, studentId, data) {
     const student = await import_database7.db.query.studentProfiles.findFirst({
-      where: (0, import_drizzle_orm6.and)(
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
-        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
+      where: (0, import_database7.and)(
+        (0, import_database7.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_database7.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
@@ -2266,41 +2262,40 @@ var import_zod9 = require("zod");
 
 // apps/api/src/services/client.service.ts
 var import_database8 = require("@avenquis/database");
-var import_drizzle_orm7 = require("drizzle-orm");
 var ClientService = class {
   static async listClients(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId)];
+    const conditions = [(0, import_database8.eq)(import_database8.clients.tenantId, tenantId)];
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.status, options.status));
+      conditions.push((0, import_database8.eq)(import_database8.clients.status, options.status));
     }
     if (options?.clientType) {
-      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.clientType, options.clientType));
+      conditions.push((0, import_database8.eq)(import_database8.clients.clientType, options.clientType));
     }
     if (options?.riskRating) {
-      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.riskRating, options.riskRating));
+      conditions.push((0, import_database8.eq)(import_database8.clients.riskRating, options.riskRating));
     }
     if (options?.kycStatus) {
-      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.kycStatus, options.kycStatus));
+      conditions.push((0, import_database8.eq)(import_database8.clients.kycStatus, options.kycStatus));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = (0, import_drizzle_orm7.or)(
-        (0, import_drizzle_orm7.ilike)(import_database8.clients.name, searchPattern),
-        (0, import_drizzle_orm7.ilike)(import_database8.clients.clientCode, searchPattern),
-        (0, import_drizzle_orm7.ilike)(import_database8.clients.primaryEmail, searchPattern)
+      const condOr = (0, import_database8.or)(
+        (0, import_database8.ilike)(import_database8.clients.name, searchPattern),
+        (0, import_database8.ilike)(import_database8.clients.clientCode, searchPattern),
+        (0, import_database8.ilike)(import_database8.clients.primaryEmail, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await import_database8.db.select().from(import_database8.clients).where((0, import_drizzle_orm7.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm7.desc)(import_database8.clients.createdAt));
+    const rows = await import_database8.db.select().from(import_database8.clients).where((0, import_database8.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database8.desc)(import_database8.clients.createdAt));
     return rows;
   }
   static async createClient(tenantId, data) {
     const existing = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clients.clientCode, data.clientCode)
+      where: (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clients.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clients.clientCode, data.clientCode)
       )
     });
     if (existing) {
@@ -2330,30 +2325,30 @@ var ClientService = class {
   }
   static async getClientById(tenantId, clientId) {
     const client = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
+      where: (0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
     const contacts = await import_database8.db.select().from(import_database8.clientContacts).where(
-      (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clientContacts.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clientContacts.clientId, clientId)
+      (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clientContacts.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clientContacts.clientId, clientId)
       )
-    ).orderBy((0, import_drizzle_orm7.desc)(import_database8.clientContacts.isPrimary), import_database8.clientContacts.fullName);
+    ).orderBy((0, import_database8.desc)(import_database8.clientContacts.isPrimary), import_database8.clientContacts.fullName);
     const kycDocuments = await import_database8.db.select().from(import_database8.clientKycDocuments).where(
-      (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.clientId, clientId)
+      (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clientKycDocuments.clientId, clientId)
       )
-    ).orderBy((0, import_drizzle_orm7.desc)(import_database8.clientKycDocuments.createdAt));
+    ).orderBy((0, import_database8.desc)(import_database8.clientKycDocuments.createdAt));
     let leadPartner = null;
     if (client.leadPartnerMembershipId) {
       const [partnerRow] = await import_database8.db.select({
         membershipId: import_database8.memberships.id,
         fullName: import_database8.userProfiles.fullName,
         email: import_database8.userProfiles.email
-      }).from(import_database8.memberships).innerJoin(import_database8.userProfiles, (0, import_drizzle_orm7.eq)(import_database8.memberships.userId, import_database8.userProfiles.id)).where((0, import_drizzle_orm7.eq)(import_database8.memberships.id, client.leadPartnerMembershipId));
+      }).from(import_database8.memberships).innerJoin(import_database8.userProfiles, (0, import_database8.eq)(import_database8.memberships.userId, import_database8.userProfiles.id)).where((0, import_database8.eq)(import_database8.memberships.id, client.leadPartnerMembershipId));
       leadPartner = partnerRow ?? null;
     }
     return {
@@ -2365,7 +2360,7 @@ var ClientService = class {
   }
   static async updateClient(tenantId, clientId, data) {
     const client = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
+      where: (0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
@@ -2373,21 +2368,21 @@ var ClientService = class {
     const [updated] = await import_database8.db.update(import_database8.clients).set({
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))).returning();
+    }).where((0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))).returning();
     return updated;
   }
   static async addContact(tenantId, clientId, data) {
     const client = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
+      where: (0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
     if (data.isPrimary) {
       await import_database8.db.update(import_database8.clientContacts).set({ isPrimary: false }).where(
-        (0, import_drizzle_orm7.and)(
-          (0, import_drizzle_orm7.eq)(import_database8.clientContacts.tenantId, tenantId),
-          (0, import_drizzle_orm7.eq)(import_database8.clientContacts.clientId, clientId)
+        (0, import_database8.and)(
+          (0, import_database8.eq)(import_database8.clientContacts.tenantId, tenantId),
+          (0, import_database8.eq)(import_database8.clientContacts.clientId, clientId)
         )
       );
     }
@@ -2405,7 +2400,7 @@ var ClientService = class {
   }
   static async uploadKycDocument(tenantId, clientId, data) {
     const client = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
+      where: (0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
@@ -2424,9 +2419,9 @@ var ClientService = class {
   }
   static async verifyKycDocument(tenantId, documentId, data) {
     const doc = await import_database8.db.query.clientKycDocuments.findFirst({
-      where: (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.id, documentId)
+      where: (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clientKycDocuments.id, documentId)
       )
     });
     if (!doc) {
@@ -2443,15 +2438,15 @@ var ClientService = class {
       remarks: data.remarks ?? doc.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.id, documentId)
+      (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clientKycDocuments.id, documentId)
       )
     ).returning();
     const allDocs = await import_database8.db.select().from(import_database8.clientKycDocuments).where(
-      (0, import_drizzle_orm7.and)(
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
-        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.clientId, doc.clientId)
+      (0, import_database8.and)(
+        (0, import_database8.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_database8.eq)(import_database8.clientKycDocuments.clientId, doc.clientId)
       )
     );
     const hasVerified = allDocs.some(
@@ -2466,12 +2461,12 @@ var ClientService = class {
     } else if (hasRejected) {
       newKycStatus = "rejected";
     }
-    await import_database8.db.update(import_database8.clients).set({ kycStatus: newKycStatus, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, doc.clientId)));
+    await import_database8.db.update(import_database8.clients).set({ kycStatus: newKycStatus, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, doc.clientId)));
     return updatedDoc;
   }
   static async updateRiskRating(tenantId, clientId, riskRating) {
     const client = await import_database8.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
+      where: (0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
@@ -2479,7 +2474,7 @@ var ClientService = class {
     const [updated] = await import_database8.db.update(import_database8.clients).set({
       riskRating,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))).returning();
+    }).where((0, import_database8.and)((0, import_database8.eq)(import_database8.clients.tenantId, tenantId), (0, import_database8.eq)(import_database8.clients.id, clientId))).returning();
     return updated;
   }
 };
@@ -2792,27 +2787,26 @@ var import_zod10 = require("zod");
 
 // apps/api/src/services/engagement.service.ts
 var import_database9 = require("@avenquis/database");
-var import_drizzle_orm8 = require("drizzle-orm");
 var EngagementService = class {
   static async listEngagements(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId)];
+    const conditions = [(0, import_database9.eq)(import_database9.engagements.tenantId, tenantId)];
     if (options?.clientId) {
-      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.clientId, options.clientId));
+      conditions.push((0, import_database9.eq)(import_database9.engagements.clientId, options.clientId));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.status, options.status));
+      conditions.push((0, import_database9.eq)(import_database9.engagements.status, options.status));
     }
     if (options?.engagementType) {
-      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.engagementType, options.engagementType));
+      conditions.push((0, import_database9.eq)(import_database9.engagements.engagementType, options.engagementType));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = (0, import_drizzle_orm8.or)(
-        (0, import_drizzle_orm8.ilike)(import_database9.engagements.title, searchPattern),
-        (0, import_drizzle_orm8.ilike)(import_database9.engagements.engagementCode, searchPattern),
-        (0, import_drizzle_orm8.ilike)(import_database9.engagements.financialYear, searchPattern)
+      const condOr = (0, import_database9.or)(
+        (0, import_database9.ilike)(import_database9.engagements.title, searchPattern),
+        (0, import_database9.ilike)(import_database9.engagements.engagementCode, searchPattern),
+        (0, import_database9.ilike)(import_database9.engagements.financialYear, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
@@ -2834,20 +2828,20 @@ var EngagementService = class {
       status: import_database9.engagements.status,
       independenceCleared: import_database9.engagements.independenceCleared,
       createdAt: import_database9.engagements.createdAt
-    }).from(import_database9.engagements).innerJoin(import_database9.clients, (0, import_drizzle_orm8.eq)(import_database9.engagements.clientId, import_database9.clients.id)).where((0, import_drizzle_orm8.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm8.desc)(import_database9.engagements.createdAt));
+    }).from(import_database9.engagements).innerJoin(import_database9.clients, (0, import_database9.eq)(import_database9.engagements.clientId, import_database9.clients.id)).where((0, import_database9.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database9.desc)(import_database9.engagements.createdAt));
     return rows;
   }
   static async createEngagement(tenantId, data) {
     const client = await import_database9.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm8.and)((0, import_drizzle_orm8.eq)(import_database9.clients.tenantId, tenantId), (0, import_drizzle_orm8.eq)(import_database9.clients.id, data.clientId))
+      where: (0, import_database9.and)((0, import_database9.eq)(import_database9.clients.tenantId, tenantId), (0, import_database9.eq)(import_database9.clients.id, data.clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
     const existing = await import_database9.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.engagementCode, data.engagementCode)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.engagementCode, data.engagementCode)
       )
     });
     if (existing) {
@@ -2879,16 +2873,16 @@ var EngagementService = class {
   }
   static async getEngagementById(tenantId, engagementId) {
     const engagement = await import_database9.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const client = await import_database9.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm8.eq)(import_database9.clients.id, engagement.clientId)
+      where: (0, import_database9.eq)(import_database9.clients.id, engagement.clientId)
     });
     const teamMembers = await import_database9.db.select({
       id: import_database9.engagementTeamMembers.id,
@@ -2901,11 +2895,11 @@ var EngagementService = class {
       email: import_database9.userProfiles.email
     }).from(import_database9.engagementTeamMembers).innerJoin(
       import_database9.memberships,
-      (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, import_database9.memberships.id)
-    ).innerJoin(import_database9.userProfiles, (0, import_drizzle_orm8.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
-      (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId)
+      (0, import_database9.eq)(import_database9.engagementTeamMembers.membershipId, import_database9.memberships.id)
+    ).innerJoin(import_database9.userProfiles, (0, import_database9.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
+      (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.engagementId, engagementId)
       )
     );
     const independenceDeclarations = await import_database9.db.select({
@@ -2919,11 +2913,11 @@ var EngagementService = class {
       fullName: import_database9.userProfiles.fullName
     }).from(import_database9.engagementIndependenceDeclarations).innerJoin(
       import_database9.memberships,
-      (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.membershipId, import_database9.memberships.id)
-    ).innerJoin(import_database9.userProfiles, (0, import_drizzle_orm8.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
-      (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
+      (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.membershipId, import_database9.memberships.id)
+    ).innerJoin(import_database9.userProfiles, (0, import_database9.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
+      (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
       )
     );
     return {
@@ -2935,9 +2929,9 @@ var EngagementService = class {
   }
   static async updateEngagementStatus(tenantId, engagementId, status) {
     const engagement = await import_database9.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
@@ -2947,28 +2941,28 @@ var EngagementService = class {
       status,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     ).returning();
     return updated;
   }
   static async assignTeamMember(tenantId, engagementId, data) {
     const engagement = await import_database9.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const existing = await import_database9.db.query.engagementTeamMembers.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, data.membershipId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.membershipId, data.membershipId)
       )
     });
     let member;
@@ -2979,7 +2973,7 @@ var EngagementService = class {
         startDate: data.startDate ?? existing.startDate,
         endDate: data.endDate ?? existing.endDate,
         updatedAt: /* @__PURE__ */ new Date()
-      }).where((0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.id, existing.id)).returning();
+      }).where((0, import_database9.eq)(import_database9.engagementTeamMembers.id, existing.id)).returning();
     } else {
       [member] = await import_database9.db.insert(import_database9.engagementTeamMembers).values({
         tenantId,
@@ -2995,10 +2989,10 @@ var EngagementService = class {
   }
   static async removeTeamMember(tenantId, engagementId, membershipId) {
     const existing = await import_database9.db.query.engagementTeamMembers.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, membershipId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
+        (0, import_database9.eq)(import_database9.engagementTeamMembers.membershipId, membershipId)
       )
     });
     if (!existing) {
@@ -3008,14 +3002,14 @@ var EngagementService = class {
         "TEAM_MEMBER_NOT_FOUND"
       );
     }
-    await import_database9.db.delete(import_database9.engagementTeamMembers).where((0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.id, existing.id));
+    await import_database9.db.delete(import_database9.engagementTeamMembers).where((0, import_database9.eq)(import_database9.engagementTeamMembers.id, existing.id));
     return { success: true };
   }
   static async submitIndependenceDeclaration(tenantId, engagementId, membershipId, data) {
     const engagement = await import_database9.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
@@ -3024,10 +3018,10 @@ var EngagementService = class {
     const hasConflict = data.hasFinancialInterest || data.hasPersonalRelationship;
     const declarationStatus = hasConflict ? "conflict_flagged" : "cleared";
     const existing = await import_database9.db.query.engagementIndependenceDeclarations.findFirst({
-      where: (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.membershipId, membershipId)
+      where: (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId),
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.membershipId, membershipId)
       )
     });
     let declaration;
@@ -3039,7 +3033,7 @@ var EngagementService = class {
         remarks: data.remarks,
         clearedAt: hasConflict ? null : /* @__PURE__ */ new Date(),
         updatedAt: /* @__PURE__ */ new Date()
-      }).where((0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.id, existing.id)).returning();
+      }).where((0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.id, existing.id)).returning();
     } else {
       [declaration] = await import_database9.db.insert(import_database9.engagementIndependenceDeclarations).values({
         tenantId,
@@ -3053,9 +3047,9 @@ var EngagementService = class {
       }).returning();
     }
     const allDeclarations = await import_database9.db.select().from(import_database9.engagementIndependenceDeclarations).where(
-      (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
+      (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
       )
     );
     const hasDeclarations = allDeclarations.length > 0;
@@ -3064,9 +3058,9 @@ var EngagementService = class {
       independenceCleared: allCleared,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm8.and)(
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
+      (0, import_database9.and)(
+        (0, import_database9.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_database9.eq)(import_database9.engagements.id, engagementId)
       )
     );
     return declaration;
@@ -3338,47 +3332,47 @@ var import_zod11 = require("zod");
 
 // apps/api/src/services/working-paper.service.ts
 var import_database10 = require("@avenquis/database");
-var import_drizzle_orm9 = require("drizzle-orm");
+var import_drizzle_orm3 = require("drizzle-orm");
 var WorkingPaperService = class {
   static async listWorkingPapers(tenantId, engagementId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const conditions = [
-      (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
-      (0, import_drizzle_orm9.eq)(import_database10.workingPapers.engagementId, engagementId)
+      (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
+      (0, import_drizzle_orm3.eq)(import_database10.workingPapers.engagementId, engagementId)
     ];
     if (options?.section) {
-      conditions.push((0, import_drizzle_orm9.eq)(import_database10.workingPapers.section, options.section));
+      conditions.push((0, import_drizzle_orm3.eq)(import_database10.workingPapers.section, options.section));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm9.eq)(import_database10.workingPapers.status, options.status));
+      conditions.push((0, import_drizzle_orm3.eq)(import_database10.workingPapers.status, options.status));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = (0, import_drizzle_orm9.or)(
-        (0, import_drizzle_orm9.ilike)(import_database10.workingPapers.title, searchPattern),
-        (0, import_drizzle_orm9.ilike)(import_database10.workingPapers.wpCode, searchPattern)
+      const condOr = (0, import_drizzle_orm3.or)(
+        (0, import_drizzle_orm3.ilike)(import_database10.workingPapers.title, searchPattern),
+        (0, import_drizzle_orm3.ilike)(import_database10.workingPapers.wpCode, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await import_database10.db.select().from(import_database10.workingPapers).where((0, import_drizzle_orm9.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm9.desc)(import_database10.workingPapers.createdAt));
+    const rows = await import_database10.db.select().from(import_database10.workingPapers).where((0, import_drizzle_orm3.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm3.desc)(import_database10.workingPapers.createdAt));
     return rows;
   }
   static async createWorkingPaper(tenantId, data) {
     const engagement = await import_database10.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.engagements.id, data.engagementId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const existing = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.engagementId, data.engagementId),
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.wpCode, data.wpCode)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.engagementId, data.engagementId),
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.wpCode, data.wpCode)
       )
     });
     if (existing) {
@@ -3403,9 +3397,9 @@ var WorkingPaperService = class {
   }
   static async getWorkingPaperById(tenantId, wpId) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3426,20 +3420,20 @@ var WorkingPaperService = class {
       createdAt: import_database10.reviewNotes.createdAt
     }).from(import_database10.reviewNotes).innerJoin(
       import_database10.memberships,
-      (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.authorMembershipId, import_database10.memberships.id)
-    ).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where(
-      (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.workingPaperId, wpId)
+      (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.authorMembershipId, import_database10.memberships.id)
+    ).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where(
+      (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.workingPaperId, wpId)
       )
-    ).orderBy((0, import_drizzle_orm9.desc)(import_database10.reviewNotes.createdAt));
+    ).orderBy((0, import_drizzle_orm3.desc)(import_database10.reviewNotes.createdAt));
     let preparer = null;
     if (wp.preparedByMembershipId) {
       const [p] = await import_database10.db.select({
         membershipId: import_database10.memberships.id,
         fullName: import_database10.userProfiles.fullName,
         email: import_database10.userProfiles.email
-      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm9.eq)(import_database10.memberships.id, wp.preparedByMembershipId));
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm3.eq)(import_database10.memberships.id, wp.preparedByMembershipId));
       preparer = p ?? null;
     }
     let reviewer = null;
@@ -3448,7 +3442,7 @@ var WorkingPaperService = class {
         membershipId: import_database10.memberships.id,
         fullName: import_database10.userProfiles.fullName,
         email: import_database10.userProfiles.email
-      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm9.eq)(import_database10.memberships.id, wp.reviewedByMembershipId));
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm3.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm3.eq)(import_database10.memberships.id, wp.reviewedByMembershipId));
       reviewer = r ?? null;
     }
     return {
@@ -3460,9 +3454,9 @@ var WorkingPaperService = class {
   }
   static async signoffWorkingPaper(tenantId, wpId, action, membershipId, remarks) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3499,15 +3493,15 @@ var WorkingPaperService = class {
       remarks: remarks ?? wp.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm9.and)((0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId), (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId))
+      (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId), (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId))
     ).returning();
     return updated;
   }
   static async addReviewNote(tenantId, wpId, authorMembershipId, content) {
     const wp = await import_database10.db.query.workingPapers.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3528,9 +3522,9 @@ var WorkingPaperService = class {
   }
   static async updateReviewNoteStatus(tenantId, noteId, action, membershipId) {
     const note = await import_database10.db.query.reviewNotes.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.id, noteId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.id, noteId)
       )
     });
     if (!note) {
@@ -3558,24 +3552,24 @@ var WorkingPaperService = class {
       clearedAt,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm9.and)((0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId), (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.id, noteId))
+      (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database10.reviewNotes.tenantId, tenantId), (0, import_drizzle_orm3.eq)(import_database10.reviewNotes.id, noteId))
     ).returning();
     return updated;
   }
   static async listDocumentRequests(tenantId, engagementId) {
     const requests = await import_database10.db.select().from(import_database10.clientDocumentRequests).where(
-      (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.engagementId, engagementId)
+      (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.engagementId, engagementId)
       )
-    ).orderBy((0, import_drizzle_orm9.desc)(import_database10.clientDocumentRequests.createdAt));
+    ).orderBy((0, import_drizzle_orm3.desc)(import_database10.clientDocumentRequests.createdAt));
     return requests;
   }
   static async createDocumentRequest(tenantId, data) {
     const engagement = await import_database10.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.engagements.id, data.engagementId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
@@ -3593,9 +3587,9 @@ var WorkingPaperService = class {
   }
   static async fulfillDocumentRequest(tenantId, requestId, uploadedFileUrl) {
     const req = await import_database10.db.query.clientDocumentRequests.findFirst({
-      where: (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.id, requestId)
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     });
     if (!req) {
@@ -3611,9 +3605,9 @@ var WorkingPaperService = class {
       submittedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm9.and)(
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
-        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.id, requestId)
+      (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm3.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     ).returning();
     return updated;
@@ -3950,31 +3944,30 @@ var import_zod12 = require("zod");
 
 // apps/api/src/services/task.service.ts
 var import_database11 = require("@avenquis/database");
-var import_drizzle_orm10 = require("drizzle-orm");
 var TaskService = class {
   static async listTasks(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId)];
+    const conditions = [(0, import_database11.eq)(import_database11.tasks.tenantId, tenantId)];
     if (options?.engagementId) {
-      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.engagementId, options.engagementId));
+      conditions.push((0, import_database11.eq)(import_database11.tasks.engagementId, options.engagementId));
     }
     if (options?.assigneeMembershipId) {
       conditions.push(
-        (0, import_drizzle_orm10.eq)(import_database11.tasks.assigneeMembershipId, options.assigneeMembershipId)
+        (0, import_database11.eq)(import_database11.tasks.assigneeMembershipId, options.assigneeMembershipId)
       );
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.status, options.status));
+      conditions.push((0, import_database11.eq)(import_database11.tasks.status, options.status));
     }
     if (options?.priority) {
-      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.priority, options.priority));
+      conditions.push((0, import_database11.eq)(import_database11.tasks.priority, options.priority));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = (0, import_drizzle_orm10.or)(
-        (0, import_drizzle_orm10.ilike)(import_database11.tasks.title, searchPattern),
-        (0, import_drizzle_orm10.ilike)(import_database11.tasks.description, searchPattern)
+      const condOr = (0, import_database11.or)(
+        (0, import_database11.ilike)(import_database11.tasks.title, searchPattern),
+        (0, import_database11.ilike)(import_database11.tasks.description, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
@@ -3992,14 +3985,14 @@ var TaskService = class {
       estimatedHours: import_database11.tasks.estimatedHours,
       actualHours: import_database11.tasks.actualHours,
       createdAt: import_database11.tasks.createdAt
-    }).from(import_database11.tasks).innerJoin(import_database11.engagements, (0, import_drizzle_orm10.eq)(import_database11.tasks.engagementId, import_database11.engagements.id)).where((0, import_drizzle_orm10.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm10.desc)(import_database11.tasks.createdAt));
+    }).from(import_database11.tasks).innerJoin(import_database11.engagements, (0, import_database11.eq)(import_database11.tasks.engagementId, import_database11.engagements.id)).where((0, import_database11.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database11.desc)(import_database11.tasks.createdAt));
     return rows;
   }
   static async createTask(tenantId, data) {
     const engagement = await import_database11.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm10.and)(
-        (0, import_drizzle_orm10.eq)(import_database11.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm10.eq)(import_database11.engagements.id, data.engagementId)
+      where: (0, import_database11.and)(
+        (0, import_database11.eq)(import_database11.engagements.tenantId, tenantId),
+        (0, import_database11.eq)(import_database11.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
@@ -4021,7 +4014,7 @@ var TaskService = class {
   }
   static async updateTaskStatus(tenantId, taskId, status, actualHours) {
     const task = await import_database11.db.query.tasks.findFirst({
-      where: (0, import_drizzle_orm10.and)((0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId), (0, import_drizzle_orm10.eq)(import_database11.tasks.id, taskId))
+      where: (0, import_database11.and)((0, import_database11.eq)(import_database11.tasks.tenantId, tenantId), (0, import_database11.eq)(import_database11.tasks.id, taskId))
     });
     if (!task) {
       throw new ApiError(404, "Task not found", "TASK_NOT_FOUND");
@@ -4030,7 +4023,7 @@ var TaskService = class {
       status,
       actualHours: actualHours ?? task.actualHours,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm10.and)((0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId), (0, import_drizzle_orm10.eq)(import_database11.tasks.id, taskId))).returning();
+    }).where((0, import_database11.and)((0, import_database11.eq)(import_database11.tasks.tenantId, tenantId), (0, import_database11.eq)(import_database11.tasks.id, taskId))).returning();
     return updated;
   }
 };
@@ -4150,20 +4143,20 @@ var import_zod13 = require("zod");
 
 // apps/api/src/services/timesheet.service.ts
 var import_database12 = require("@avenquis/database");
-var import_drizzle_orm11 = require("drizzle-orm");
+var import_drizzle_orm4 = require("drizzle-orm");
 var TimesheetService = class {
   static async listTimesheets(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId)];
     if (options?.membershipId) {
-      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.membershipId, options.membershipId));
+      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.membershipId, options.membershipId));
     }
     if (options?.engagementId) {
-      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.engagementId, options.engagementId));
+      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.engagementId, options.engagementId));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.status, options.status));
+      conditions.push((0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.status, options.status));
     }
     const rows = await import_database12.db.select({
       id: import_database12.timesheetEntries.id,
@@ -4179,7 +4172,7 @@ var TimesheetService = class {
       description: import_database12.timesheetEntries.description,
       status: import_database12.timesheetEntries.status,
       createdAt: import_database12.timesheetEntries.createdAt
-    }).from(import_database12.timesheetEntries).innerJoin(import_database12.memberships, (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.membershipId, import_database12.memberships.id)).innerJoin(import_database12.userProfiles, (0, import_drizzle_orm11.eq)(import_database12.memberships.userId, import_database12.userProfiles.id)).leftJoin(import_database12.engagements, (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.engagementId, import_database12.engagements.id)).where((0, import_drizzle_orm11.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm11.desc)(import_database12.timesheetEntries.workDate));
+    }).from(import_database12.timesheetEntries).innerJoin(import_database12.memberships, (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.membershipId, import_database12.memberships.id)).innerJoin(import_database12.userProfiles, (0, import_drizzle_orm4.eq)(import_database12.memberships.userId, import_database12.userProfiles.id)).leftJoin(import_database12.engagements, (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.engagementId, import_database12.engagements.id)).where((0, import_drizzle_orm4.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm4.desc)(import_database12.timesheetEntries.workDate));
     return rows;
   }
   static async logTimesheet(tenantId, membershipId, data) {
@@ -4196,19 +4189,19 @@ var TimesheetService = class {
     }).returning();
     if (data.taskId) {
       const task = await import_database12.db.query.tasks.findFirst({
-        where: (0, import_drizzle_orm11.eq)(import_database12.tasks.id, data.taskId)
+        where: (0, import_drizzle_orm4.eq)(import_database12.tasks.id, data.taskId)
       });
       if (task) {
-        await import_database12.db.update(import_database12.tasks).set({ actualHours: task.actualHours + data.hours }).where((0, import_drizzle_orm11.eq)(import_database12.tasks.id, data.taskId));
+        await import_database12.db.update(import_database12.tasks).set({ actualHours: task.actualHours + data.hours }).where((0, import_drizzle_orm4.eq)(import_database12.tasks.id, data.taskId));
       }
     }
     return entry;
   }
   static async approveTimesheet(tenantId, timesheetId, approverMembershipId, status) {
     const entry = await import_database12.db.query.timesheetEntries.findFirst({
-      where: (0, import_drizzle_orm11.and)(
-        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId),
-        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.id, timesheetId)
+      where: (0, import_drizzle_orm4.and)(
+        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     });
     if (!entry) {
@@ -4224,9 +4217,9 @@ var TimesheetService = class {
       approvedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm11.and)(
-        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId),
-        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.id, timesheetId)
+      (0, import_drizzle_orm4.and)(
+        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_drizzle_orm4.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     ).returning();
     return updated;
@@ -4356,20 +4349,19 @@ var import_zod14 = require("zod");
 
 // apps/api/src/services/billing.service.ts
 var import_database13 = require("@avenquis/database");
-var import_drizzle_orm12 = require("drizzle-orm");
 var BillingService = class {
   static async listInvoices(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId)];
+    const conditions = [(0, import_database13.eq)(import_database13.invoices.tenantId, tenantId)];
     if (options?.clientId) {
-      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.clientId, options.clientId));
+      conditions.push((0, import_database13.eq)(import_database13.invoices.clientId, options.clientId));
     }
     if (options?.engagementId) {
-      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.engagementId, options.engagementId));
+      conditions.push((0, import_database13.eq)(import_database13.invoices.engagementId, options.engagementId));
     }
     if (options?.status) {
-      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.status, options.status));
+      conditions.push((0, import_database13.eq)(import_database13.invoices.status, options.status));
     }
     const rows = await import_database13.db.select({
       id: import_database13.invoices.id,
@@ -4387,20 +4379,20 @@ var BillingService = class {
       dueDate: import_database13.invoices.dueDate,
       paidAmount: import_database13.invoices.paidAmount,
       createdAt: import_database13.invoices.createdAt
-    }).from(import_database13.invoices).innerJoin(import_database13.clients, (0, import_drizzle_orm12.eq)(import_database13.invoices.clientId, import_database13.clients.id)).leftJoin(import_database13.engagements, (0, import_drizzle_orm12.eq)(import_database13.invoices.engagementId, import_database13.engagements.id)).where((0, import_drizzle_orm12.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm12.desc)(import_database13.invoices.createdAt));
+    }).from(import_database13.invoices).innerJoin(import_database13.clients, (0, import_database13.eq)(import_database13.invoices.clientId, import_database13.clients.id)).leftJoin(import_database13.engagements, (0, import_database13.eq)(import_database13.invoices.engagementId, import_database13.engagements.id)).where((0, import_database13.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database13.desc)(import_database13.invoices.createdAt));
     return rows;
   }
   static async createInvoice(tenantId, data) {
     const client = await import_database13.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.clients.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.clients.id, data.clientId))
+      where: (0, import_database13.and)((0, import_database13.eq)(import_database13.clients.tenantId, tenantId), (0, import_database13.eq)(import_database13.clients.id, data.clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
     const existing = await import_database13.db.query.invoices.findFirst({
-      where: (0, import_drizzle_orm12.and)(
-        (0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId),
-        (0, import_drizzle_orm12.eq)(import_database13.invoices.invoiceNumber, data.invoiceNumber)
+      where: (0, import_database13.and)(
+        (0, import_database13.eq)(import_database13.invoices.tenantId, tenantId),
+        (0, import_database13.eq)(import_database13.invoices.invoiceNumber, data.invoiceNumber)
       )
     });
     if (existing) {
@@ -4431,7 +4423,7 @@ var BillingService = class {
   }
   static async recordPayment(tenantId, invoiceId, data) {
     const invoice = await import_database13.db.query.invoices.findFirst({
-      where: (0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.invoices.id, invoiceId))
+      where: (0, import_database13.and)((0, import_database13.eq)(import_database13.invoices.tenantId, tenantId), (0, import_database13.eq)(import_database13.invoices.id, invoiceId))
     });
     if (!invoice) {
       throw new ApiError(404, "Invoice not found", "INVOICE_NOT_FOUND");
@@ -4457,7 +4449,7 @@ var BillingService = class {
       paidAmount: newPaidAmount,
       status: newStatus,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where((0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.invoices.id, invoiceId)));
+    }).where((0, import_database13.and)((0, import_database13.eq)(import_database13.invoices.tenantId, tenantId), (0, import_database13.eq)(import_database13.invoices.id, invoiceId)));
     return payment;
   }
 };
@@ -4582,13 +4574,12 @@ var import_zod15 = require("zod");
 // apps/api/src/services/certificate.service.ts
 var import_crypto2 = require("crypto");
 var import_database14 = require("@avenquis/database");
-var import_drizzle_orm13 = require("drizzle-orm");
 var CertificateService = class {
   static async signoffEngagement(tenantId, engagementId, signerMembershipId, data) {
     const engagement = await import_database14.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.engagements.id, engagementId)
+      where: (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.engagements.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.engagements.id, engagementId)
       )
     });
     if (!engagement) {
@@ -4610,9 +4601,9 @@ var CertificateService = class {
         status: "completed",
         updatedAt: /* @__PURE__ */ new Date()
       }).where(
-        (0, import_drizzle_orm13.and)(
-          (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
-          (0, import_drizzle_orm13.eq)(import_database14.engagements.id, engagementId)
+        (0, import_database14.and)(
+          (0, import_database14.eq)(import_database14.engagements.tenantId, tenantId),
+          (0, import_database14.eq)(import_database14.engagements.id, engagementId)
         )
       );
     }
@@ -4620,18 +4611,18 @@ var CertificateService = class {
   }
   static async issueCertificate(tenantId, data) {
     const engagement = await import_database14.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.engagements.id, data.engagementId)
+      where: (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.engagements.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const existing = await import_database14.db.query.digitalCertificates.findFirst({
-      where: (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.certificateNumber, data.certificateNumber)
+      where: (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.digitalCertificates.certificateNumber, data.certificateNumber)
       )
     });
     if (existing) {
@@ -4663,31 +4654,31 @@ var CertificateService = class {
   }
   static async getCertificateById(tenantId, certificateId) {
     const cert = await import_database14.db.query.digitalCertificates.findFirst({
-      where: (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
+      where: (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     });
     if (!cert) {
       throw new ApiError(404, "Certificate not found", "CERTIFICATE_NOT_FOUND");
     }
     const engagement = await import_database14.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm13.eq)(import_database14.engagements.id, cert.engagementId)
+      where: (0, import_database14.eq)(import_database14.engagements.id, cert.engagementId)
     });
     const client = engagement ? await import_database14.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm13.eq)(import_database14.clients.id, engagement.clientId)
+      where: (0, import_database14.eq)(import_database14.clients.id, engagement.clientId)
     }) : null;
     const [signer] = await import_database14.db.select({
       membershipId: import_database14.memberships.id,
       fullName: import_database14.userProfiles.fullName,
       email: import_database14.userProfiles.email
-    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_drizzle_orm13.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_drizzle_orm13.eq)(import_database14.memberships.id, cert.signedByMembershipId));
+    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_database14.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_database14.eq)(import_database14.memberships.id, cert.signedByMembershipId));
     const auditLogs = await import_database14.db.select().from(import_database14.signoffAuditLogs).where(
-      (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.signoffAuditLogs.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.signoffAuditLogs.engagementId, cert.engagementId)
+      (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.signoffAuditLogs.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.signoffAuditLogs.engagementId, cert.engagementId)
       )
-    ).orderBy((0, import_drizzle_orm13.desc)(import_database14.signoffAuditLogs.createdAt));
+    ).orderBy((0, import_database14.desc)(import_database14.signoffAuditLogs.createdAt));
     return {
       ...cert,
       engagementTitle: engagement?.title,
@@ -4698,7 +4689,7 @@ var CertificateService = class {
   }
   static async verifyCertificatePublic(verificationToken) {
     const cert = await import_database14.db.query.digitalCertificates.findFirst({
-      where: (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.verificationToken, verificationToken)
+      where: (0, import_database14.eq)(import_database14.digitalCertificates.verificationToken, verificationToken)
     });
     if (!cert) {
       throw new ApiError(
@@ -4708,14 +4699,14 @@ var CertificateService = class {
       );
     }
     const engagement = await import_database14.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm13.eq)(import_database14.engagements.id, cert.engagementId)
+      where: (0, import_database14.eq)(import_database14.engagements.id, cert.engagementId)
     });
     const client = engagement ? await import_database14.db.query.clients.findFirst({
-      where: (0, import_drizzle_orm13.eq)(import_database14.clients.id, engagement.clientId)
+      where: (0, import_database14.eq)(import_database14.clients.id, engagement.clientId)
     }) : null;
     const [signer] = await import_database14.db.select({
       fullName: import_database14.userProfiles.fullName
-    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_drizzle_orm13.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_drizzle_orm13.eq)(import_database14.memberships.id, cert.signedByMembershipId));
+    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_database14.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_database14.eq)(import_database14.memberships.id, cert.signedByMembershipId));
     return {
       verified: cert.status === "issued",
       status: cert.status,
@@ -4734,9 +4725,9 @@ var CertificateService = class {
   }
   static async revokeCertificate(tenantId, certificateId, reason) {
     const cert = await import_database14.db.query.digitalCertificates.findFirst({
-      where: (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
+      where: (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     });
     if (!cert) {
@@ -4748,9 +4739,9 @@ var CertificateService = class {
       revocationReason: reason,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm13.and)(
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
-        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
+      (0, import_database14.and)(
+        (0, import_database14.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_database14.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     ).returning();
     return updated;
@@ -4924,27 +4915,26 @@ var import_zod16 = require("zod");
 
 // apps/api/src/services/notification.service.ts
 var import_database15 = require("@avenquis/database");
-var import_drizzle_orm14 = require("drizzle-orm");
 var NotificationService = class {
   static async listNotifications(tenantId, recipientMembershipId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const conditions = [
-      (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
-      (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
+      (0, import_database15.eq)(import_database15.notifications.tenantId, tenantId),
+      (0, import_database15.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
     ];
     if (options?.isRead !== void 0) {
-      conditions.push((0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, options.isRead));
+      conditions.push((0, import_database15.eq)(import_database15.notifications.isRead, options.isRead));
     }
-    const rows = await import_database15.db.select().from(import_database15.notifications).where((0, import_drizzle_orm14.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm14.desc)(import_database15.notifications.createdAt));
+    const rows = await import_database15.db.select().from(import_database15.notifications).where((0, import_database15.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database15.desc)(import_database15.notifications.createdAt));
     return rows;
   }
   static async getUnreadCount(tenantId, recipientMembershipId) {
-    const [row] = await import_database15.db.select({ count: (0, import_drizzle_orm14.count)() }).from(import_database15.notifications).where(
-      (0, import_drizzle_orm14.and)(
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, false)
+    const [row] = await import_database15.db.select({ count: (0, import_database15.count)() }).from(import_database15.notifications).where(
+      (0, import_database15.and)(
+        (0, import_database15.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_database15.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
+        (0, import_database15.eq)(import_database15.notifications.isRead, false)
       )
     );
     return { unreadCount: Number(row?.count ?? 0) };
@@ -4963,10 +4953,10 @@ var NotificationService = class {
   }
   static async markAsRead(tenantId, notificationId, recipientMembershipId) {
     const notif = await import_database15.db.query.notifications.findFirst({
-      where: (0, import_drizzle_orm14.and)(
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.id, notificationId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
+      where: (0, import_database15.and)(
+        (0, import_database15.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_database15.eq)(import_database15.notifications.id, notificationId),
+        (0, import_database15.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
       )
     });
     if (!notif) {
@@ -4981,9 +4971,9 @@ var NotificationService = class {
       readAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm14.and)(
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.id, notificationId)
+      (0, import_database15.and)(
+        (0, import_database15.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_database15.eq)(import_database15.notifications.id, notificationId)
       )
     ).returning();
     return updated;
@@ -4994,10 +4984,10 @@ var NotificationService = class {
       readAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      (0, import_drizzle_orm14.and)(
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
-        (0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, false)
+      (0, import_database15.and)(
+        (0, import_database15.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_database15.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
+        (0, import_database15.eq)(import_database15.notifications.isRead, false)
       )
     );
     return { success: true };
@@ -5005,12 +4995,12 @@ var NotificationService = class {
   static async listActivityFeed(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.tenantId, tenantId)];
+    const conditions = [(0, import_database15.eq)(import_database15.activityFeedEvents.tenantId, tenantId)];
     if (options?.entityType) {
-      conditions.push((0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.entityType, options.entityType));
+      conditions.push((0, import_database15.eq)(import_database15.activityFeedEvents.entityType, options.entityType));
     }
     if (options?.entityId) {
-      conditions.push((0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.entityId, options.entityId));
+      conditions.push((0, import_database15.eq)(import_database15.activityFeedEvents.entityId, options.entityId));
     }
     const rows = await import_database15.db.select({
       id: import_database15.activityFeedEvents.id,
@@ -5025,8 +5015,8 @@ var NotificationService = class {
       createdAt: import_database15.activityFeedEvents.createdAt
     }).from(import_database15.activityFeedEvents).innerJoin(
       import_database15.memberships,
-      (0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.actorMembershipId, import_database15.memberships.id)
-    ).innerJoin(import_database15.userProfiles, (0, import_drizzle_orm14.eq)(import_database15.memberships.userId, import_database15.userProfiles.id)).where((0, import_drizzle_orm14.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm14.desc)(import_database15.activityFeedEvents.createdAt));
+      (0, import_database15.eq)(import_database15.activityFeedEvents.actorMembershipId, import_database15.memberships.id)
+    ).innerJoin(import_database15.userProfiles, (0, import_database15.eq)(import_database15.memberships.userId, import_database15.userProfiles.id)).where((0, import_database15.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database15.desc)(import_database15.activityFeedEvents.createdAt));
     return rows;
   }
   static async logActivityEvent(tenantId, actorMembershipId, data) {
@@ -5275,15 +5265,14 @@ var import_express18 = require("express");
 
 // apps/api/src/services/analytics.service.ts
 var import_database16 = require("@avenquis/database");
-var import_drizzle_orm15 = require("drizzle-orm");
 var AnalyticsService = class {
   static async getExecutiveDashboardMetrics(tenantId) {
-    const [clientCountRow] = await import_database16.db.select({ count: (0, import_drizzle_orm15.count)() }).from(import_database16.clients).where((0, import_drizzle_orm15.eq)(import_database16.clients.tenantId, tenantId));
+    const [clientCountRow] = await import_database16.db.select({ count: (0, import_database16.count)() }).from(import_database16.clients).where((0, import_database16.eq)(import_database16.clients.tenantId, tenantId));
     const totalClients = Number(clientCountRow?.count ?? 0);
     const allEngagements = await import_database16.db.select({
       id: import_database16.engagements.id,
       status: import_database16.engagements.status
-    }).from(import_database16.engagements).where((0, import_drizzle_orm15.eq)(import_database16.engagements.tenantId, tenantId));
+    }).from(import_database16.engagements).where((0, import_database16.eq)(import_database16.engagements.tenantId, tenantId));
     const totalEngagements = allEngagements.length;
     const engagementsByStatus = {
       planning: 0,
@@ -5297,14 +5286,14 @@ var AnalyticsService = class {
         engagementsByStatus[eng.status]++;
       }
     }
-    const [studentCountRow] = await import_database16.db.select({ count: (0, import_drizzle_orm15.count)() }).from(import_database16.studentProfiles).where((0, import_drizzle_orm15.eq)(import_database16.studentProfiles.tenantId, tenantId));
+    const [studentCountRow] = await import_database16.db.select({ count: (0, import_database16.count)() }).from(import_database16.studentProfiles).where((0, import_database16.eq)(import_database16.studentProfiles.tenantId, tenantId));
     const caStudentsCount = Number(studentCountRow?.count ?? 0);
-    const [billedSumRow] = await import_database16.db.select({ totalBilled: (0, import_drizzle_orm15.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where((0, import_drizzle_orm15.eq)(import_database16.invoices.tenantId, tenantId));
+    const [billedSumRow] = await import_database16.db.select({ totalBilled: (0, import_database16.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where((0, import_database16.eq)(import_database16.invoices.tenantId, tenantId));
     const totalRevenueBilled = Number(billedSumRow?.totalBilled ?? 0);
-    const [collectedSumRow] = await import_database16.db.select({ totalCollected: (0, import_drizzle_orm15.sum)(import_database16.payments.amount) }).from(import_database16.payments).where((0, import_drizzle_orm15.eq)(import_database16.payments.tenantId, tenantId));
+    const [collectedSumRow] = await import_database16.db.select({ totalCollected: (0, import_database16.sum)(import_database16.payments.amount) }).from(import_database16.payments).where((0, import_database16.eq)(import_database16.payments.tenantId, tenantId));
     const totalRevenueCollected = Number(collectedSumRow?.totalCollected ?? 0);
     const outstandingBilling = totalRevenueBilled - totalRevenueCollected;
-    const allWps = await import_database16.db.select({ status: import_database16.workingPapers.status }).from(import_database16.workingPapers).where((0, import_drizzle_orm15.eq)(import_database16.workingPapers.tenantId, tenantId));
+    const allWps = await import_database16.db.select({ status: import_database16.workingPapers.status }).from(import_database16.workingPapers).where((0, import_database16.eq)(import_database16.workingPapers.tenantId, tenantId));
     const workingPapersByStatus = {
       draft: 0,
       prepared: 0,
@@ -5319,7 +5308,7 @@ var AnalyticsService = class {
     const allCerts = await import_database16.db.select({
       status: import_database16.digitalCertificates.status,
       auditOpinion: import_database16.digitalCertificates.auditOpinion
-    }).from(import_database16.digitalCertificates).where((0, import_drizzle_orm15.eq)(import_database16.digitalCertificates.tenantId, tenantId));
+    }).from(import_database16.digitalCertificates).where((0, import_database16.eq)(import_database16.digitalCertificates.tenantId, tenantId));
     const certificatesIssuedCount = allCerts.filter(
       (c) => c.status === "issued"
     ).length;
@@ -5334,7 +5323,7 @@ var AnalyticsService = class {
         certificatesByOpinion[cert.auditOpinion]++;
       }
     }
-    const [timesheetHoursRow] = await import_database16.db.select({ totalHours: (0, import_drizzle_orm15.sum)(import_database16.timesheetEntries.hours) }).from(import_database16.timesheetEntries).where((0, import_drizzle_orm15.eq)(import_database16.timesheetEntries.tenantId, tenantId));
+    const [timesheetHoursRow] = await import_database16.db.select({ totalHours: (0, import_database16.sum)(import_database16.timesheetEntries.hours) }).from(import_database16.timesheetEntries).where((0, import_database16.eq)(import_database16.timesheetEntries.tenantId, tenantId));
     const totalLoggedHours = Number(timesheetHoursRow?.totalHours ?? 0);
     return {
       kpiSummary: {
@@ -5355,16 +5344,16 @@ var AnalyticsService = class {
   }
   static async getEngagementHealthReport(tenantId, engagementId) {
     const engagement = await import_database16.db.query.engagements.findFirst({
-      where: (0, import_drizzle_orm15.and)(
-        (0, import_drizzle_orm15.eq)(import_database16.engagements.tenantId, tenantId),
-        (0, import_drizzle_orm15.eq)(import_database16.engagements.id, engagementId)
+      where: (0, import_database16.and)(
+        (0, import_database16.eq)(import_database16.engagements.tenantId, tenantId),
+        (0, import_database16.eq)(import_database16.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const engagementTasks = await import_database16.db.select().from(import_database16.tasks).where(
-      (0, import_drizzle_orm15.and)((0, import_drizzle_orm15.eq)(import_database16.tasks.tenantId, tenantId), (0, import_drizzle_orm15.eq)(import_database16.tasks.engagementId, engagementId))
+      (0, import_database16.and)((0, import_database16.eq)(import_database16.tasks.tenantId, tenantId), (0, import_database16.eq)(import_database16.tasks.engagementId, engagementId))
     );
     const totalTasks = engagementTasks.length;
     const completedTasks = engagementTasks.filter(
@@ -5372,9 +5361,9 @@ var AnalyticsService = class {
     ).length;
     const taskCompletionPercentage = totalTasks > 0 ? Math.round(completedTasks / totalTasks * 100) : 0;
     const engagementWps = await import_database16.db.select().from(import_database16.workingPapers).where(
-      (0, import_drizzle_orm15.and)(
-        (0, import_drizzle_orm15.eq)(import_database16.workingPapers.tenantId, tenantId),
-        (0, import_drizzle_orm15.eq)(import_database16.workingPapers.engagementId, engagementId)
+      (0, import_database16.and)(
+        (0, import_database16.eq)(import_database16.workingPapers.tenantId, tenantId),
+        (0, import_database16.eq)(import_database16.workingPapers.engagementId, engagementId)
       )
     );
     const totalWps = engagementWps.length;
@@ -5382,10 +5371,10 @@ var AnalyticsService = class {
       (w) => w.status === "approved"
     ).length;
     const wpApprovalPercentage = totalWps > 0 ? Math.round(approvedWps / totalWps * 100) : 0;
-    const [invRow] = await import_database16.db.select({ totalBilled: (0, import_drizzle_orm15.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where(
-      (0, import_drizzle_orm15.and)(
-        (0, import_drizzle_orm15.eq)(import_database16.invoices.tenantId, tenantId),
-        (0, import_drizzle_orm15.eq)(import_database16.invoices.engagementId, engagementId)
+    const [invRow] = await import_database16.db.select({ totalBilled: (0, import_database16.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where(
+      (0, import_database16.and)(
+        (0, import_database16.eq)(import_database16.invoices.tenantId, tenantId),
+        (0, import_database16.eq)(import_database16.invoices.engagementId, engagementId)
       )
     );
     const totalBilled = Number(invRow?.totalBilled ?? 0);
@@ -5461,14 +5450,13 @@ var import_zod17 = require("zod");
 
 // apps/api/src/services/admin.service.ts
 var import_database17 = require("@avenquis/database");
-var import_drizzle_orm16 = require("drizzle-orm");
 var AdminService = class {
   static async listSecurityEvents(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [(0, import_drizzle_orm16.eq)(import_database17.securityEvents.tenantId, tenantId)];
+    const conditions = [(0, import_database17.eq)(import_database17.securityEvents.tenantId, tenantId)];
     if (options?.severity) {
-      conditions.push((0, import_drizzle_orm16.eq)(import_database17.securityEvents.severity, options.severity));
+      conditions.push((0, import_database17.eq)(import_database17.securityEvents.severity, options.severity));
     }
     const events = await import_database17.db.select({
       id: import_database17.securityEvents.id,
@@ -5481,7 +5469,7 @@ var AdminService = class {
       details: import_database17.securityEvents.details,
       ipAddress: import_database17.securityEvents.ipAddress,
       createdAt: import_database17.securityEvents.createdAt
-    }).from(import_database17.securityEvents).leftJoin(import_database17.memberships, (0, import_drizzle_orm16.eq)(import_database17.securityEvents.membershipId, import_database17.memberships.id)).leftJoin(import_database17.userProfiles, (0, import_drizzle_orm16.eq)(import_database17.memberships.userId, import_database17.userProfiles.id)).where((0, import_drizzle_orm16.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm16.desc)(import_database17.securityEvents.createdAt));
+    }).from(import_database17.securityEvents).leftJoin(import_database17.memberships, (0, import_database17.eq)(import_database17.securityEvents.membershipId, import_database17.memberships.id)).leftJoin(import_database17.userProfiles, (0, import_database17.eq)(import_database17.memberships.userId, import_database17.userProfiles.id)).where((0, import_database17.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_database17.desc)(import_database17.securityEvents.createdAt));
     return events;
   }
   static async getSystemHealth() {
@@ -5504,10 +5492,10 @@ var AdminService = class {
   }
   static async getTenantDeploymentProfile(tenantId) {
     const tenant = await import_database17.db.query.tenants.findFirst({
-      where: (0, import_drizzle_orm16.eq)(import_database17.tenants.id, tenantId)
+      where: (0, import_database17.eq)(import_database17.tenants.id, tenantId)
     });
     const flags = await import_database17.db.query.featureFlags.findMany({
-      where: (0, import_drizzle_orm16.eq)(import_database17.featureFlags.tenantId, tenantId)
+      where: (0, import_database17.eq)(import_database17.featureFlags.tenantId, tenantId)
     });
     return {
       tenantId,
@@ -5523,13 +5511,13 @@ var AdminService = class {
   }
   static async updateFeatureFlag(tenantId, code, enabled) {
     const existing = await import_database17.db.query.featureFlags.findFirst({
-      where: (0, import_drizzle_orm16.and)(
-        (0, import_drizzle_orm16.eq)(import_database17.featureFlags.tenantId, tenantId),
-        (0, import_drizzle_orm16.eq)(import_database17.featureFlags.code, code)
+      where: (0, import_database17.and)(
+        (0, import_database17.eq)(import_database17.featureFlags.tenantId, tenantId),
+        (0, import_database17.eq)(import_database17.featureFlags.code, code)
       )
     });
     if (existing) {
-      const [updated] = await import_database17.db.update(import_database17.featureFlags).set({ enabled }).where((0, import_drizzle_orm16.eq)(import_database17.featureFlags.id, existing.id)).returning();
+      const [updated] = await import_database17.db.update(import_database17.featureFlags).set({ enabled }).where((0, import_database17.eq)(import_database17.featureFlags.id, existing.id)).returning();
       return updated;
     }
     const [inserted] = await import_database17.db.insert(import_database17.featureFlags).values({
@@ -5676,6 +5664,12 @@ function createApp(testRouter) {
 
 // apps/api/src/bootstrap/server.ts
 function startServer() {
+  process.on("uncaughtException", (err) => {
+    logger.error({ err }, "Uncaught Exception caught in background");
+  });
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ reason }, "Unhandled Rejection caught in background");
+  });
   const app = createApp();
   const server = app.listen(env.PORT, "0.0.0.0", () => {
     logger.info(

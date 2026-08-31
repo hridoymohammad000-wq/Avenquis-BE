@@ -4,6 +4,14 @@ import { env } from "../config/env.js";
 import { logger } from "../logging/logger.js";
 
 export function startServer(): Server {
+  process.on("uncaughtException", (err) => {
+    logger.error({ err }, "Uncaught Exception caught in background");
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    logger.error({ reason }, "Unhandled Rejection caught in background");
+  });
+
   const app = createApp();
 
   const server = app.listen(env.PORT, "0.0.0.0", () => {
