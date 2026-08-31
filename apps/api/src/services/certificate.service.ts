@@ -6,12 +6,42 @@ import {
   engagements,
   clients,
   memberships,
+  engagementTeamMembers,
+  workingPapers,
+  reviewNotes,
+  count,
+  ne,
   userProfiles,
   eq,
   and,
   desc,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
+import {
+  canonicalEvidence,
+  hashArtifactUrl,
+  hashAuditRecord,
+  sha256Bytes,
+  signEvidence,
+  verifyCertificateEvidence,
+} from "./crypto-evidence.service.js";
+
+export function deriveEngagementSignoffRole(
+  requestedRole: "audit_senior" | "engagement_manager" | "eqcr_partner" | "lead_partner",
+  assignedTeamRole: string | undefined,
+  engagementAssignmentMembershipId: string | null | undefined,
+  signerMembershipId: string,
+) {
+  const requiredTeamRole: Record<string, string> = {
+    lead_partner: "lead_partner",
+    engagement_manager: "engagement_manager",
+    eqcr_partner: "eqcr_partner",
+    audit_senior: "senior_auditor",
+  };
+  if (assignedTeamRole === requiredTeamRole[requestedRole]) return requestedRole;
+  if (engagementAssignmentMembershipId === signerMembershipId) return requestedRole;
+  return null;
+}
 
 export class CertificateService {
   static async signoffEngagement(
@@ -25,50 +55,96 @@ export class CertificateService {
       comments?: string;
     },
   ) {
-    const engagement = await db.query.engagements.findFirst({
-      where: and(
-        eq(engagements.tenantId, tenantId),
-        eq(engagements.id, engagementId),
-      ),
-    });
-
-    if (!engagement) {
-      throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
-    }
-
-    const payload = `${tenantId}:${engagementId}:${signerMembershipId}:${data.signoffRole}:${data.action}:${Date.now()}`;
-    const signedHash = createHash("sha256").update(payload).digest("hex");
-
-    const [log] = await db
-      .insert(signoffAuditLogs)
-      .values({
+    return db.transaction(async (tx) => {
+      const engagement = await tx.query.engagements.findFirst({
+        where: and(eq(engagements.tenantId, tenantId), eq(engagements.id, engagementId)),
+      });
+      if (!engagement) throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+      const assignment = await tx.query.engagementTeamMembers.findFirst({
+        where: and(
+          eq(engagementTeamMembers.tenantId, tenantId),
+          eq(engagementTeamMembers.engagementId, engagementId),
+          eq(engagementTeamMembers.membershipId, signerMembershipId),
+        ),
+      });
+      const assignmentMembershipId = data.signoffRole === "lead_partner"
+        ? engagement.engagementPartnerMembershipId
+        : data.signoffRole === "engagement_manager"
+          ? engagement.engagementManagerMembershipId
+          : data.signoffRole === "eqcr_partner"
+            ? engagement.auditQualityReviewerMembershipId
+            : null;
+      const assignedRole = deriveEngagementSignoffRole(data.signoffRole, assignment?.role, assignmentMembershipId, signerMembershipId);
+      if (!assignedRole) throw new ApiError(403, "Signer is not assigned to this engagement for the requested role", "SIGNOFF_ROLE_NOT_AUTHORIZED");
+      const [openNotes] = await tx.select({ total: count() })
+        .from(reviewNotes)
+        .innerJoin(workingPapers, eq(reviewNotes.workingPaperId, workingPapers.id))
+        .where(and(
+          eq(reviewNotes.tenantId, tenantId),
+          eq(workingPapers.tenantId, tenantId),
+          eq(workingPapers.engagementId, engagementId),
+          ne(reviewNotes.status, "cleared"),
+        ));
+      if (data.action === "approved" && Number(openNotes.total) > 0) {
+        throw new ApiError(409, "Unresolved review notes block sign-off", "UNRESOLVED_REVIEW_NOTES");
+      }
+      const artifacts = await tx.select({ fileUrl: workingPapers.fileUrl })
+        .from(workingPapers)
+        .where(and(
+          eq(workingPapers.tenantId, tenantId),
+          eq(workingPapers.engagementId, engagementId),
+        ));
+      if (artifacts.length === 0 || artifacts.some((artifact) => !artifact.fileUrl)) {
+        throw new ApiError(409, "All working papers must have retrievable file artifacts before sign-off", "ARTIFACT_REQUIRED");
+      }
+      const artifactHashes = await Promise.all(artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)));
+      const artifactHash = sha256Bytes(canonicalEvidence(artifactHashes));
+      const createdAt = new Date();
+      const signaturePayload = canonicalEvidence({
+        artifactHash,
+        signerMembershipId,
+        signoffRole: assignedRole,
+        action: data.action,
+        createdAt: createdAt.toISOString(),
+      });
+      const evidenceSignature = signEvidence(signaturePayload);
+      const previous = await tx.query.signoffAuditLogs.findFirst({
+        where: and(eq(signoffAuditLogs.tenantId, tenantId), eq(signoffAuditLogs.engagementId, engagementId)),
+        orderBy: [desc(signoffAuditLogs.createdAt)],
+      });
+      const previousRecordHash = previous?.recordHash ?? null;
+      const recordHash = hashAuditRecord({
+        previousRecordHash,
+        artifactHash,
+        signerMembershipId,
+        signoffRole: assignedRole,
+        action: data.action,
+        createdAt,
+        signature: evidenceSignature.signature,
+      });
+      const [log] = await tx.insert(signoffAuditLogs).values({
         tenantId,
         engagementId,
         signerMembershipId,
-        signoffRole: data.signoffRole,
+        signoffRole: assignedRole,
         action: data.action,
         comments: data.comments,
-        signedHash,
-      })
-      .returning();
-
-    // If Lead Partner approves/signs, update engagement status to completed
-    if (data.signoffRole === "lead_partner" && data.action === "approved") {
-      await db
-        .update(engagements)
-        .set({
-          status: "completed",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(engagements.tenantId, tenantId),
-            eq(engagements.id, engagementId),
-          ),
+        signedHash: recordHash,
+        artifactHash,
+        signature: evidenceSignature.signature,
+        signatureAlgorithm: evidenceSignature.algorithm,
+        signingKeyId: evidenceSignature.keyId,
+        previousRecordHash,
+        recordHash,
+        createdAt,
+      }).returning();
+      if (assignedRole === "lead_partner" && data.action === "approved") {
+        await tx.update(engagements).set({ status: "completed", updatedAt: new Date() }).where(
+          and(eq(engagements.tenantId, tenantId), eq(engagements.id, engagementId)),
         );
-    }
-
-    return log;
+      }
+      return log;
+    });
   }
 
   static async issueCertificate(
@@ -116,6 +192,25 @@ export class CertificateService {
     const digitalSealHash = createHash("sha256")
       .update(rawSealPayload)
       .digest("hex");
+    const artifacts = await db
+      .select({ fileUrl: workingPapers.fileUrl })
+      .from(workingPapers)
+      .where(and(
+        eq(workingPapers.tenantId, tenantId),
+        eq(workingPapers.engagementId, data.engagementId),
+      ));
+    if (artifacts.length === 0 || artifacts.some((artifact) => !artifact.fileUrl)) {
+      throw new ApiError(409, "All working papers must have retrievable file artifacts before certificate issuance", "ARTIFACT_REQUIRED");
+    }
+    const artifactHashes = await Promise.all(artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)));
+    const artifactHash = sha256Bytes(canonicalEvidence(artifactHashes));
+    const evidenceSignature = signEvidence(canonicalEvidence({
+      artifactHash,
+      signerMembershipId: data.signedByMembershipId,
+      signoffRole: "lead_partner",
+      action: "issued",
+      createdAt: signedAt.toISOString(),
+    }));
 
     const [certificate] = await db
       .insert(digitalCertificates)
@@ -128,6 +223,10 @@ export class CertificateService {
         auditOpinion: data.auditOpinion,
         summaryOpinionText: data.summaryOpinionText,
         digitalSealHash,
+        artifactHash,
+        signature: evidenceSignature.signature,
+        signatureAlgorithm: evidenceSignature.algorithm,
+        signingKeyId: evidenceSignature.keyId,
         signedByMembershipId: data.signedByMembershipId,
         signedAt,
         verificationToken,
@@ -225,7 +324,15 @@ export class CertificateService {
       .where(eq(memberships.id, cert.signedByMembershipId));
 
     return {
-      verified: cert.status === "issued",
+      verified: cert.status === "issued" && !!cert.signature && !!cert.artifactHash &&
+        verifyCertificateEvidence({
+          status: cert.status,
+          signature: cert.signature,
+          artifactHash: cert.artifactHash,
+          signerMembershipId: cert.signedByMembershipId,
+          signoffRole: "lead_partner",
+          signedAt: cert.signedAt,
+        }),
       status: cert.status,
       certificateNumber: cert.certificateNumber,
       certificateType: cert.certificateType,

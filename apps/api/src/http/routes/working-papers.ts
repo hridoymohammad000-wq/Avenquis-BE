@@ -273,7 +273,7 @@ workingPaperRouter.post(
   "/:id/signoff",
   authenticate,
   requireTenantContext,
-  requirePermission("working_papers:signoff"),
+  requirePermission("working_papers:signoff", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;

@@ -1182,6 +1182,10 @@ export const digitalCertificates = pgTable(
     auditOpinion: varchar("audit_opinion", { length: 50 }).notNull(), // unmodified, qualified, adverse, disclaimer
     summaryOpinionText: text("summary_opinion_text").notNull(),
     digitalSealHash: varchar("digital_seal_hash", { length: 255 }).notNull(),
+    artifactHash: varchar("artifact_hash", { length: 64 }),
+    signature: text("signature"),
+    signatureAlgorithm: varchar("signature_algorithm", { length: 50 }),
+    signingKeyId: varchar("signing_key_id", { length: 100 }),
     signedByMembershipId: uuid("signed_by_membership_id")
       .notNull()
       .references(() => memberships.id, { onDelete: "cascade" }),
@@ -1230,6 +1234,12 @@ export const signoffAuditLogs = pgTable(
     action: varchar("action", { length: 50 }).notNull(), // approved, rejected, signed_and_sealed
     comments: text("comments"),
     signedHash: varchar("signed_hash", { length: 255 }),
+    artifactHash: varchar("artifact_hash", { length: 64 }),
+    signature: text("signature"),
+    signatureAlgorithm: varchar("signature_algorithm", { length: 50 }),
+    signingKeyId: varchar("signing_key_id", { length: 100 }),
+    previousRecordHash: varchar("previous_record_hash", { length: 64 }),
+    recordHash: varchar("record_hash", { length: 64 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1304,5 +1314,555 @@ export const activityFeedEvents = pgTable(
       "activity_feed_events_tenant_entity_type_entity_id_idx",
     ).on(table.tenantId, table.entityType, table.entityId),
     tenantIdIdx: index("activity_feed_events_tenant_id_idx").on(table.tenantId),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: TRIAL BALANCE & ACCOUNT MAPPING
+// ============================================================================
+
+export const trialBalances = pgTable(
+  "trial_balances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g. Unadjusted Trial Balance FY 2025
+    asOfDate: timestamp("as_of_date", { withTimezone: true }).notNull(),
+    currency: varchar("currency", { length: 10 }).notNull().default("BDT"),
+    totalDebit: integer("total_debit").notNull(),
+    totalCredit: integer("total_credit").notNull(),
+    isBalanced: boolean("is_balanced").notNull().default(true),
+    uploadedByMembershipId: uuid("uploaded_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("trial_balances_tenant_id_idx").on(table.tenantId),
+    engagementIdIdx: index("trial_balances_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+export const tbLineItems = pgTable(
+  "tb_line_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    trialBalanceId: uuid("trial_balance_id")
+      .notNull()
+      .references(() => trialBalances.id, { onDelete: "cascade" }),
+    accountCode: varchar("account_code", { length: 50 }).notNull(),
+    accountName: varchar("account_name", { length: 255 }).notNull(),
+    debitAmount: integer("debit_amount").notNull().default(0),
+    creditAmount: integer("credit_amount").notNull().default(0),
+    netBalance: integer("net_balance").notNull(),
+    priorYearBalance: integer("prior_year_balance").default(0),
+    mappedFinancialStatementGroup: varchar("mapped_fs_group", { length: 100 }), // asset, liability, equity, revenue, expense
+    mappedLeadSchedule: varchar("mapped_lead_schedule", { length: 100 }), // cash_and_bank, trade_receivables, inventory, trade_payables, etc.
+    isMapped: boolean("is_mapped").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantTbIdx: index("tb_line_items_tenant_tb_idx").on(
+      table.tenantId,
+      table.trialBalanceId,
+    ),
+    tenantLeadScheduleIdx: index("tb_line_items_tenant_lead_schedule_idx").on(
+      table.tenantId,
+      table.mappedLeadSchedule,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: MATERIALITY & RISK ASSESSMENT
+// ============================================================================
+
+export const materialityAssessments = pgTable(
+  "materiality_assessments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    benchmark: varchar("benchmark", { length: 100 }).notNull(), // total_revenue, total_assets, profit_before_tax, total_expenses, equity
+    benchmarkAmount: integer("benchmark_amount").notNull(),
+    percentageApplied: integer("percentage_applied").notNull(), // stored as basis points (e.g. 500 = 5.00%)
+    overallMateriality: integer("overall_materiality").notNull(),
+    performanceMaterialityPct: integer("performance_materiality_pct")
+      .notNull()
+      .default(7500), // basis points, default 75%
+    performanceMateriality: integer("performance_materiality").notNull(),
+    clearlyTrivialPct: integer("clearly_trivial_pct")
+      .notNull()
+      .default(500), // basis points, default 5%
+    clearlyTrivialThreshold: integer("clearly_trivial_threshold").notNull(),
+    rationale: text("rationale"),
+    assessedByMembershipId: uuid("assessed_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("materiality_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+export const riskAssessments = pgTable(
+  "risk_assessments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    lineItemId: uuid("line_item_id")
+      .references(() => tbLineItems.id, { onDelete: "cascade" }),
+    areaName: varchar("area_name", { length: 255 }).notNull(), // e.g. Revenue Recognition, Inventory Valuation
+    assertion: varchar("assertion", { length: 100 }).notNull(), // existence, completeness, valuation, rights_and_obligations, presentation, accuracy, cutoff, occurrence, classification
+    inherentRisk: varchar("inherent_risk", { length: 20 }).notNull().default("medium"), // low, medium, high
+    controlRisk: varchar("control_risk", { length: 20 }).notNull().default("medium"), // low, medium, high
+    combinedRiskLevel: varchar("combined_risk_level", { length: 20 }).notNull(), // low, moderate, significant, high
+    detectionRiskRequired: varchar("detection_risk_required", { length: 20 }).notNull(), // low, medium, high
+    riskDescription: text("risk_description"),
+    responseStrategy: text("response_strategy"), // planned audit response
+    assessedByMembershipId: uuid("assessed_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("risk_assessments_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantAssertionIdx: index("risk_assessments_tenant_assertion_idx").on(
+      table.tenantId,
+      table.assertion,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: AUDIT PROGRAMS & PROCEDURES
+// ============================================================================
+
+export const auditPrograms = pgTable(
+  "audit_programs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g., "Cash and Cash Equivalents", "Revenue"
+    description: text("description"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, in_progress, completed, reviewed
+    preparedByMembershipId: uuid("prepared_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    reviewedByMembershipId: uuid("reviewed_by_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_programs_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+export const auditProcedures = pgTable(
+  "audit_procedures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    programId: uuid("program_id")
+      .notNull()
+      .references(() => auditPrograms.id, { onDelete: "cascade" }),
+    riskAssessmentId: uuid("risk_assessment_id")
+      .references(() => riskAssessments.id, { onDelete: "set null" }),
+    assertion: varchar("assertion", { length: 100 }), // can map to multiple, or link specifically. we'll keep it simple: one primary assertion per procedure
+    procedureText: text("procedure_text").notNull(),
+    procedureType: varchar("procedure_type", { length: 50 }).notNull().default("substantive"), // test_of_controls, substantive, analytical
+    status: varchar("status", { length: 50 }).notNull().default("not_started"), // not_started, in_progress, completed, n_a
+    assignedToMembershipId: uuid("assigned_to_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    workPaperReference: varchar("work_paper_reference", { length: 255 }),
+    results: text("results"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantProgramIdx: index("audit_procedures_tenant_program_idx").on(
+      table.tenantId,
+      table.programId,
+    ),
+    tenantRiskIdx: index("audit_procedures_tenant_risk_idx").on(
+      table.tenantId,
+      table.riskAssessmentId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: SAMPLING & EVIDENCE VAULT
+// ============================================================================
+
+export const auditSamples = pgTable(
+  "audit_samples",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+      .notNull()
+      .references(() => auditProcedures.id, { onDelete: "cascade" }),
+    populationSize: integer("population_size").notNull(),
+    sampleSize: integer("sample_size").notNull(),
+    selectionMethod: varchar("selection_method", { length: 50 }).notNull(), // random, monetary_unit, haphazard, systematic
+    confidenceLevelPct: integer("confidence_level_pct").notNull().default(9500), // 95% = 9500 bps
+    tolerableErrorPct: integer("tolerable_error_pct").notNull().default(500), // 5% = 500 bps
+    status: varchar("status", { length: 50 }).notNull().default("planned"), // planned, selected, evaluated
+    createdByMembershipId: uuid("created_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_samples_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantProcedureIdx: index("audit_samples_tenant_procedure_idx").on(
+      table.tenantId,
+      table.procedureId,
+    ),
+  }),
+);
+
+export const auditEvidence = pgTable(
+  "audit_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+      .references(() => auditProcedures.id, { onDelete: "set null" }),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    fileUrl: varchar("file_url", { length: 1024 }).notNull(),
+    referenceCode: varchar("reference_code", { length: 100 }), // e.g. A.1.1-1
+    description: text("description"),
+    uploadedByMembershipId: uuid("uploaded_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_evidence_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantProcedureIdx: index("audit_evidence_tenant_procedure_idx").on(
+      table.tenantId,
+      table.procedureId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: EXCEPTIONS, SUD & REVIEW
+// ============================================================================
+
+export const auditExceptions = pgTable(
+  "audit_exceptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    procedureId: uuid("procedure_id")
+      .references(() => auditProcedures.id, { onDelete: "set null" }),
+    exceptionType: varchar("exception_type", { length: 50 }).notNull(), // misstatement, control_failure, scope_limitation, compliance_breach
+    description: text("description").notNull(),
+    financialImpact: integer("financial_impact").notNull().default(0), // positive or negative adjustment amount
+    resolutionStatus: varchar("resolution_status", { length: 50 }).notNull().default("open"), // open, adjusted, unadjusted, management_letter, waived
+    raisedByMembershipId: uuid("raised_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    resolvedByMembershipId: uuid("resolved_by_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    managementResponse: text("management_response"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_exceptions_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantStatusIdx: index("audit_exceptions_tenant_status_idx").on(
+      table.tenantId,
+      table.resolutionStatus,
+    ),
+  }),
+);
+
+export const auditReviews = pgTable(
+  "audit_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    reviewType: varchar("review_type", { length: 50 }).notNull(), // hot_review, cold_review, eqcr (Engagement Quality Control Review)
+    status: varchar("status", { length: 50 }).notNull().default("in_progress"), // in_progress, completed, requires_rework
+    findings: text("findings"),
+    reviewerMembershipId: uuid("reviewer_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    signedOffAt: timestamp("signed_off_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_reviews_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: COMPLETION & REPORTING
+// ============================================================================
+
+export const auditCompletionChecklists = pgTable(
+  "audit_completion_checklists",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    category: varchar("category", { length: 100 }).notNull(), // e.g. final_review, going_concern, subsequent_events
+    item: text("item").notNull(),
+    isCompleted: boolean("is_completed").notNull().default(false),
+    completedByMembershipId: uuid("completed_by_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    comments: text("comments"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index(
+      "audit_completion_checklists_tenant_engagement_idx",
+    ).on(table.tenantId, table.engagementId),
+  }),
+);
+
+export const auditReports = pgTable(
+  "audit_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .unique()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    reportType: varchar("report_type", { length: 50 }).notNull(), // unqualified, qualified, adverse, disclaimer
+    opinionText: text("opinion_text").notNull(),
+    basisForOpinion: text("basis_for_opinion"),
+    emphasisOfMatter: text("emphasis_of_matter"),
+    keyAuditMatters: text("key_audit_matters"),
+    otherInformation: text("other_information"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, signed
+    draftedByMembershipId: uuid("drafted_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    signedByMembershipId: uuid("signed_by_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    issueDate: timestamp("issue_date", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_reports_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: PERMANENT & CURRENT FILES (PAF & CAF)
+// ============================================================================
+
+export const auditFiles = pgTable(
+  "audit_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .references(() => engagements.id, { onDelete: "cascade" }), // Null for PAF, Required for CAF
+    fileType: varchar("file_type", { length: 20 }).notNull(), // PAF (Permanent Audit File), CAF (Current Audit File)
+    category: varchar("category", { length: 100 }).notNull(), // e.g., MoA, AoA, Board_Minutes, Planning, Execution, Conclusion
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    fileUrl: varchar("file_url", { length: 1024 }).notNull(),
+    description: text("description"),
+    uploadedByMembershipId: uuid("uploaded_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("audit_files_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    tenantEngagementIdx: index("audit_files_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V2 DEEP AUDIT ENGINE: AUDIT QUALITY CONTROLS (ISQM 1 / ISA 220)
+// ============================================================================
+
+export const auditQualityControls = pgTable(
+  "audit_quality_controls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    category: varchar("category", { length: 50 }).notNull(), // independence, competence, eqcr, documentation, consultation
+    questionText: text("question_text").notNull(),
+    isCompliant: boolean("is_compliant").notNull().default(false),
+    comments: text("comments"),
+    evaluatedByMembershipId: uuid("evaluated_by_membership_id")
+      .references(() => memberships.id, { onDelete: "set null" }),
+    evaluatedAt: timestamp("evaluated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("audit_qc_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
   }),
 );

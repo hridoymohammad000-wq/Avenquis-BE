@@ -1,3 +1,4 @@
 export * from "./client.js";
+export * from "./config/env.js";
 export * from "./schema.js";
 export * from "drizzle-orm";

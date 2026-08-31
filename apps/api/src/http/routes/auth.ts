@@ -142,7 +142,7 @@ authRouter.post("/login", async (req, res, next) => {
       );
     }
 
-    const aal = user.mfaEnabled ? "aal1" : "aal2";
+    const aal = "aal1" as const;
     const tokens = AuthService.generateTokens({
       userId: user.id,
       email: user.email,

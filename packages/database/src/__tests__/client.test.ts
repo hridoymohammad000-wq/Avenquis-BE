@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { db, closeDatabaseConnection } from "../client.js";
+import { db, closeDatabaseConnection, withTenantContext } from "../client.js";
 import { sql } from "drizzle-orm";
 import { tenants, tenantSettings } from "../schema.js";
 
@@ -34,10 +34,7 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
     });
 
     // 3. Set request context to Tenant A inside a transaction -> Should be able to query Tenant A setting
-    await db.transaction(async (tx) => {
-      await tx.execute(
-        sql.raw(`SET LOCAL app.current_tenant_id = '${tenantA.id}'`),
-      );
+    await withTenantContext({ tenantId: tenantA.id }, async (tx) => {
       const tenantASettings = await tx.execute(
         sql`SELECT * FROM tenant_settings WHERE tenant_id = app.current_tenant_id()`,
       );
@@ -46,14 +43,16 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
     });
 
     // 4. Set request context to Tenant B inside a transaction -> Must NOT see Tenant A setting (RLS Isolation)
-    await db.transaction(async (tx) => {
-      await tx.execute(
-        sql.raw(`SET LOCAL app.current_tenant_id = '${tenantB.id}'`),
-      );
+    await withTenantContext({ tenantId: tenantB.id }, async (tx) => {
       const tenantBSettings = await tx.execute(
         sql`SELECT * FROM tenant_settings WHERE tenant_id = app.current_tenant_id()`,
       );
       expect(tenantBSettings.length).toBe(0);
     });
+
+    const contextAfterTransaction = await db.execute(
+      sql`SELECT current_setting('app.current_tenant_id', true) AS tenant_id`,
+    );
+    expect(contextAfterTransaction[0].tenant_id).toBeNull();
   });
 });

@@ -59,7 +59,7 @@ certificateRouter.post(
   "/signoff",
   authenticate,
   requireTenantContext,
-  requirePermission("engagements:signoff"),
+  requirePermission("engagements:signoff", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
@@ -97,7 +97,7 @@ certificateRouter.post(
   "/",
   authenticate,
   requireTenantContext,
-  requirePermission("certificates:issue"),
+  requirePermission("certificates:issue", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;

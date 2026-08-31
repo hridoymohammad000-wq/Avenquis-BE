@@ -37,8 +37,6 @@ export function errorHandler(
     message = "Request body exceeds size limit";
   } else {
     logger.error({ err, reqId: req.id }, "Unhandled error");
-    // Temporarily expose error message for diagnostics
-    message = err?.message ?? "An unexpected error occurred";
   }
 
   res.status(statusCode).json({

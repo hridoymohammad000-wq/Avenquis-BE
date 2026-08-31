@@ -21,6 +21,17 @@ import { certificateRouter } from "./routes/certificates.js";
 import { notificationRouter } from "./routes/notifications.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { adminRouter } from "./routes/admin.js";
+import { trialBalanceRouter } from "./routes/trial-balance.js";
+import { materialityRouter } from "./routes/materiality.js";
+import {
+  auditProgramRouter,
+  auditProcedureRouter,
+} from "./routes/audit-program.js";
+import { samplingEvidenceRouter } from "./routes/sampling-evidence.js";
+import { exceptionReviewRouter } from "./routes/exception-review.js";
+import { completionReportingRouter } from "./routes/completion-reporting.js";
+import { auditFilesRouter } from "./routes/audit-files.js";
+import { qualityControlRouter } from "./routes/quality-control.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -56,6 +67,15 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/analytics", analyticsRouter);
   app.use("/api/v1/admin", adminRouter);
+  app.use("/api/v1/trial-balances", trialBalanceRouter);
+  app.use("/api/v1/audit", materialityRouter); // Materiality & Risks (Phase 15)
+  app.use("/api/v1/audit/programs", auditProgramRouter); // Programs (Phase 16)
+  app.use("/api/v1/audit/procedures", auditProcedureRouter); // Procedures (Phase 16)
+  app.use("/api/v1/audit", samplingEvidenceRouter); // Sampling & Evidence (Phase 17)
+  app.use("/api/v1/audit", exceptionReviewRouter); // Exceptions & Review (Phase 18)
+  app.use("/api/v1/audit", completionReportingRouter); // Completion & Reporting (Phase 19)
+  app.use("/api/v1/audit", auditFilesRouter); // PAF & CAF (Phase 20)
+  app.use("/api/v1/audit", qualityControlRouter); // Quality Control (Phase 21)
 
   if (testRouter) {
     app.use("/test", testRouter);

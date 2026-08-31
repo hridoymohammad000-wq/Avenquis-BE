@@ -2,6 +2,9 @@ import {
   db,
   workingPapers,
   reviewNotes,
+  signoffAuditLogs,
+  count,
+  ne,
   clientDocumentRequests,
   engagements,
   memberships,
@@ -13,6 +16,35 @@ import {
   or,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
+import {
+  canonicalEvidence,
+  hashArtifactUrl,
+  hashAuditRecord,
+  signEvidence,
+} from "./crypto-evidence.service.js";
+
+export function validateWorkingPaperSignoff(
+  status: string,
+  action: "prepare" | "approve" | "reject",
+  preparedByMembershipId: string | null,
+  membershipId: string,
+  unresolvedReviewNotes: number,
+) {
+  const allowed: Record<string, string[]> = {
+    prepare: ["draft", "rejected"],
+    approve: ["prepared", "reviewed"],
+    reject: ["prepared", "reviewed"],
+  };
+  if (!allowed[action].includes(status)) {
+    throw new ApiError(409, "Invalid working-paper status transition", "INVALID_STATUS_TRANSITION");
+  }
+  if (action !== "prepare" && preparedByMembershipId === membershipId) {
+    throw new ApiError(403, "A preparer cannot approve or review their own working paper", "SEGREGATION_OF_DUTIES_VIOLATION");
+  }
+  if (action === "approve" && unresolvedReviewNotes > 0) {
+    throw new ApiError(409, "Working paper has unresolved review notes", "UNRESOLVED_REVIEW_NOTES");
+  }
+}
 
 export class WorkingPaperService {
   static async listWorkingPapers(
@@ -205,58 +237,76 @@ export class WorkingPaperService {
     membershipId: string,
     remarks?: string,
   ) {
-    const wp = await db.query.workingPapers.findFirst({
-      where: and(
-        eq(workingPapers.tenantId, tenantId),
-        eq(workingPapers.id, wpId),
-      ),
-    });
+    return db.transaction(async (tx) => {
+      const wp = await tx.query.workingPapers.findFirst({
+        where: and(eq(workingPapers.tenantId, tenantId), eq(workingPapers.id, wpId)),
+      });
+      if (!wp) throw new ApiError(404, "Working paper not found", "WORKING_PAPER_NOT_FOUND");
 
-    if (!wp) {
-      throw new ApiError(
-        404,
-        "Working paper not found",
-        "WORKING_PAPER_NOT_FOUND",
-      );
-    }
+      let unresolvedReviewNotes = 0;
+      if (action === "approve") {
+        const [openNotes] = await tx
+          .select({ total: count() })
+          .from(reviewNotes)
+          .where(and(eq(reviewNotes.tenantId, tenantId), eq(reviewNotes.workingPaperId, wpId), ne(reviewNotes.status, "cleared")));
+        unresolvedReviewNotes = Number(openNotes.total);
+      }
+      validateWorkingPaperSignoff(wp.status, action, wp.preparedByMembershipId, membershipId, unresolvedReviewNotes);
+      if (!wp.fileUrl) {
+        throw new ApiError(409, "A working-paper file artifact is required before sign-off", "ARTIFACT_REQUIRED");
+      }
+      const artifactHash = await hashArtifactUrl(wp.fileUrl);
+      const createdAt = new Date();
+      const signoffRole = action === "prepare" ? "preparer" : "reviewer";
+      const evidenceSignature = signEvidence(canonicalEvidence({
+        artifactHash,
+        signerMembershipId: membershipId,
+        signoffRole,
+        action,
+        createdAt: createdAt.toISOString(),
+      }));
+      const previous = await tx.query.signoffAuditLogs.findFirst({
+        where: and(eq(signoffAuditLogs.tenantId, tenantId), eq(signoffAuditLogs.engagementId, wp.engagementId)),
+        orderBy: [desc(signoffAuditLogs.createdAt)],
+      });
+      const previousRecordHash = previous?.recordHash ?? null;
+      const recordHash = hashAuditRecord({
+        previousRecordHash,
+        artifactHash,
+        signerMembershipId: membershipId,
+        signoffRole,
+        action,
+        createdAt,
+        signature: evidenceSignature.signature,
+      });
 
-    let updatedStatus = wp.status;
-    let preparedByMembershipId = wp.preparedByMembershipId;
-    let preparedAt = wp.preparedAt;
-    let reviewedByMembershipId = wp.reviewedByMembershipId;
-    let reviewedAt = wp.reviewedAt;
-
-    if (action === "prepare") {
-      updatedStatus = "prepared";
-      preparedByMembershipId = membershipId;
-      preparedAt = new Date();
-    } else if (action === "approve") {
-      updatedStatus = "approved";
-      reviewedByMembershipId = membershipId;
-      reviewedAt = new Date();
-    } else if (action === "reject") {
-      updatedStatus = "rejected";
-      reviewedByMembershipId = membershipId;
-      reviewedAt = new Date();
-    }
-
-    const [updated] = await db
-      .update(workingPapers)
-      .set({
-        status: updatedStatus,
-        preparedByMembershipId,
-        preparedAt,
-        reviewedByMembershipId,
-        reviewedAt,
+      const [updated] = await tx.update(workingPapers).set({
+        status: action === "prepare" ? "prepared" : action === "approve" ? "approved" : "rejected",
+        preparedByMembershipId: action === "prepare" ? membershipId : wp.preparedByMembershipId,
+        preparedAt: action === "prepare" ? new Date() : wp.preparedAt,
+        reviewedByMembershipId: action === "prepare" ? wp.reviewedByMembershipId : membershipId,
+        reviewedAt: action === "prepare" ? wp.reviewedAt : new Date(),
         remarks: remarks ?? wp.remarks,
         updatedAt: new Date(),
-      })
-      .where(
-        and(eq(workingPapers.tenantId, tenantId), eq(workingPapers.id, wpId)),
-      )
-      .returning();
-
-    return updated;
+      }).where(and(eq(workingPapers.tenantId, tenantId), eq(workingPapers.id, wpId))).returning();
+      await tx.insert(signoffAuditLogs).values({
+        tenantId,
+        engagementId: wp.engagementId,
+        signerMembershipId: membershipId,
+        signoffRole,
+        action,
+        comments: remarks,
+        signedHash: recordHash,
+        artifactHash,
+        signature: evidenceSignature.signature,
+        signatureAlgorithm: evidenceSignature.algorithm,
+        signingKeyId: evidenceSignature.keyId,
+        previousRecordHash,
+        recordHash,
+        createdAt,
+      });
+      return updated;
+    });
   }
 
   static async addReviewNote(

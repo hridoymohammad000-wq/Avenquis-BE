@@ -150,23 +150,14 @@ Goal:
 
 Focus:
 
-- Trial Balance import
-- Account mapping
-- Materiality
-- Risk assessment
-- Assertions
-- Controls
-- Audit programs
-- Audit procedures
-- Sampling
-- Evidence
-- Exceptions
-- Review
-- Completion
-- Reporting
-- Permanent file
-- Current file
-- Audit quality controls
+- [x] Phase 14: Trial Balance import & Account mapping
+- [x] Phase 15: Materiality, Risk assessment, Assertions
+- [x] Phase 16: Controls, Audit programs, Audit procedures
+- [x] Phase 17: Sampling & Evidence
+- [x] Phase 18: Exceptions & Review
+- [x] Phase 19: Completion & Reporting
+- [x] Phase 20: Permanent & Current files
+- [x] Phase 21: Audit quality controls
 
 Core audit flow:
 
