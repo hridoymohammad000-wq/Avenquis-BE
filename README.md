@@ -1202,33 +1202,41 @@ Then AVENQUIS moves to V2.
 Each implementation ticket follows:
 
 **1. ChatGPT**
+
 - scope
 - architecture decision
 - acceptance criteria
 - security constraints
 
 **2. Design if required**
+
 - Figma
 - v0 prototype
 
 **3. Implementation**
+
 - Python → Codex
 - Non-Python local implementation → Antigravity
 
 **4. Review**
+
 - Gemini independent review
 
 **5. Fix**
+
 - Original implementation owner
 
 **6. QA**
+
 - Antigravity local/browser/E2E testing
 
 **7. Architecture Acceptance**
+
 - ChatGPT review
 - PASS or REWORK
 
 **8. GitHub**
+
 - Pull Request
 - CI
 - Review
@@ -1326,3 +1334,53 @@ Business modules must not begin until the Phase 0–3 security gate passes.
 
 **AVENQUIS**  
 **BUILD SMALL. ARCHITECT BIG.**
+
+## Local Development
+
+### Prerequisites
+
+- Node.js v24+
+- pnpm v11+
+- Git
+
+### Setup
+
+1. Install dependencies:
+   `ash
+pnpm install
+`
+2. Setup environment:
+   `ash
+cp apps/api/.env.example apps/api/.env
+`
+
+### Commands
+
+Run these from the repository root:
+
+- **Start Development Server**: pnpm dev
+- **Typecheck**: pnpm typecheck
+- **Lint**: pnpm lint
+- **Build**: pnpm build
+- **Production Start**: pnpm start (requires pnpm build first)
+
+### Health Check
+
+When the API is running locally, you can verify it by checking the health endpoint:
+`ash
+curl http://localhost:3000/health
+`
+
+## Database & Migrations
+
+- **Migrations are Immutable**: Once shared or deployed, migrations cannot be altered.
+- **Committed to Git**: All SQL migrations inside packages/database/migrations must be committed.
+- **Deterministic Order**: Migrations run sequentially. Do not alter historical files.
+- **Rollbacks**: Considered per migration (forward-only fix is preferred in production).
+- **SQL-First**: Manual SQL is expected for PostgreSQL-specific security (RLS, roles) alongside ORM definitions.
+
+## Engineering Quality & Verification
+
+- Run pnpm verify to execute a complete, non-destructive quality gate before committing. This runs format checks, type checks, linting, tests, and builds.
+- **Environment Safety**: A script (pnpm verify:env) automatically ensures sensitive files (like .env and DB data) are strictly ignored by git.
+- **Docker Credentials**: The local docker-compose setup is fully parameterized. Create a local .env matching .env.example instead of committing raw passwords.

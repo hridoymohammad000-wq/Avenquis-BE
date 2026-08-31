@@ -1,0 +1,29 @@
+{
+  "name": "@avenquis/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run --dir src",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
+    "db:verify": "tsx src/verify-connection.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.33.0",
+    "pino": "^10.3.1",
+    "postgres": "^3.4.4",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.5",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.24.2",
+    "typescript": "^5.6.2",
+    "vitest": "^4.1.11"
+  }
+}
