@@ -6,7 +6,8 @@
     "start": "node dist/index.js",
     "test": "vitest run --dir src",
     "lint": "eslint src",
-    "build": "tsc"
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
