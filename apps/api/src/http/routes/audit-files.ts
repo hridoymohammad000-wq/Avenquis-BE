@@ -69,7 +69,10 @@ auditFilesRouter.get(
         );
       }
 
-      const files = await AuditFilesService.getPermanentFiles(tenantId, clientId);
+      const files = await AuditFilesService.getPermanentFiles(
+        tenantId,
+        clientId,
+      );
       res.json({ success: true, data: files });
     } catch (error) {
       next(error);
@@ -95,7 +98,10 @@ auditFilesRouter.get(
         );
       }
 
-      const files = await AuditFilesService.getCurrentFiles(tenantId, engagementId);
+      const files = await AuditFilesService.getCurrentFiles(
+        tenantId,
+        engagementId,
+      );
       res.json({ success: true, data: files });
     } catch (error) {
       next(error);

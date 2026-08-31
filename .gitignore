@@ -10,4 +10,4 @@ coverage/
 .pnpm-debug.log
 
 # Allow production bundle for Render deploy
-!apps/api/dist/index.js
+

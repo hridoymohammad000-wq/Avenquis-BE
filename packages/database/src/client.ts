@@ -14,9 +14,13 @@ const conn =
   globalForDb.conn ??
   postgres(env.DATABASE_URL, {
     max: env.NODE_ENV === "test" ? 1 : undefined,
-    ssl: env.NODE_ENV === "production"
-      ? { rejectUnauthorized: true, ...(env.DATABASE_SSL_CA ? { ca: env.DATABASE_SSL_CA } : {}) }
-      : false,
+    ssl:
+      env.NODE_ENV === "production"
+        ? {
+            rejectUnauthorized: true,
+            ...(env.DATABASE_SSL_CA ? { ca: env.DATABASE_SSL_CA } : {}),
+          }
+        : false,
     onnotice: () => {},
   });
 
@@ -36,8 +40,12 @@ export async function withTenantContext<T>(
   callback: (tx: typeof db) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.current_tenant_id', ${context.tenantId}, true)`);
-    await tx.execute(sql`select set_config('app.current_membership_id', ${context.membershipId ?? ""}, true)`);
+    await tx.execute(
+      sql`select set_config('app.current_tenant_id', ${context.tenantId}, true)`,
+    );
+    await tx.execute(
+      sql`select set_config('app.current_membership_id', ${context.membershipId ?? ""}, true)`,
+    );
     return callback(tx as typeof db);
   });
 }

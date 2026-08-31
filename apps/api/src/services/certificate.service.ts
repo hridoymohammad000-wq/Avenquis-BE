@@ -27,7 +27,8 @@ import {
 } from "./crypto-evidence.service.js";
 
 export function deriveEngagementSignoffRole(
-  requestedRole: "audit_senior" | "engagement_manager" | "eqcr_partner" | "lead_partner",
+  requestedRole:
+    "audit_senior" | "engagement_manager" | "eqcr_partner" | "lead_partner",
   assignedTeamRole: string | undefined,
   engagementAssignmentMembershipId: string | null | undefined,
   signerMembershipId: string,
@@ -38,8 +39,10 @@ export function deriveEngagementSignoffRole(
     eqcr_partner: "eqcr_partner",
     audit_senior: "senior_auditor",
   };
-  if (assignedTeamRole === requiredTeamRole[requestedRole]) return requestedRole;
-  if (engagementAssignmentMembershipId === signerMembershipId) return requestedRole;
+  if (assignedTeamRole === requiredTeamRole[requestedRole])
+    return requestedRole;
+  if (engagementAssignmentMembershipId === signerMembershipId)
+    return requestedRole;
   return null;
 }
 
@@ -57,9 +60,13 @@ export class CertificateService {
   ) {
     return db.transaction(async (tx) => {
       const engagement = await tx.query.engagements.findFirst({
-        where: and(eq(engagements.tenantId, tenantId), eq(engagements.id, engagementId)),
+        where: and(
+          eq(engagements.tenantId, tenantId),
+          eq(engagements.id, engagementId),
+        ),
       });
-      if (!engagement) throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+      if (!engagement)
+        throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
       const assignment = await tx.query.engagementTeamMembers.findFirst({
         where: and(
           eq(engagementTeamMembers.tenantId, tenantId),
@@ -67,37 +74,70 @@ export class CertificateService {
           eq(engagementTeamMembers.membershipId, signerMembershipId),
         ),
       });
-      const assignmentMembershipId = data.signoffRole === "lead_partner"
-        ? engagement.engagementPartnerMembershipId
-        : data.signoffRole === "engagement_manager"
-          ? engagement.engagementManagerMembershipId
-          : data.signoffRole === "eqcr_partner"
-            ? engagement.auditQualityReviewerMembershipId
-            : null;
-      const assignedRole = deriveEngagementSignoffRole(data.signoffRole, assignment?.role, assignmentMembershipId, signerMembershipId);
-      if (!assignedRole) throw new ApiError(403, "Signer is not assigned to this engagement for the requested role", "SIGNOFF_ROLE_NOT_AUTHORIZED");
-      const [openNotes] = await tx.select({ total: count() })
+      const assignmentMembershipId =
+        data.signoffRole === "lead_partner"
+          ? engagement.engagementPartnerMembershipId
+          : data.signoffRole === "engagement_manager"
+            ? engagement.engagementManagerMembershipId
+            : data.signoffRole === "eqcr_partner"
+              ? engagement.auditQualityReviewerMembershipId
+              : null;
+      const assignedRole = deriveEngagementSignoffRole(
+        data.signoffRole,
+        assignment?.role,
+        assignmentMembershipId,
+        signerMembershipId,
+      );
+      if (!assignedRole)
+        throw new ApiError(
+          403,
+          "Signer is not assigned to this engagement for the requested role",
+          "SIGNOFF_ROLE_NOT_AUTHORIZED",
+        );
+      const [openNotes] = await tx
+        .select({ total: count() })
         .from(reviewNotes)
-        .innerJoin(workingPapers, eq(reviewNotes.workingPaperId, workingPapers.id))
-        .where(and(
-          eq(reviewNotes.tenantId, tenantId),
-          eq(workingPapers.tenantId, tenantId),
-          eq(workingPapers.engagementId, engagementId),
-          ne(reviewNotes.status, "cleared"),
-        ));
+        .innerJoin(
+          workingPapers,
+          eq(reviewNotes.workingPaperId, workingPapers.id),
+        )
+        .where(
+          and(
+            eq(reviewNotes.tenantId, tenantId),
+            eq(workingPapers.tenantId, tenantId),
+            eq(workingPapers.engagementId, engagementId),
+            ne(reviewNotes.status, "cleared"),
+          ),
+        );
       if (data.action === "approved" && Number(openNotes.total) > 0) {
-        throw new ApiError(409, "Unresolved review notes block sign-off", "UNRESOLVED_REVIEW_NOTES");
+        throw new ApiError(
+          409,
+          "Unresolved review notes block sign-off",
+          "UNRESOLVED_REVIEW_NOTES",
+        );
       }
-      const artifacts = await tx.select({ fileUrl: workingPapers.fileUrl })
+      const artifacts = await tx
+        .select({ fileUrl: workingPapers.fileUrl })
         .from(workingPapers)
-        .where(and(
-          eq(workingPapers.tenantId, tenantId),
-          eq(workingPapers.engagementId, engagementId),
-        ));
-      if (artifacts.length === 0 || artifacts.some((artifact) => !artifact.fileUrl)) {
-        throw new ApiError(409, "All working papers must have retrievable file artifacts before sign-off", "ARTIFACT_REQUIRED");
+        .where(
+          and(
+            eq(workingPapers.tenantId, tenantId),
+            eq(workingPapers.engagementId, engagementId),
+          ),
+        );
+      if (
+        artifacts.length === 0 ||
+        artifacts.some((artifact) => !artifact.fileUrl)
+      ) {
+        throw new ApiError(
+          409,
+          "All working papers must have retrievable file artifacts before sign-off",
+          "ARTIFACT_REQUIRED",
+        );
       }
-      const artifactHashes = await Promise.all(artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)));
+      const artifactHashes = await Promise.all(
+        artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)),
+      );
       const artifactHash = sha256Bytes(canonicalEvidence(artifactHashes));
       const createdAt = new Date();
       const signaturePayload = canonicalEvidence({
@@ -109,7 +149,10 @@ export class CertificateService {
       });
       const evidenceSignature = signEvidence(signaturePayload);
       const previous = await tx.query.signoffAuditLogs.findFirst({
-        where: and(eq(signoffAuditLogs.tenantId, tenantId), eq(signoffAuditLogs.engagementId, engagementId)),
+        where: and(
+          eq(signoffAuditLogs.tenantId, tenantId),
+          eq(signoffAuditLogs.engagementId, engagementId),
+        ),
         orderBy: [desc(signoffAuditLogs.createdAt)],
       });
       const previousRecordHash = previous?.recordHash ?? null;
@@ -122,26 +165,35 @@ export class CertificateService {
         createdAt,
         signature: evidenceSignature.signature,
       });
-      const [log] = await tx.insert(signoffAuditLogs).values({
-        tenantId,
-        engagementId,
-        signerMembershipId,
-        signoffRole: assignedRole,
-        action: data.action,
-        comments: data.comments,
-        signedHash: recordHash,
-        artifactHash,
-        signature: evidenceSignature.signature,
-        signatureAlgorithm: evidenceSignature.algorithm,
-        signingKeyId: evidenceSignature.keyId,
-        previousRecordHash,
-        recordHash,
-        createdAt,
-      }).returning();
+      const [log] = await tx
+        .insert(signoffAuditLogs)
+        .values({
+          tenantId,
+          engagementId,
+          signerMembershipId,
+          signoffRole: assignedRole,
+          action: data.action,
+          comments: data.comments,
+          signedHash: recordHash,
+          artifactHash,
+          signature: evidenceSignature.signature,
+          signatureAlgorithm: evidenceSignature.algorithm,
+          signingKeyId: evidenceSignature.keyId,
+          previousRecordHash,
+          recordHash,
+          createdAt,
+        })
+        .returning();
       if (assignedRole === "lead_partner" && data.action === "approved") {
-        await tx.update(engagements).set({ status: "completed", updatedAt: new Date() }).where(
-          and(eq(engagements.tenantId, tenantId), eq(engagements.id, engagementId)),
-        );
+        await tx
+          .update(engagements)
+          .set({ status: "completed", updatedAt: new Date() })
+          .where(
+            and(
+              eq(engagements.tenantId, tenantId),
+              eq(engagements.id, engagementId),
+            ),
+          );
       }
       return log;
     });
@@ -195,22 +247,35 @@ export class CertificateService {
     const artifacts = await db
       .select({ fileUrl: workingPapers.fileUrl })
       .from(workingPapers)
-      .where(and(
-        eq(workingPapers.tenantId, tenantId),
-        eq(workingPapers.engagementId, data.engagementId),
-      ));
-    if (artifacts.length === 0 || artifacts.some((artifact) => !artifact.fileUrl)) {
-      throw new ApiError(409, "All working papers must have retrievable file artifacts before certificate issuance", "ARTIFACT_REQUIRED");
+      .where(
+        and(
+          eq(workingPapers.tenantId, tenantId),
+          eq(workingPapers.engagementId, data.engagementId),
+        ),
+      );
+    if (
+      artifacts.length === 0 ||
+      artifacts.some((artifact) => !artifact.fileUrl)
+    ) {
+      throw new ApiError(
+        409,
+        "All working papers must have retrievable file artifacts before certificate issuance",
+        "ARTIFACT_REQUIRED",
+      );
     }
-    const artifactHashes = await Promise.all(artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)));
+    const artifactHashes = await Promise.all(
+      artifacts.map((artifact) => hashArtifactUrl(artifact.fileUrl!)),
+    );
     const artifactHash = sha256Bytes(canonicalEvidence(artifactHashes));
-    const evidenceSignature = signEvidence(canonicalEvidence({
-      artifactHash,
-      signerMembershipId: data.signedByMembershipId,
-      signoffRole: "lead_partner",
-      action: "issued",
-      createdAt: signedAt.toISOString(),
-    }));
+    const evidenceSignature = signEvidence(
+      canonicalEvidence({
+        artifactHash,
+        signerMembershipId: data.signedByMembershipId,
+        signoffRole: "lead_partner",
+        action: "issued",
+        createdAt: signedAt.toISOString(),
+      }),
+    );
 
     const [certificate] = await db
       .insert(digitalCertificates)
@@ -324,7 +389,10 @@ export class CertificateService {
       .where(eq(memberships.id, cert.signedByMembershipId));
 
     return {
-      verified: cert.status === "issued" && !!cert.signature && !!cert.artifactHash &&
+      verified:
+        cert.status === "issued" &&
+        !!cert.signature &&
+        !!cert.artifactHash &&
         verifyCertificateEvidence({
           status: cert.status,
           signature: cert.signature,

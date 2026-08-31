@@ -167,7 +167,8 @@ describe("Phase 15 Materiality Calculation & Risk Assessment API", () => {
           inherentRisk: "medium",
           controlRisk: "low",
           riskDescription: "Inventory valuation risk for raw material and WIP",
-          responseStrategy: "Analytical procedures and sample-based NRV testing",
+          responseStrategy:
+            "Analytical procedures and sample-based NRV testing",
         });
 
       expect(res.status).toBe(201);

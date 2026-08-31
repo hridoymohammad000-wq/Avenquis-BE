@@ -204,9 +204,8 @@ export class MaterialityService {
       significantRisks: risks.filter(
         (r) => r.combinedRiskLevel === "significant",
       ).length,
-      moderateRisks: risks.filter(
-        (r) => r.combinedRiskLevel === "moderate",
-      ).length,
+      moderateRisks: risks.filter((r) => r.combinedRiskLevel === "moderate")
+        .length,
       lowRisks: risks.filter((r) => r.combinedRiskLevel === "low").length,
       byAssertion: {} as Record<string, number>,
     };

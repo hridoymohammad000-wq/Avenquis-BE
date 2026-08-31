@@ -117,7 +117,7 @@ describe("Phase 18 Exceptions & Review API", () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data.resolutionStatus).toBe("unadjusted");
       expect(res.body.data.managementResponse).toBe(
-        "Immaterial, will adjust next year."
+        "Immaterial, will adjust next year.",
       );
     });
 

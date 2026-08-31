@@ -94,7 +94,9 @@ describe("Phase 3 Authentication, Authorization & Tenant Isolation API", () => {
       expect(res.body.data.tokens.accessToken).toBeDefined();
       expect(res.body.data.aal).toBeUndefined();
       const { AuthService } = await import("../services/auth.service.js");
-      expect(AuthService.verifyAccessToken(res.body.data.tokens.accessToken).aal).toBe("aal1");
+      expect(
+        AuthService.verifyAccessToken(res.body.data.tokens.accessToken).aal,
+      ).toBe("aal1");
       accessToken = res.body.data.tokens.accessToken;
     });
 
@@ -179,7 +181,10 @@ describe("Phase 3 Authentication, Authorization & Tenant Isolation API", () => {
       expect(challengeRes.status).toBe(200);
       expect(challengeRes.body.success).toBe(true);
       expect(challengeRes.body.data.tokens.accessToken).toBeDefined();
-      expect(AuthService.verifyAccessToken(challengeRes.body.data.tokens.accessToken).aal).toBe("aal2");
+      expect(
+        AuthService.verifyAccessToken(challengeRes.body.data.tokens.accessToken)
+          .aal,
+      ).toBe("aal2");
 
       accessToken = challengeRes.body.data.tokens.accessToken;
     });

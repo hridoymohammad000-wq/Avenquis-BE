@@ -162,7 +162,7 @@ describe("Phase 17 Sampling & Evidence API", () => {
     it("should list evidence specifically for a procedure", async () => {
       const res = await request(app)
         .get(
-          `/api/v1/audit/evidence?engagementId=${engagementId}&procedureId=${procedureId}`
+          `/api/v1/audit/evidence?engagementId=${engagementId}&procedureId=${procedureId}`,
         )
         .set("Authorization", `Bearer ${adminToken}`)
         .set("x-tenant-id", tenantAId);

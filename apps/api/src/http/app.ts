@@ -32,6 +32,19 @@ import { exceptionReviewRouter } from "./routes/exception-review.js";
 import { completionReportingRouter } from "./routes/completion-reporting.js";
 import { auditFilesRouter } from "./routes/audit-files.js";
 import { qualityControlRouter } from "./routes/quality-control.js";
+import { icabWorkflowRouter } from "./routes/icab-workflow.js";
+import { dvsWorkflowRouter } from "./routes/dvs-workflow.js";
+import { regulatoryFilingRouter } from "./routes/regulatory-filing.js";
+import { taxVatRouter } from "./routes/tax-vat.js";
+import { complianceMasterRouter } from "./routes/compliance-master.js";
+import { aiIntelligenceRouter } from "./routes/ai-intelligence.js";
+import { advancedAnalyticsRouter } from "./routes/advanced-analytics.js";
+import { hrFinanceRouter } from "./routes/hr-finance.js";
+import { clientPortalRouter } from "./routes/client-portal.js";
+import { automationRouter } from "./routes/automation.js";
+import { enterpriseRouter } from "./routes/enterprise.js";
+import { i18nRouter } from "./routes/i18n.js";
+import { regionalRouter } from "./routes/regional.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -76,6 +89,19 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/audit", completionReportingRouter); // Completion & Reporting (Phase 19)
   app.use("/api/v1/audit", auditFilesRouter); // PAF & CAF (Phase 20)
   app.use("/api/v1/audit", qualityControlRouter); // Quality Control (Phase 21)
+  app.use("/api/v1/compliance/icab", icabWorkflowRouter); // ICAB Workflows (Phase 22)
+  app.use("/api/v1/compliance/dvs", dvsWorkflowRouter); // DVS (Phase 23)
+  app.use("/api/v1/compliance/filings", regulatoryFilingRouter); // Regulatory Compliance (Phase 24)
+  app.use("/api/v1/compliance/tax-vat", taxVatRouter); // Tax & VAT Workflows (Phase 25)
+  app.use("/api/v1/compliance/master", complianceMasterRouter); // Calendar & Templates (Phase 26)
+  app.use("/api/v1/intelligence", aiIntelligenceRouter); // AI & Document Intelligence (Phase 27)
+  app.use("/api/v1/analytics/advanced", advancedAnalyticsRouter); // Workload & Profitability (Phase 28)
+  app.use("/api/v1/hr-finance", hrFinanceRouter); // Payroll & Expenses (Phase 29)
+  app.use("/api/v1/client-portal", clientPortalRouter); // Client Portal & Secure Exchange (Phase 30)
+  app.use("/api/v1/automation", automationRouter); // Automation & APIs (Phase 31)
+  app.use("/api/v1/enterprise", enterpriseRouter); // Enterprise Scale (Phase 32)
+  app.use("/api/v1/i18n", i18nRouter); // Internationalization (Phase 33)
+  app.use("/api/v1/regional", regionalRouter); // Multi-country (Phase 34)
 
   if (testRouter) {
     app.use("/test", testRouter);

@@ -120,7 +120,8 @@ describe("Phase 16 Audit Programs API", () => {
         .send({
           riskAssessmentId,
           assertion: "existence",
-          procedureText: "Obtain bank confirmations for all material bank accounts.",
+          procedureText:
+            "Obtain bank confirmations for all material bank accounts.",
           procedureType: "substantive",
         });
 

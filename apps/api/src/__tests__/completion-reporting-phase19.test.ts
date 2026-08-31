@@ -116,7 +116,8 @@ describe("Phase 19 Completion & Reporting API", () => {
         .send({
           engagementId,
           reportType: "unqualified",
-          opinionText: "In our opinion, the financial statements present fairly...",
+          opinionText:
+            "In our opinion, the financial statements present fairly...",
           basisForOpinion: "We conducted our audit in accordance with ISA...",
           keyAuditMatters: "Revenue recognition was a key audit matter.",
         });

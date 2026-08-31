@@ -1415,9 +1415,7 @@ export const materialityAssessments = pgTable(
       .notNull()
       .default(7500), // basis points, default 75%
     performanceMateriality: integer("performance_materiality").notNull(),
-    clearlyTrivialPct: integer("clearly_trivial_pct")
-      .notNull()
-      .default(500), // basis points, default 5%
+    clearlyTrivialPct: integer("clearly_trivial_pct").notNull().default(500), // basis points, default 5%
     clearlyTrivialThreshold: integer("clearly_trivial_threshold").notNull(),
     rationale: text("rationale"),
     assessedByMembershipId: uuid("assessed_by_membership_id")
@@ -1448,14 +1446,21 @@ export const riskAssessments = pgTable(
     engagementId: uuid("engagement_id")
       .notNull()
       .references(() => engagements.id, { onDelete: "cascade" }),
-    lineItemId: uuid("line_item_id")
-      .references(() => tbLineItems.id, { onDelete: "cascade" }),
+    lineItemId: uuid("line_item_id").references(() => tbLineItems.id, {
+      onDelete: "cascade",
+    }),
     areaName: varchar("area_name", { length: 255 }).notNull(), // e.g. Revenue Recognition, Inventory Valuation
     assertion: varchar("assertion", { length: 100 }).notNull(), // existence, completeness, valuation, rights_and_obligations, presentation, accuracy, cutoff, occurrence, classification
-    inherentRisk: varchar("inherent_risk", { length: 20 }).notNull().default("medium"), // low, medium, high
-    controlRisk: varchar("control_risk", { length: 20 }).notNull().default("medium"), // low, medium, high
+    inherentRisk: varchar("inherent_risk", { length: 20 })
+      .notNull()
+      .default("medium"), // low, medium, high
+    controlRisk: varchar("control_risk", { length: 20 })
+      .notNull()
+      .default("medium"), // low, medium, high
     combinedRiskLevel: varchar("combined_risk_level", { length: 20 }).notNull(), // low, moderate, significant, high
-    detectionRiskRequired: varchar("detection_risk_required", { length: 20 }).notNull(), // low, medium, high
+    detectionRiskRequired: varchar("detection_risk_required", {
+      length: 20,
+    }).notNull(), // low, medium, high
     riskDescription: text("risk_description"),
     responseStrategy: text("response_strategy"), // planned audit response
     assessedByMembershipId: uuid("assessed_by_membership_id")
@@ -1500,8 +1505,10 @@ export const auditPrograms = pgTable(
     preparedByMembershipId: uuid("prepared_by_membership_id")
       .notNull()
       .references(() => memberships.id, { onDelete: "set null" }),
-    reviewedByMembershipId: uuid("reviewed_by_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    reviewedByMembershipId: uuid("reviewed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1527,14 +1534,20 @@ export const auditProcedures = pgTable(
     programId: uuid("program_id")
       .notNull()
       .references(() => auditPrograms.id, { onDelete: "cascade" }),
-    riskAssessmentId: uuid("risk_assessment_id")
-      .references(() => riskAssessments.id, { onDelete: "set null" }),
+    riskAssessmentId: uuid("risk_assessment_id").references(
+      () => riskAssessments.id,
+      { onDelete: "set null" },
+    ),
     assertion: varchar("assertion", { length: 100 }), // can map to multiple, or link specifically. we'll keep it simple: one primary assertion per procedure
     procedureText: text("procedure_text").notNull(),
-    procedureType: varchar("procedure_type", { length: 50 }).notNull().default("substantive"), // test_of_controls, substantive, analytical
+    procedureType: varchar("procedure_type", { length: 50 })
+      .notNull()
+      .default("substantive"), // test_of_controls, substantive, analytical
     status: varchar("status", { length: 50 }).notNull().default("not_started"), // not_started, in_progress, completed, n_a
-    assignedToMembershipId: uuid("assigned_to_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    assignedToMembershipId: uuid("assigned_to_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     workPaperReference: varchar("work_paper_reference", { length: 255 }),
     results: text("results"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1611,8 +1624,9 @@ export const auditEvidence = pgTable(
     engagementId: uuid("engagement_id")
       .notNull()
       .references(() => engagements.id, { onDelete: "cascade" }),
-    procedureId: uuid("procedure_id")
-      .references(() => auditProcedures.id, { onDelete: "set null" }),
+    procedureId: uuid("procedure_id").references(() => auditProcedures.id, {
+      onDelete: "set null",
+    }),
     fileName: varchar("file_name", { length: 255 }).notNull(),
     fileUrl: varchar("file_url", { length: 1024 }).notNull(),
     referenceCode: varchar("reference_code", { length: 100 }), // e.g. A.1.1-1
@@ -1650,17 +1664,22 @@ export const auditExceptions = pgTable(
     engagementId: uuid("engagement_id")
       .notNull()
       .references(() => engagements.id, { onDelete: "cascade" }),
-    procedureId: uuid("procedure_id")
-      .references(() => auditProcedures.id, { onDelete: "set null" }),
+    procedureId: uuid("procedure_id").references(() => auditProcedures.id, {
+      onDelete: "set null",
+    }),
     exceptionType: varchar("exception_type", { length: 50 }).notNull(), // misstatement, control_failure, scope_limitation, compliance_breach
     description: text("description").notNull(),
     financialImpact: integer("financial_impact").notNull().default(0), // positive or negative adjustment amount
-    resolutionStatus: varchar("resolution_status", { length: 50 }).notNull().default("open"), // open, adjusted, unadjusted, management_letter, waived
+    resolutionStatus: varchar("resolution_status", { length: 50 })
+      .notNull()
+      .default("open"), // open, adjusted, unadjusted, management_letter, waived
     raisedByMembershipId: uuid("raised_by_membership_id")
       .notNull()
       .references(() => memberships.id, { onDelete: "set null" }),
-    resolvedByMembershipId: uuid("resolved_by_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    resolvedByMembershipId: uuid("resolved_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     managementResponse: text("management_response"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1730,8 +1749,10 @@ export const auditCompletionChecklists = pgTable(
     category: varchar("category", { length: 100 }).notNull(), // e.g. final_review, going_concern, subsequent_events
     item: text("item").notNull(),
     isCompleted: boolean("is_completed").notNull().default(false),
-    completedByMembershipId: uuid("completed_by_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    completedByMembershipId: uuid("completed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     comments: text("comments"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1769,8 +1790,10 @@ export const auditReports = pgTable(
     draftedByMembershipId: uuid("drafted_by_membership_id")
       .notNull()
       .references(() => memberships.id, { onDelete: "set null" }),
-    signedByMembershipId: uuid("signed_by_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    signedByMembershipId: uuid("signed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     signedAt: timestamp("signed_at", { withTimezone: true }),
     issueDate: timestamp("issue_date", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1802,8 +1825,9 @@ export const auditFiles = pgTable(
     clientId: uuid("client_id")
       .notNull()
       .references(() => clients.id, { onDelete: "cascade" }),
-    engagementId: uuid("engagement_id")
-      .references(() => engagements.id, { onDelete: "cascade" }), // Null for PAF, Required for CAF
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "cascade",
+    }), // Null for PAF, Required for CAF
     fileType: varchar("file_type", { length: 20 }).notNull(), // PAF (Permanent Audit File), CAF (Current Audit File)
     category: varchar("category", { length: 100 }).notNull(), // e.g., MoA, AoA, Board_Minutes, Planning, Execution, Conclusion
     fileName: varchar("file_name", { length: 255 }).notNull(),
@@ -1849,8 +1873,10 @@ export const auditQualityControls = pgTable(
     questionText: text("question_text").notNull(),
     isCompliant: boolean("is_compliant").notNull().default(false),
     comments: text("comments"),
-    evaluatedByMembershipId: uuid("evaluated_by_membership_id")
-      .references(() => memberships.id, { onDelete: "set null" }),
+    evaluatedByMembershipId: uuid("evaluated_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     evaluatedAt: timestamp("evaluated_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1866,3 +1892,759 @@ export const auditQualityControls = pgTable(
     ),
   }),
 );
+
+// ============================================================================
+// V3 BANGLADESH COMPLIANCE LAYER: PHASE 22 - ICAB WORKFLOWS
+// ============================================================================
+
+export const icabForms = pgTable(
+  "icab_forms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => studentProfiles.id, { onDelete: "cascade" }),
+    formType: varchar("form_type", { length: 50 }).notNull(), // form_104 (Deed), form_108 (Completion), form_112 (Transfer)
+    submissionDate: timestamp("submission_date", { withTimezone: true }),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, pending_principal_signature, submitted_to_icab, approved, rejected
+    documentUrl: varchar("document_url", { length: 1024 }),
+    signedByPrincipalId: uuid("signed_by_principal_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantStudentIdx: index("icab_forms_tenant_student_idx").on(
+      table.tenantId,
+      table.studentId,
+    ),
+  }),
+);
+
+export const icabExamRegistrations = pgTable(
+  "icab_exam_registrations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => studentProfiles.id, { onDelete: "cascade" }),
+    examSession: varchar("exam_session", { length: 100 }).notNull(), // e.g., "May-June 2026"
+    level: varchar("level", { length: 50 }).notNull(), // certificate, professional, advanced
+    status: varchar("status", { length: 50 }).notNull().default("applied"), // applied, principal_approved, rejected
+    leaveRequestedDays: integer("leave_requested_days").notNull().default(0),
+    leaveApproved: boolean("leave_approved").notNull().default(false),
+    approvedByMembershipId: uuid("approved_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    comments: text("comments"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantStudentIdx: index("icab_exam_regs_tenant_student_idx").on(
+      table.tenantId,
+      table.studentId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V3 BANGLADESH COMPLIANCE LAYER: PHASE 23 - DVS (Document Verification System)
+// ============================================================================
+
+export const dvsRecords = pgTable(
+  "dvs_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    dvsCode: varchar("dvs_code", { length: 50 }).notNull().unique(), // e.g., 210516-XYZ-1234
+    documentType: varchar("document_type", { length: 100 }).notNull(), // Audit Report, Review Report, etc.
+    status: varchar("status", { length: 50 }).notNull().default("generated"), // generated, revoked
+    generatedByMembershipId: uuid("generated_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    generatedAt: timestamp("generated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("dvs_records_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V3 BANGLADESH COMPLIANCE LAYER: PHASE 24 - REGULATORY COMPLIANCE
+// ============================================================================
+
+export const regulatoryFilings = pgTable(
+  "regulatory_filings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    regulator: varchar("regulator", { length: 50 }).notNull(), // FRC, BSEC, NBR, BB
+    filingType: varchar("filing_type", { length: 100 }).notNull(), // Annual Return, Audit Report, Special Audit
+    status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, submitted, accepted, rejected
+    filingDate: timestamp("filing_date", { withTimezone: true }),
+    referenceNumber: varchar("reference_number", { length: 100 }), // e.g., acknowledgment receipt number
+    documentUrl: varchar("document_url", { length: 1024 }),
+    submittedByMembershipId: uuid("submitted_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("reg_filings_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantRegulatorIdx: index("reg_filings_tenant_regulator_idx").on(
+      table.tenantId,
+      table.regulator,
+    ),
+  }),
+);
+
+// ============================================================================
+// V3 BANGLADESH COMPLIANCE LAYER: PHASE 25 - TAX & VAT WORKFLOWS
+// ============================================================================
+
+export const taxVatWorkflows = pgTable(
+  "tax_vat_workflows",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    workflowType: varchar("workflow_type", { length: 50 }).notNull(), // corporate_tax, vat_return, withholding_tax
+    period: varchar("period", { length: 50 }).notNull(), // e.g., "FY 2024-2025" or "July 2024"
+    status: varchar("status", { length: 50 })
+      .notNull()
+      .default("data_collection"), // data_collection, computation, review, filed, completed
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    filedDate: timestamp("filed_date", { withTimezone: true }),
+    assignedToMembershipId: uuid("assigned_to_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("tax_vat_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    tenantStatusIdx: index("tax_vat_tenant_status_idx").on(
+      table.tenantId,
+      table.status,
+    ),
+  }),
+);
+
+// ============================================================================
+// V3 BANGLADESH COMPLIANCE LAYER: PHASE 26 - COMPLIANCE MASTER & CALENDAR
+// ============================================================================
+
+export const complianceTemplates = pgTable(
+  "compliance_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g., RJSC Annual Return Checklist
+    category: varchar("category", { length: 100 }).notNull(), // RJSC, NBR, FRC, ICAB
+    checklistData: jsonb("checklist_data").notNull(), // Standard JSON array of checklist items
+    createdByMembershipId: uuid("created_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantCategoryIdx: index("comp_templates_tenant_category_idx").on(
+      table.tenantId,
+      table.category,
+    ),
+  }),
+);
+
+export const regulatoryCalendarEvents = pgTable(
+  "regulatory_calendar_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }), // Can be null if it's a general firm deadline
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    eventDate: timestamp("event_date", { withTimezone: true }).notNull(),
+    eventType: varchar("event_type", { length: 100 }).notNull(), // statutory_filing, tax_return, icab_deadline
+    status: varchar("status", { length: 50 }).notNull().default("upcoming"), // upcoming, completed, overdue
+    createdByMembershipId: uuid("created_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantDateIdx: index("reg_calendar_tenant_date_idx").on(
+      table.tenantId,
+      table.eventDate,
+    ),
+    tenantClientIdx: index("reg_calendar_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 27 - AI & DOCUMENT INTELLIGENCE
+// ============================================================================
+
+export const aiDocumentAnalyses = pgTable(
+  "ai_document_analyses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "cascade",
+    }),
+    documentUrl: varchar("document_url", { length: 1024 }).notNull(),
+    documentType: varchar("document_type", { length: 100 }).notNull(), // invoice, bank_statement, contract
+    aiAnalysisResult: jsonb("ai_analysis_result"),
+    status: varchar("status", { length: 50 }).notNull().default("processing"), // processing, completed, failed
+    requestedByMembershipId: uuid("requested_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("ai_doc_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+export const aiEngagementReviews = pgTable(
+  "ai_engagement_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    reviewedByAiModel: varchar("reviewed_by_ai_model", {
+      length: 100,
+    }).notNull(), // gemini-1.5-pro, gpt-4
+    findings: jsonb("findings"), // array of issues/suggestions
+    confidenceScore: integer("confidence_score"), // 0-100
+    status: varchar("status", { length: 50 }).notNull().default("processing"), // processing, completed, failed
+    requestedByMembershipId: uuid("requested_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("ai_review_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 28 - ADVANCED ANALYTICS & FORECASTING
+// ============================================================================
+
+export const resourceAllocations = pgTable(
+  "resource_allocations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    allocatedHours: integer("allocated_hours").notNull(),
+    startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+    endDate: timestamp("end_date", { withTimezone: true }).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantMembershipIdx: index("res_alloc_tenant_membership_idx").on(
+      table.tenantId,
+      table.membershipId,
+    ),
+    tenantEngagementIdx: index("res_alloc_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+    tenantDatesIdx: index("res_alloc_tenant_dates_idx").on(
+      table.tenantId,
+      table.startDate,
+      table.endDate,
+    ),
+  }),
+);
+
+export const engagementProfitabilityMetrics = pgTable(
+  "engagement_profitability_metrics",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    snapshotDate: timestamp("snapshot_date", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    budgetedHours: integer("budgeted_hours").notNull(),
+    actualHours: integer("actual_hours").notNull(),
+    estimatedRevenue: integer("estimated_revenue").notNull(), // using integer for cents/poisha
+    actualCost: integer("actual_cost").notNull(),
+    profitMarginPercent: integer("profit_margin_percent"), // 0-100
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("profitability_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 29 - ADVANCED HR & FINANCE
+// ============================================================================
+
+export const hrPayrollRecords = pgTable(
+  "hr_payroll_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    monthYear: varchar("month_year", { length: 20 }).notNull(), // e.g., "Oct-2026"
+    basicSalary: integer("basic_salary").notNull(),
+    allowances: integer("allowances").notNull().default(0),
+    deductions: integer("deductions").notNull().default(0),
+    netPay: integer("net_pay").notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, approved, paid
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantMembershipIdx: index("payroll_tenant_membership_idx").on(
+      table.tenantId,
+      table.membershipId,
+    ),
+    tenantMonthIdx: index("payroll_tenant_month_idx").on(
+      table.tenantId,
+      table.monthYear,
+    ),
+  }),
+);
+
+export const financeExpenses = pgTable(
+  "finance_expenses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "cascade",
+    }), // nullable for general firm expenses
+    incurredByMembershipId: uuid("incurred_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    category: varchar("category", { length: 100 }).notNull(), // travel, software, meals, office_supplies
+    description: text("description"),
+    receiptUrl: varchar("receipt_url", { length: 1024 }),
+    status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, approved, rejected, reimbursed
+    approvedByMembershipId: uuid("approved_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementIdx: index("expense_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 30 - CLIENT PORTAL & SECURE EXCHANGE
+// ============================================================================
+
+export const clientPortalUsers = pgTable(
+  "client_portal_users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 255 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    fullName: varchar("full_name", { length: 255 }).notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, suspended
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("portal_user_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    emailUnique: uniqueIndex("portal_user_email_unique").on(table.email),
+  }),
+);
+
+export const secureDocumentExchanges = pgTable(
+  "secure_document_exchanges",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "cascade",
+    }),
+    documentUrl: varchar("document_url", { length: 1024 }).notNull(),
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    accessLevel: varchar("access_level", { length: 50 })
+      .notNull()
+      .default("client_visible"), // internal_only, client_visible
+    uploadedByClientUserId: uuid("uploaded_by_client_user_id").references(
+      () => clientPortalUsers.id,
+      { onDelete: "set null" },
+    ),
+    uploadedByMembershipId: uuid("uploaded_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("secure_doc_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    tenantEngagementIdx: index("secure_doc_tenant_engagement_idx").on(
+      table.tenantId,
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 31 - AUTOMATION & APIS
+// ============================================================================
+
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    url: varchar("url", { length: 2048 }).notNull(),
+    secret: varchar("secret", { length: 255 }), // used to sign payloads
+    eventTypes: jsonb("event_types").notNull().default([]), // array of strings e.g. ["engagement.created", "document.uploaded"]
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, disabled
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdx: index("webhook_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export const workflowAutomationRules = pgTable(
+  "workflow_automation_rules",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    triggerEvent: varchar("trigger_event", { length: 100 }).notNull(), // e.g., "task.completed"
+    condition: jsonb("condition"), // Optional criteria to match (e.g. { "taskType": "review" })
+    actionType: varchar("action_type", { length: 100 }).notNull(), // e.g., "notify_partner", "create_next_task"
+    actionPayload: jsonb("action_payload"), // Data needed for the action
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantTriggerIdx: index("workflow_rule_tenant_trigger_idx").on(
+      table.tenantId,
+      table.triggerEvent,
+    ),
+  }),
+);
+
+// ============================================================================
+// V4 INTELLIGENCE & SCALE: PHASE 32 - ENTERPRISE SCALE (MULTI-OFFICE)
+// ============================================================================
+
+export const firmBranches = pgTable(
+  "firm_branches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g. "Dhaka Head Office", "Chattogram Branch"
+    branchCode: varchar("branch_code", { length: 50 }),
+    location: text("location"),
+    isHeadOffice: boolean("is_head_office").notNull().default(false),
+    status: varchar("status", { length: 50 }).notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdx: index("branch_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export const staffBranchAllocations = pgTable(
+  "staff_branch_allocations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    branchId: uuid("branch_id")
+      .notNull()
+      .references(() => firmBranches.id, { onDelete: "cascade" }),
+    isPrimary: boolean("is_primary").notNull().default(false), // e.g., primarily sitting in Dhaka but could have an allocation to Chattogram
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantMembershipIdx: index("branch_alloc_tenant_membership_idx").on(
+      table.tenantId,
+      table.membershipId,
+    ),
+    tenantBranchIdx: index("branch_alloc_tenant_branch_idx").on(
+      table.tenantId,
+      table.branchId,
+    ),
+  }),
+);
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 33 - INTERNATIONALIZATION & MULTI-LANGUAGE
+// ============================================================================
+
+export const supportedLocales = pgTable("supported_locales", {
+  code: varchar("code", { length: 10 }).primaryKey(), // e.g., 'en', 'bn', 'ar'
+  name: varchar("name", { length: 100 }).notNull(), // e.g., 'English', 'Bengali'
+  nativeName: varchar("native_name", { length: 100 }), // e.g., 'বাংলা'
+  isRtl: boolean("is_rtl").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const tenantLocales = pgTable(
+  "tenant_locales",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    localeCode: varchar("locale_code", { length: 10 })
+      .notNull()
+      .references(() => supportedLocales.code, { onDelete: "cascade" }),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantLocaleIdx: index("tenant_locale_idx").on(
+      table.tenantId,
+      table.localeCode,
+    ),
+  }),
+);
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 34 - MULTI-COUNTRY & REGIONAL DATA
+// ============================================================================
+
+export const globalCountries = pgTable("global_countries", {
+  code: varchar("code", { length: 2 }).primaryKey(), // ISO 3166-1 alpha-2 e.g. BD, US, GB
+  name: varchar("name", { length: 100 }).notNull(),
+  currencyCode: varchar("currency_code", { length: 3 }).notNull(), // e.g. BDT, USD
+  callingCode: varchar("calling_code", { length: 10 }), // e.g. +880
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const tenantRegionalSettings = pgTable("tenant_regional_settings", {
+  tenantId: uuid("tenant_id")
+    .primaryKey()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  countryCode: varchar("country_code", { length: 2 })
+    .notNull()
+    .references(() => globalCountries.code),
+  currencyCode: varchar("currency_code", { length: 3 }).notNull(),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("UTC"),
+  dateFormat: varchar("date_format", { length: 20 })
+    .notNull()
+    .default("YYYY-MM-DD"),
+  financialYearStartMonth: integer("financial_year_start_month")
+    .notNull()
+    .default(1), // 1 = January, 7 = July
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

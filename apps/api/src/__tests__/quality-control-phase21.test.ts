@@ -68,7 +68,8 @@ describe("Phase 21 Audit Quality Controls API", () => {
       .send({
         engagementId,
         category: "independence",
-        questionText: "Has the engagement team confirmed independence in accordance with ethical requirements?",
+        questionText:
+          "Has the engagement team confirmed independence in accordance with ethical requirements?",
       });
 
     expect(res.status).toBe(201);

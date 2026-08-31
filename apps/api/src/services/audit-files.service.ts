@@ -25,10 +25,7 @@ export class AuditFilesService {
   ) {
     // Basic validation
     const client = await db.query.clients.findFirst({
-      where: and(
-        eq(clients.tenantId, tenantId),
-        eq(clients.id, data.clientId),
-      ),
+      where: and(eq(clients.tenantId, tenantId), eq(clients.id, data.clientId)),
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");

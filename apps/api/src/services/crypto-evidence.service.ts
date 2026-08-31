@@ -60,7 +60,12 @@ export function verifyEvidence(
   signature: string,
   publicKey = keys().publicKey,
 ): boolean {
-  return verifyBytes(null, payload, publicKey, Buffer.from(signature, "base64"));
+  return verifyBytes(
+    null,
+    payload,
+    publicKey,
+    Buffer.from(signature, "base64"),
+  );
 }
 
 export function hashAuditRecord(record: {
@@ -72,39 +77,53 @@ export function hashAuditRecord(record: {
   createdAt: Date;
   signature: string;
 }): string {
-  return sha256Bytes(canonicalEvidence({
-    previousRecordHash: record.previousRecordHash,
-    artifactHash: record.artifactHash,
-    signerMembershipId: record.signerMembershipId,
-    signoffRole: record.signoffRole,
-    action: record.action,
-    signature: record.signature,
-    createdAt: record.createdAt.toISOString(),
-  }));
-}
-
-export function verifyAuditChain(records: Array<{
-  previousRecordHash: string | null;
-  artifactHash: string;
-  signerMembershipId: string;
-  signoffRole: string;
-  action: string;
-  createdAt: Date | string;
-  signature: string;
-  recordHash: string;
-}>): boolean {
-  let previous: string | null = null;
-  for (const record of records) {
-    if (record.previousRecordHash !== previous) return false;
-    const createdAt = record.createdAt instanceof Date ? record.createdAt : new Date(record.createdAt);
-    if (hashAuditRecord({ ...record, createdAt }) !== record.recordHash) return false;
-    if (!verifyEvidence(canonicalEvidence({
+  return sha256Bytes(
+    canonicalEvidence({
+      previousRecordHash: record.previousRecordHash,
       artifactHash: record.artifactHash,
       signerMembershipId: record.signerMembershipId,
       signoffRole: record.signoffRole,
       action: record.action,
-      createdAt: createdAt.toISOString(),
-    }), record.signature)) return false;
+      signature: record.signature,
+      createdAt: record.createdAt.toISOString(),
+    }),
+  );
+}
+
+export function verifyAuditChain(
+  records: Array<{
+    previousRecordHash: string | null;
+    artifactHash: string;
+    signerMembershipId: string;
+    signoffRole: string;
+    action: string;
+    createdAt: Date | string;
+    signature: string;
+    recordHash: string;
+  }>,
+): boolean {
+  let previous: string | null = null;
+  for (const record of records) {
+    if (record.previousRecordHash !== previous) return false;
+    const createdAt =
+      record.createdAt instanceof Date
+        ? record.createdAt
+        : new Date(record.createdAt);
+    if (hashAuditRecord({ ...record, createdAt }) !== record.recordHash)
+      return false;
+    if (
+      !verifyEvidence(
+        canonicalEvidence({
+          artifactHash: record.artifactHash,
+          signerMembershipId: record.signerMembershipId,
+          signoffRole: record.signoffRole,
+          action: record.action,
+          createdAt: createdAt.toISOString(),
+        }),
+        record.signature,
+      )
+    )
+      return false;
     previous = record.recordHash;
   }
   return true;
@@ -119,14 +138,18 @@ export function verifyCertificateEvidence(certificate: {
   signedAt: Date | string;
 }): boolean {
   if (certificate.status !== "issued") return false;
-  const signedAt = certificate.signedAt instanceof Date
-    ? certificate.signedAt
-    : new Date(certificate.signedAt);
-  return verifyEvidence(canonicalEvidence({
-    artifactHash: certificate.artifactHash,
-    signerMembershipId: certificate.signerMembershipId,
-    signoffRole: certificate.signoffRole,
-    action: "issued",
-    createdAt: signedAt.toISOString(),
-  }), certificate.signature);
+  const signedAt =
+    certificate.signedAt instanceof Date
+      ? certificate.signedAt
+      : new Date(certificate.signedAt);
+  return verifyEvidence(
+    canonicalEvidence({
+      artifactHash: certificate.artifactHash,
+      signerMembershipId: certificate.signerMembershipId,
+      signoffRole: certificate.signoffRole,
+      action: "issued",
+      createdAt: signedAt.toISOString(),
+    }),
+    certificate.signature,
+  );
 }

@@ -177,18 +177,11 @@ Core audit flow:
 
 Focus:
 
-- ICAB workflows
-- FRC requirements
-- BSEC requirements
-- NBR requirements
-- DVS workflow support
-- Articleship rules
-- Tax/VAT workflow
-- Regulatory calendar
-- Independence checks
-- Conflict checks
-- Quality management
-- Compliance templates
+- [x] Phase 22: ICAB Workflows & Articleship Rules
+- [x] Phase 23: DVS (Document Verification System) Support
+- [x] Phase 24: Regulatory Compliance (FRC, BSEC, NBR)
+- [x] Phase 25: Tax & VAT Workflows
+- [x] Phase 26: Regulatory Calendar & Compliance Templates
 
 Future sector packs may include:
 
@@ -204,22 +197,12 @@ Future sector packs may include:
 
 Focus:
 
-- Advanced AI
-- AI engagement review
-- Document intelligence
-- Advanced analytics
-- Workload forecasting
-- Resource planning
-- Engagement profitability
-- Advanced HR
-- Advanced finance
-- Client portal
-- Secure client exchange
-- Automation
-- APIs
-- Integrations
-- Multi-office support
-- Mobile-ready experience
+- [x] Phase 27: AI & Document Intelligence (Document parsing, AI engagement review)
+- [x] Phase 28: Advanced Analytics & Forecasting (Workload, Resource Planning, Profitability)
+- [x] Phase 29: Advanced HR & Finance (Payroll, Advanced billing)
+- [x] Phase 30: Client Portal & Secure Exchange (Secure doc sharing, Client dashboards)
+- [x] Phase 31: Automation & APIs (Workflow automation, Third-party integrations)
+- [x] Phase 32: Enterprise Scale (Multi-office support, Mobile-ready experience)
 
 ---
 
@@ -227,17 +210,12 @@ Focus:
 
 Focus:
 
-- Multi-country architecture
-- Country regulatory packs
-- Internationalization
-- Multi-language
-- Enterprise permissions
-- Enterprise identity
-- Regional deployment options
-- Dedicated tenant options
-- Advanced integrations
-- Enterprise security
-- International SaaS readiness
+- [x] Phase 33: Internationalization & Multi-language (i18n, translation management)
+- [x] Phase 34: Multi-country Architecture & Regional Data (Region/country metadata)
+- [ ] Phase 35: Country Regulatory Packs (Dynamic regulatory rules engine)
+- [ ] Phase 36: Enterprise Security & Identity (SSO, SAML, advanced audit)
+- [ ] Phase 37: Advanced Integrations (Global ERP APIs)
+- [ ] Phase 38: International SaaS Readiness (Dedicated tenants, final QA)
 
 Public launch happens only after V5 readiness and final security/QA approval.
 
