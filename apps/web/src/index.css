@@ -1,0 +1,237 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #FAF7F2;
+  --ink: #1C1F1E;
+  --forest: #113227;
+  --forest-hover: #174234;
+  --gold: #C58A3E;
+  --muted: #66706B;
+  --border: #EBE6DD;
+  --mint: #E1F3EE;
+  --mint-text: #1F5946;
+  --amber: #FCEFD9;
+  --amber-text: #8A5A18;
+  --coral: #FDE6E2;
+  --coral-text: #8E362C;
+  --sky: #E2F1F8;
+  --sky-text: #1D526D;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, Cambria, "Times New Roman", serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Cinzel", "Playfair Display", Georgia, serif;
+}
+
+@layer base {
+  * {
+    border-color: #EBE6DD;
+  }
+  body {
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background-color: var(--bg);
+    overflow-x: hidden;
+  }
+}
+
+/* Natural Tones Ambient Gradient & Dot Grid */
+.luxury-gradient {
+  position: absolute;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: radial-gradient(circle at 10% 20%, rgba(225, 243, 238, 0.45) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(252, 239, 217, 0.45) 0%, transparent 40%),
+              radial-gradient(circle at 85% 25%, rgba(226, 241, 248, 0.35) 0%, transparent 35%);
+  pointer-events: none;
+}
+
+.dot-grid {
+  position: absolute;
+  width: 120px;
+  height: 100%;
+  top: 0;
+  right: 0;
+  background-image: radial-gradient(var(--border) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.dot-grid-left {
+  position: absolute;
+  width: 100px;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-image: radial-gradient(var(--border) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn-forest {
+  background: var(--forest);
+  color: white;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-forest:hover {
+  background: var(--forest-hover);
+  opacity: 0.95;
+}
+
+/* AVENQUIS motion tokens: restrained, fast, and shared across the product. */
+:root {
+  --motion-fast: 150ms;
+  --motion-standard: 220ms;
+  --motion-reveal: 380ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes avq-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes avq-slide-left {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes avq-surface-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes avq-popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes avq-timer-pulse {
+  0%, 100% { opacity: 0.72; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+
+.animate-fadeIn {
+  animation: avq-fade-in var(--motion-standard) var(--motion-ease) both;
+}
+
+.animate-slideLeft {
+  animation: avq-slide-left 260ms var(--motion-ease) both;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-timing-function: var(--motion-ease);
+}
+
+button:not(:disabled) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: var(--motion-fast);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: var(--motion-standard);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 16%, transparent);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--gold) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.motion-card {
+  transition: transform var(--motion-standard) var(--motion-ease),
+    box-shadow var(--motion-standard) var(--motion-ease),
+    border-color var(--motion-standard) var(--motion-ease);
+}
+
+.motion-card:hover {
+  transform: translateY(-2px);
+}
+
+.motion-dialog {
+  animation: avq-surface-in var(--motion-standard) var(--motion-ease) both;
+}
+
+.motion-popover {
+  transform-origin: top right;
+  animation: avq-popover-in var(--motion-fast) var(--motion-ease) both;
+}
+
+.motion-drawer {
+  transition-duration: 340ms !important;
+  transition-timing-function: var(--motion-ease) !important;
+}
+
+.motion-backdrop {
+  animation: avq-fade-in var(--motion-standard) var(--motion-ease) both;
+}
+
+.motion-nav-item {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-duration: var(--motion-standard);
+  transition-timing-function: var(--motion-ease);
+}
+
+.motion-badge {
+  transition: transform var(--motion-fast) var(--motion-ease), opacity var(--motion-fast) var(--motion-ease);
+}
+
+.motion-timer-indicator {
+  animation: avq-timer-pulse 1.8s var(--motion-ease) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Custom smooth scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF7F2;
+}
+::-webkit-scrollbar-thumb {
+  background: #D9D2C5;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4BCAF;
+}

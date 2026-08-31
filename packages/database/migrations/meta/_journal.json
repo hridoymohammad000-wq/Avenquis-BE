@@ -15,6 +15,41 @@
       "when": 1788201660136,
       "tag": "0001_rls_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788201969494,
+      "tag": "0002_bored_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788202582654,
+      "tag": "0003_flat_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788202682655,
+      "tag": "0004_phase4_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788203090903,
+      "tag": "0005_aberrant_karma",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788203190904,
+      "tag": "0006_phase5_rls",
+      "breakpoints": true
     }
   ]
 }

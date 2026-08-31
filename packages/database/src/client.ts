@@ -19,7 +19,9 @@ if (env.NODE_ENV !== "production") {
   globalForDb.conn = conn;
 }
 
-export const db = drizzle(conn);
+import * as schema from "./schema.js";
+
+export const db = drizzle(conn, { schema });
 
 export async function closeDatabaseConnection() {
   if (conn) {

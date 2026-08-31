@@ -5,6 +5,17 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  JWT_SECRET: z
+    .string()
+    .default("avenquis_jwt_super_secret_key_production_grade_32_chars"),
+  JWT_EXPIRES_IN: z.string().default("1h"),
+  REFRESH_TOKEN_SECRET: z
+    .string()
+    .default("avenquis_refresh_super_secret_key_production_grade_32"),
+  REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
+  DATABASE_URL: z
+    .string()
+    .default("postgres://postgres:postgres@localhost:5432/avenquis_db"),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -1,0 +1,6 @@
+{
+  "name": "AVENQUIS - Professional Firm Operating System",
+  "description": "AVENQUIS - Professional Firm Operating System. Manage people, operations, audit files, timesheets, compliance, and accounts from one workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
