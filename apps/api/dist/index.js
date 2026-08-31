@@ -5550,6 +5550,7 @@ var updateFeatureFlagSchema = import_zod17.z.object({
 adminRouter.get(
   "/system-health",
   authenticate,
+  requireTenantContext,
   requirePermission("admin:read"),
   async (_req, res, next) => {
     try {
