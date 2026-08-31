@@ -5,8 +5,12 @@ import {
   clientKycDocuments,
   memberships,
   userProfiles,
+  eq,
+  and,
+  desc,
+  ilike,
+  or,
 } from "@avenquis/database";
-import { eq, and, desc, ilike, or } from "drizzle-orm";
 import { ApiError } from "../errors/api-error.js";
 
 export class ClientService {

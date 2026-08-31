@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, userProfiles } from "@avenquis/database";
-import { eq } from "drizzle-orm";
+import { db, userProfiles, eq } from "@avenquis/database";
 import { AuthService } from "../../services/auth.service.js";
 import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";

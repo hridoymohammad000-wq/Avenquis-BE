@@ -7,8 +7,8 @@ import {
   tenants,
   memberships,
   closeDatabaseConnection,
+  eq,
 } from "@avenquis/database";
-import { eq } from "drizzle-orm";
 
 describe("Phase 4 People & Staff Management API", () => {
   const app = createApp();

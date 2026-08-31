@@ -7,8 +7,8 @@ import {
   tenants,
   memberships,
   closeDatabaseConnection,
+  eq,
 } from "@avenquis/database";
-import { eq } from "drizzle-orm";
 
 describe("Phase 3 Authentication, Authorization & Tenant Isolation API", () => {
   const app = createApp();

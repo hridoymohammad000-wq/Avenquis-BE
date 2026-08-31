@@ -18,5 +18,7 @@ export const env = _env.success
       DATABASE_URL:
         process.env.DATABASE_URL ||
         "postgresql://postgres:postgres@localhost:5432/postgres",
-      NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "development",
+      NODE_ENV:
+        (process.env.NODE_ENV as "development" | "production" | "test") ||
+        "development",
     };

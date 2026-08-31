@@ -1241,3 +1241,68 @@ export const signoffAuditLogs = pgTable(
     ),
   }),
 );
+
+// ============================================================================
+// REAL-TIME COMMUNICATION & NOTIFICATIONS
+// ============================================================================
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    recipientMembershipId: uuid("recipient_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    type: varchar("type", { length: 100 }).notNull(), // task_assignment, review_note, leave_approval, kyc_verification, invoice_payment, independence_flag, system_alert
+    link: text("link"),
+    isRead: boolean("is_read").notNull().default(false),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantRecipientIsReadIdx: index(
+      "notifications_tenant_recipient_is_read_idx",
+    ).on(table.tenantId, table.recipientMembershipId, table.isRead),
+    tenantIdIdx: index("notifications_tenant_id_idx").on(table.tenantId),
+    recipientMembershipIdIdx: index(
+      "notifications_recipient_membership_id_idx",
+    ).on(table.recipientMembershipId),
+  }),
+);
+
+export const activityFeedEvents = pgTable(
+  "activity_feed_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    actorMembershipId: uuid("actor_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    entityType: varchar("entity_type", { length: 100 }).notNull(), // client, engagement, working_paper, task, invoice, certificate
+    entityId: uuid("entity_id").notNull(),
+    action: varchar("action", { length: 100 }).notNull(), // created, updated, submitted, approved, rejected, signed_and_sealed, revoked
+    description: text("description").notNull(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEntityTypeEntityIdIdx: index(
+      "activity_feed_events_tenant_entity_type_entity_id_idx",
+    ).on(table.tenantId, table.entityType, table.entityId),
+    tenantIdIdx: index("activity_feed_events_tenant_id_idx").on(table.tenantId),
+  }),
+);

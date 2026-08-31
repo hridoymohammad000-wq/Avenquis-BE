@@ -4,8 +4,9 @@ import {
   rolePermissions,
   permissions,
   roles,
+  eq,
+  inArray,
 } from "@avenquis/database";
-import { eq, inArray } from "drizzle-orm";
 
 export class PermissionService {
   static async getMembershipPermissions(

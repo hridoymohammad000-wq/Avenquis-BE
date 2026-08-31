@@ -24,7 +24,9 @@ export const env = _env.success
   ? _env.data
   : {
       PORT: Number(process.env.PORT) || 3000,
-      NODE_ENV: (process.env.NODE_ENV as "development" | "production" | "test") || "development",
+      NODE_ENV:
+        (process.env.NODE_ENV as "development" | "production" | "test") ||
+        "development",
       JWT_SECRET:
         process.env.JWT_SECRET ||
         "avenquis_jwt_super_secret_key_production_grade_32_chars",

@@ -20,6 +20,7 @@ import { billingRouter } from "./routes/billing.js";
 import { certificateRouter } from "./routes/certificates.js";
 import { notificationRouter } from "./routes/notifications.js";
 import { analyticsRouter } from "./routes/analytics.js";
+import { adminRouter } from "./routes/admin.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -54,6 +55,7 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/certificates", certificateRouter);
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/analytics", analyticsRouter);
+  app.use("/api/v1/admin", adminRouter);
 
   if (testRouter) {
     app.use("/test", testRouter);

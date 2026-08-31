@@ -7,8 +7,10 @@ import {
   clients,
   memberships,
   userProfiles,
+  eq,
+  and,
+  desc,
 } from "@avenquis/database";
-import { eq, and, desc } from "drizzle-orm";
 import { ApiError } from "../errors/api-error.js";
 
 export class CertificateService {
