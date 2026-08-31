@@ -2,6 +2,7 @@
   "name": "avenquis-monorepo",
   "version": "0.0.0",
   "private": true,
+  "packageManager": "pnpm@9.11.0",
   "scripts": {
     "dev": "pnpm --filter api dev",
     "build": "pnpm -r build",
