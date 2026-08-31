@@ -45,6 +45,8 @@ import { automationRouter } from "./routes/automation.js";
 import { enterpriseRouter } from "./routes/enterprise.js";
 import { i18nRouter } from "./routes/i18n.js";
 import { regionalRouter } from "./routes/regional.js";
+import { regulatoryPacksRouter } from "./routes/regulatory-packs.js";
+import { enterpriseSecurityRouter } from "./routes/enterprise-security.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -102,6 +104,8 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/enterprise", enterpriseRouter); // Enterprise Scale (Phase 32)
   app.use("/api/v1/i18n", i18nRouter); // Internationalization (Phase 33)
   app.use("/api/v1/regional", regionalRouter); // Multi-country (Phase 34)
+  app.use("/api/v1/regulatory", regulatoryPacksRouter); // Country Regulatory Packs (Phase 35)
+  app.use("/api/v1/security", enterpriseSecurityRouter); // Enterprise Security & SSO (Phase 36)
 
   if (testRouter) {
     app.use("/test", testRouter);

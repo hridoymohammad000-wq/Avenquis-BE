@@ -2648,3 +2648,113 @@ export const tenantRegionalSettings = pgTable("tenant_regional_settings", {
     .notNull()
     .defaultNow(),
 });
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 35 - COUNTRY REGULATORY PACKS
+// ============================================================================
+
+export const globalRegulatoryBodies = pgTable(
+  "global_regulatory_bodies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    countryCode: varchar("country_code", { length: 2 })
+      .notNull()
+      .references(() => globalCountries.code, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g. "Institute of Chartered Accountants of Bangladesh"
+    code: varchar("code", { length: 50 }).notNull(), // e.g. "ICAB", "FRC", "ICAEW"
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  }
+);
+
+export const regulatoryRulePacks = pgTable(
+  "regulatory_rule_packs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bodyId: uuid("body_id")
+      .notNull()
+      .references(() => globalRegulatoryBodies.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(), // e.g. "ICAB Audit Manual 2024"
+    version: varchar("version", { length: 50 }).notNull(),
+    description: text("description"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  }
+);
+
+export const tenantRegulatoryPacks = pgTable(
+  "tenant_regulatory_packs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    packId: uuid("pack_id")
+      .notNull()
+      .references(() => regulatoryRulePacks.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").notNull().default(true),
+    activatedAt: timestamp("activated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantPackIdx: index("tenant_regulatory_pack_idx").on(table.tenantId, table.packId),
+  }),
+);
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 36 - ENTERPRISE SECURITY & IDENTITY (SSO)
+// ============================================================================
+
+export const tenantSsoProviders = pgTable(
+  "tenant_sso_providers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    providerType: varchar("provider_type", { length: 50 }).notNull(), // 'saml', 'oidc'
+    issuer: varchar("issuer", { length: 255 }).notNull(),
+    ssoUrl: varchar("sso_url", { length: 500 }).notNull(),
+    certificate: text("certificate"), // For SAML X.509
+    clientId: varchar("client_id", { length: 255 }), // For OIDC
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantSsoIdx: index("tenant_sso_idx").on(table.tenantId),
+  })
+);
+
+export const enterpriseAuditLogs = pgTable(
+  "enterprise_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: uuid("user_id"), // Optional if system action
+    action: varchar("action", { length: 100 }).notNull(), // e.g. 'SSO_LOGIN', 'EXPORT_DATA', 'ROLE_CHANGE'
+    resourceType: varchar("resource_type", { length: 100 }), // e.g. 'USER', 'INVOICE', 'CLIENT'
+    resourceId: varchar("resource_id", { length: 255 }),
+    metadata: jsonb("metadata").default({}),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantAuditIdx: index("enterprise_audit_tenant_idx").on(table.tenantId),
+    actionAuditIdx: index("enterprise_audit_action_idx").on(table.action),
+  })
+);

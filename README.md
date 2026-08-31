@@ -212,8 +212,8 @@ Focus:
 
 - [x] Phase 33: Internationalization & Multi-language (i18n, translation management)
 - [x] Phase 34: Multi-country Architecture & Regional Data (Region/country metadata)
-- [ ] Phase 35: Country Regulatory Packs (Dynamic regulatory rules engine)
-- [ ] Phase 36: Enterprise Security & Identity (SSO, SAML, advanced audit)
+- [x] Phase 35: Country Regulatory Packs (Dynamic regulatory rules engine)
+- [x] Phase 36: Enterprise Security & Identity (SSO, SAML, advanced audit)
 - [ ] Phase 37: Advanced Integrations (Global ERP APIs)
 - [ ] Phase 38: International SaaS Readiness (Dedicated tenants, final QA)
 
