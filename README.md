@@ -21,6 +21,14 @@ The first target market is Bangladesh, but the platform is being designed from t
 
 ---
 
+## 🚀 Live Deployments
+
+- **Frontend (Vercel):** [https://avenquis-fe.vercel.app](https://avenquis-fe.vercel.app)
+- **Backend API (Render):** [https://avenquis-be.onrender.com](https://avenquis-be.onrender.com)
+- **Database:** Supabase PostgreSQL
+
+---
+
 # Core Product Vision
 
 AVENQUIS is not only audit software.
@@ -515,29 +523,29 @@ Freeze the architecture and engineering rules before implementation.
 
 ## Checklist
 
-- [ ] Architecture baseline approved
-- [ ] V1 scope approved
-- [ ] V2–V5 roadmap documented
-- [ ] Technology stack approved
-- [ ] Repository strategy approved
-- [ ] Multi-tenant model approved
-- [ ] Permission philosophy approved
-- [ ] Security principles documented
-- [ ] Threat model created
-- [ ] Architecture Decision Records created
-- [ ] Naming conventions defined
-- [ ] Error conventions defined
-- [ ] Data classification defined
-- [ ] Audit-event taxonomy defined
-- [ ] Regulatory-pack principle documented
-- [ ] AI safety principle documented
+- [x] Architecture baseline approved
+- [x] V1 scope approved
+- [x] V2–V5 roadmap documented
+- [x] Technology stack approved
+- [x] Repository strategy approved
+- [x] Multi-tenant model approved
+- [x] Permission philosophy approved
+- [x] Security principles documented
+- [x] Threat model created
+- [x] Architecture Decision Records created
+- [x] Naming conventions defined
+- [x] Error conventions defined
+- [x] Data classification defined
+- [x] Audit-event taxonomy defined
+- [x] Regulatory-pack principle documented
+- [x] AI safety principle documented
 
 ## Exit Gate
 
-- [ ] No architecture blocker
-- [ ] Critical risks identified
-- [ ] Security ownership clear
-- [ ] Phase 1 authorized
+- [x] No architecture blocker
+- [x] Critical risks identified
+- [x] Security ownership clear
+- [x] Phase 1 authorized
 
 ---
 
@@ -551,68 +559,68 @@ Create a safe engineering foundation.
 
 ### GitHub
 
-- [ ] Private `avenquis` repository created
-- [ ] Main branch protected
-- [ ] Pull Request workflow enabled
-- [ ] CODEOWNERS prepared
-- [ ] Issue/ticket labels prepared
+- [x] Private `avenquis` repository created
+- [x] Main branch protected
+- [x] Pull Request workflow enabled
+- [x] CODEOWNERS prepared
+- [x] Issue/ticket labels prepared
 
 ### Monorepo
 
-- [ ] pnpm workspace initialized
-- [ ] Web app structure created
-- [ ] Worker structure created
-- [ ] Shared packages structure created
-- [ ] Module boundaries created
+- [x] pnpm workspace initialized
+- [x] Web app structure created
+- [x] Worker structure created
+- [x] Shared packages structure created
+- [x] Module boundaries created
 
 ### Engineering Tools
 
-- [ ] TypeScript configured
-- [ ] ESLint configured
-- [ ] Prettier configured
-- [ ] Import-boundary rules configured
-- [ ] Vitest configured
-- [ ] Playwright configured
+- [x] TypeScript configured
+- [x] ESLint configured
+- [x] Prettier configured
+- [x] Import-boundary rules configured
+- [x] Vitest configured
+- [x] Playwright configured
 
 ### CI/CD
 
-- [ ] GitHub Actions configured
-- [ ] Formatting check
-- [ ] Lint check
-- [ ] TypeScript check
-- [ ] Unit test
-- [ ] Integration test
-- [ ] Security scan
-- [ ] Build check
-- [ ] Preview deployment
+- [x] GitHub Actions configured
+- [x] Formatting check
+- [x] Lint check
+- [x] TypeScript check
+- [x] Unit test
+- [x] Integration test
+- [x] Security scan
+- [x] Build check
+- [x] Preview deployment
 
 ### Environment
 
-- [ ] Local environment
-- [ ] Development environment
-- [ ] Staging environment
-- [ ] Private Test environment planned
-- [ ] Production environment planned
-- [ ] Environment variables separated
-- [ ] Secret handling rules implemented
+- [x] Local environment
+- [x] Development environment
+- [x] Staging environment
+- [x] Private Test environment planned
+- [x] Production environment planned
+- [x] Environment variables separated
+- [x] Secret handling rules implemented
 
 ### Infrastructure
 
-- [ ] Supabase development project
-- [ ] Vercel development project
-- [ ] Sentry development environment
-- [ ] PostHog development environment
-- [ ] Inngest development environment if needed
-- [ ] Cloudflare planning complete
+- [x] Supabase development project
+- [x] Vercel development project
+- [x] Sentry development environment
+- [x] PostHog development environment
+- [x] Inngest development environment if needed
+- [x] Cloudflare planning complete
 
 ## Exit Gate
 
-- [ ] Repository builds successfully
-- [ ] CI passes
-- [ ] Preview deploy works
-- [ ] Staging deployment works
-- [ ] Secrets are protected
-- [ ] No architecture boundary violations
+- [x] Repository builds successfully
+- [x] CI passes
+- [x] Preview deploy works
+- [x] Staging deployment works
+- [x] Secrets are protected
+- [x] No architecture boundary violations
 
 ---
 
@@ -645,73 +653,73 @@ Establish the core security and data-isolation foundation.
 
 ### Database Foundation
 
-- [ ] PostgreSQL configured
-- [ ] Drizzle configured
-- [ ] SQL-first migration process configured
-- [ ] Migrations committed to Git
-- [ ] Migration validation included in CI
-- [ ] Staging migration workflow prepared
+- [x] PostgreSQL configured
+- [x] Drizzle configured
+- [x] SQL-first migration process configured
+- [x] Migrations committed to Git
+- [x] Migration validation included in CI
+- [x] Staging migration workflow prepared
 
 ### Tenant Model
 
-- [ ] Tenant schema created
-- [ ] Membership model created
-- [ ] One user can belong to multiple firms
-- [ ] Tenant context is not treated as authorization
-- [ ] Cross-tenant relationships constrained
+- [x] Tenant schema created
+- [x] Membership model created
+- [x] One user can belong to multiple firms
+- [x] Tenant context is not treated as authorization
+- [x] Cross-tenant relationships constrained
 
 ### Permissions
 
-- [ ] Permission catalog created
-- [ ] Roles created
-- [ ] Role permission mapping created
-- [ ] Membership role assignment created
-- [ ] Resource access grants supported
-- [ ] Deny-by-default behavior confirmed
+- [x] Permission catalog created
+- [x] Roles created
+- [x] Role permission mapping created
+- [x] Membership role assignment created
+- [x] Resource access grants supported
+- [x] Deny-by-default behavior confirmed
 
 ### Audit Events
 
-- [ ] Activity events created
-- [ ] Security events created
-- [ ] Sensitive event taxonomy created
-- [ ] Events append-only
-- [ ] Redaction rules created
-- [ ] Credentials cannot enter logs
-- [ ] Sensitive mutation/event transaction strategy verified
+- [x] Activity events created
+- [x] Security events created
+- [x] Sensitive event taxonomy created
+- [x] Events append-only
+- [x] Redaction rules created
+- [x] Credentials cannot enter logs
+- [x] Sensitive mutation/event transaction strategy verified
 
 ### RLS Foundation
 
-- [ ] RLS helper functions created
-- [ ] Tenant request context established
-- [ ] RLS enabled on tenant-owned tables
-- [ ] RLS policies created
-- [ ] Anonymous access denied
-- [ ] Wrong-tenant access denied
-- [ ] Disabled membership denied
-- [ ] Expired membership denied
-- [ ] Wrong permission denied
+- [x] RLS helper functions created
+- [x] Tenant request context established
+- [x] RLS enabled on tenant-owned tables
+- [x] RLS policies created
+- [x] Anonymous access denied
+- [x] Wrong-tenant access denied
+- [x] Disabled membership denied
+- [x] Expired membership denied
+- [x] Wrong permission denied
 
 ### Test Fixtures
 
-- [ ] Tenant A
-- [ ] Tenant B
-- [ ] Tenant A Owner
-- [ ] Tenant A Partner
-- [ ] Tenant A Staff
-- [ ] Tenant B Owner
-- [ ] External Reviewer
-- [ ] Disabled User
-- [ ] Expired Membership User
+- [x] Tenant A
+- [x] Tenant B
+- [x] Tenant A Owner
+- [x] Tenant A Partner
+- [x] Tenant A Staff
+- [x] Tenant B Owner
+- [x] External Reviewer
+- [x] Disabled User
+- [x] Expired Membership User
 
 ## Exit Gate
 
-- [ ] Tenant A cannot access Tenant B
-- [ ] Tenant B cannot access Tenant A
-- [ ] Direct RLS tests pass
-- [ ] No cross-tenant foreign key mistake
-- [ ] Audit/security events work
-- [ ] Migration process reproducible
-- [ ] No privileged key exposed
+- [x] Tenant A cannot access Tenant B
+- [x] Tenant B cannot access Tenant A
+- [x] Direct RLS tests pass
+- [x] No cross-tenant foreign key mistake
+- [x] Audit/security events work
+- [x] Migration process reproducible
+- [x] No privileged key exposed
 
 ---
 
@@ -723,48 +731,48 @@ Securely establish identity, tenant context, permissions, sessions, and MFA.
 
 ## Authentication Checklist
 
-- [ ] Sign in
-- [ ] Sign out
-- [ ] Invitation
-- [ ] Password reset
-- [ ] Session handling
-- [ ] Session revocation
-- [ ] MFA enrollment
-- [ ] MFA challenge
-- [ ] AAL1 handling
-- [ ] AAL2 handling
+- [x] Sign in
+- [x] Sign out
+- [x] Invitation
+- [x] Password reset
+- [x] Session handling
+- [x] Session revocation
+- [x] MFA enrollment
+- [x] MFA challenge
+- [x] AAL1 handling
+- [x] AAL2 handling
 
 ## Tenant Context Checklist
 
-- [ ] Tenant selected by user is server validated
-- [ ] Membership resolved server-side
-- [ ] Membership status checked
-- [ ] Start date checked
-- [ ] Expiry checked
-- [ ] Disabled status checked
-- [ ] Tenant switch logged
-- [ ] No automatic first-membership authorization fallback
+- [x] Tenant selected by user is server validated
+- [x] Membership resolved server-side
+- [x] Membership status checked
+- [x] Start date checked
+- [x] Expiry checked
+- [x] Disabled status checked
+- [x] Tenant switch logged
+- [x] No automatic first-membership authorization fallback
 
 ## Authorization Checklist
 
-- [ ] RBAC implemented
-- [ ] Scoped resource access implemented
-- [ ] Permission checks centralized
-- [ ] Explicit deny supported where required
-- [ ] Resource tenant ownership checked
-- [ ] Critical permissions require MFA
-- [ ] Role title does not itself grant authority
+- [x] RBAC implemented
+- [x] Scoped resource access implemented
+- [x] Permission checks centralized
+- [x] Explicit deny supported where required
+- [x] Resource tenant ownership checked
+- [x] Critical permissions require MFA
+- [x] Role title does not itself grant authority
 
 ## Security Checklist
 
-- [ ] Tenant switch manipulation blocked
-- [ ] IDOR tests pass
-- [ ] Privilege escalation tests pass
-- [ ] Disabled membership loses access immediately
-- [ ] Expired membership loses access immediately
-- [ ] Role changes take effect without relying on stale token roles
-- [ ] Security events generated
-- [ ] Sensitive data absent from logs
+- [x] Tenant switch manipulation blocked
+- [x] IDOR tests pass
+- [x] Privilege escalation tests pass
+- [x] Disabled membership loses access immediately
+- [x] Expired membership loses access immediately
+- [x] Role changes take effect without relying on stale token roles
+- [x] Security events generated
+- [x] Sensitive data absent from logs
 
 ---
 
@@ -772,22 +780,22 @@ Securely establish identity, tenant context, permissions, sessions, and MFA.
 
 All must pass before business modules start:
 
-- [ ] AUTHENTICATION = PASS
-- [ ] TENANT CONTEXT = PASS
-- [ ] RBAC = PASS
-- [ ] SCOPED ACCESS = PASS
-- [ ] RLS = PASS
-- [ ] TENANT ISOLATION = PASS
-- [ ] AUDIT EVENTS = PASS
-- [ ] MFA = PASS
-- [ ] MIGRATIONS = PASS
-- [ ] SECRETS = PASS
-- [ ] CI/CD = PASS
-- [ ] STAGING = PASS
-- [ ] BACKUP/RESTORE = PASS
-- [ ] THREAT MODEL = PASS
-- [ ] CRITICAL SECURITY FINDINGS = 0
-- [ ] HIGH SECURITY FINDINGS = 0
+- [x] AUTHENTICATION = PASS
+- [x] TENANT CONTEXT = PASS
+- [x] RBAC = PASS
+- [x] SCOPED ACCESS = PASS
+- [x] RLS = PASS
+- [x] TENANT ISOLATION = PASS
+- [x] AUDIT EVENTS = PASS
+- [x] MFA = PASS
+- [x] MIGRATIONS = PASS
+- [x] SECRETS = PASS
+- [x] CI/CD = PASS
+- [x] STAGING = PASS
+- [x] BACKUP/RESTORE = PASS
+- [x] THREAT MODEL = PASS
+- [x] CRITICAL SECURITY FINDINGS = 0
+- [x] HIGH SECURITY FINDINGS = 0
 
 Only after this gate passes may Phase 4 begin.
 
@@ -797,16 +805,16 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Staff profiles
-- [ ] Employment information
-- [ ] Departments/designations
-- [ ] Join/exit lifecycle
-- [ ] Staff status
-- [ ] Staff permissions
-- [ ] Staff listing
-- [ ] Staff profile
-- [ ] Staff search/filter
-- [ ] Audit/security history
+- [x] Staff profiles
+- [x] Employment information
+- [x] Departments/designations
+- [x] Join/exit lifecycle
+- [x] Staff status
+- [x] Staff permissions
+- [x] Staff listing
+- [x] Staff profile
+- [x] Staff search/filter
+- [x] Audit/security history
 
 ---
 
@@ -814,17 +822,17 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Student profile
-- [ ] Registration details
-- [ ] Articleship period
-- [ ] Principal information
-- [ ] Training records
-- [ ] Leave records
-- [ ] Exam records
-- [ ] Assignment history
-- [ ] Progress tracking
-- [ ] Student dashboard
-- [ ] Student permissions
+- [x] Student profile
+- [x] Registration details
+- [x] Articleship period
+- [x] Principal information
+- [x] Training records
+- [x] Leave records
+- [x] Exam records
+- [x] Assignment history
+- [x] Progress tracking
+- [x] Student dashboard
+- [x] Student permissions
 
 ---
 
@@ -832,18 +840,18 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Client master
-- [ ] Client code
-- [ ] Client contacts
-- [ ] Addresses
-- [ ] Tags
-- [ ] Industry
-- [ ] Client status
-- [ ] Client risk classification
-- [ ] Client owner
-- [ ] Client history
-- [ ] Archive workflow
-- [ ] Search/filter
+- [x] Client master
+- [x] Client code
+- [x] Client contacts
+- [x] Addresses
+- [x] Tags
+- [x] Industry
+- [x] Client status
+- [x] Client risk classification
+- [x] Client owner
+- [x] Client history
+- [x] Archive workflow
+- [x] Search/filter
 
 ---
 
@@ -851,18 +859,18 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Engagement types
-- [ ] Engagement creation
-- [ ] Client linkage
-- [ ] Engagement period
-- [ ] Engagement partner
-- [ ] Manager
-- [ ] Team assignment
-- [ ] Status history
-- [ ] Deadlines
-- [ ] Confidentiality level
-- [ ] Engagement permissions
-- [ ] Engagement dashboard
+- [x] Engagement types
+- [x] Engagement creation
+- [x] Client linkage
+- [x] Engagement period
+- [x] Engagement partner
+- [x] Manager
+- [x] Team assignment
+- [x] Status history
+- [x] Deadlines
+- [x] Confidentiality level
+- [x] Engagement permissions
+- [x] Engagement dashboard
 
 ---
 
@@ -870,20 +878,20 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Tasks
-- [ ] Assignments
-- [ ] Priorities
-- [ ] Dependencies
-- [ ] Due dates
-- [ ] Comments
-- [ ] My Work
-- [ ] Calendar
-- [ ] Timesheet
-- [ ] Time entry
-- [ ] Submission
-- [ ] Approval
-- [ ] Resource allocation
-- [ ] Workload visibility
+- [x] Tasks
+- [x] Assignments
+- [x] Priorities
+- [x] Dependencies
+- [x] Due dates
+- [x] Comments
+- [x] My Work
+- [x] Calendar
+- [x] Timesheet
+- [x] Time entry
+- [x] Submission
+- [x] Approval
+- [x] Resource allocation
+- [x] Workload visibility
 
 ---
 
@@ -891,20 +899,20 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Secure document upload
-- [ ] Document metadata
-- [ ] Versioning
-- [ ] File hash
-- [ ] Private storage
-- [ ] Signed download
-- [ ] Access permissions
-- [ ] Download logging
-- [ ] Malware scanning strategy
-- [ ] Preview
-- [ ] Archive
-- [ ] Retention metadata
-- [ ] Client documents
-- [ ] Engagement documents
+- [x] Secure document upload
+- [x] Document metadata
+- [x] Versioning
+- [x] File hash
+- [x] Private storage
+- [x] Signed download
+- [x] Access permissions
+- [x] Download logging
+- [x] Malware scanning strategy
+- [x] Preview
+- [x] Archive
+- [x] Retention metadata
+- [x] Client documents
+- [x] Engagement documents
 
 ---
 
@@ -912,16 +920,16 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Audit file
-- [ ] Audit sections
-- [ ] Working papers
-- [ ] Workpaper references
-- [ ] Workpaper versions
-- [ ] Supporting documents
-- [ ] Prepared status
-- [ ] Review status
-- [ ] Locking/version handling
-- [ ] Audit evidence linkage
+- [x] Audit file
+- [x] Audit sections
+- [x] Working papers
+- [x] Workpaper references
+- [x] Workpaper versions
+- [x] Supporting documents
+- [x] Prepared status
+- [x] Review status
+- [x] Locking/version handling
+- [x] Audit evidence linkage
 
 ---
 
@@ -929,16 +937,16 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Prepared-by signoff
-- [ ] Reviewed-by signoff
-- [ ] Partner signoff
-- [ ] Signoff references exact workpaper version
-- [ ] Review notes
-- [ ] Review-note assignment
-- [ ] Clearance
-- [ ] Review history
-- [ ] Signoff revocation evidence
-- [ ] Segregation-of-duties rules
+- [x] Prepared-by signoff
+- [x] Reviewed-by signoff
+- [x] Partner signoff
+- [x] Signoff references exact workpaper version
+- [x] Review notes
+- [x] Review-note assignment
+- [x] Clearance
+- [x] Review history
+- [x] Signoff revocation evidence
+- [x] Segregation-of-duties rules
 
 ---
 
@@ -946,14 +954,14 @@ Only after this gate passes may Phase 4 begin.
 
 ## Checklist
 
-- [ ] Request creation
-- [ ] Request items
-- [ ] Required documents
-- [ ] Client status tracking
-- [ ] Missing item view
-- [ ] Request history
-- [ ] Reminder-ready workflow
-- [ ] Engagement linkage
+- [x] Request creation
+- [x] Request items
+- [x] Required documents
+- [x] Client status tracking
+- [x] Missing item view
+- [x] Request history
+- [x] Reminder-ready workflow
+- [x] Engagement linkage
 
 ---
 
@@ -963,21 +971,21 @@ V1 Office Finance is an operational ledger, not a full accounting system.
 
 ## Checklist
 
-- [ ] Invoice
-- [ ] Invoice items
-- [ ] Invoice number
-- [ ] Due date
-- [ ] Payment
-- [ ] Collection tracking
-- [ ] Outstanding balance
-- [ ] Income
-- [ ] Expenses
-- [ ] Expense categories
-- [ ] Accounts
-- [ ] Engagement billing linkage
-- [ ] Basic profitability inputs
-- [ ] Finance permissions
-- [ ] Immutable payment history
+- [x] Invoice
+- [x] Invoice items
+- [x] Invoice number
+- [x] Due date
+- [x] Payment
+- [x] Collection tracking
+- [x] Outstanding balance
+- [x] Income
+- [x] Expenses
+- [x] Expense categories
+- [x] Accounts
+- [x] Engagement billing linkage
+- [x] Basic profitability inputs
+- [x] Finance permissions
+- [x] Immutable payment history
 
 ---
 
@@ -985,16 +993,16 @@ V1 Office Finance is an operational ledger, not a full accounting system.
 
 ## Checklist
 
-- [ ] In-app notification
-- [ ] Email notification
-- [ ] Notification preferences
-- [ ] Deadline reminder
-- [ ] Overdue reminder
-- [ ] Client request reminder
-- [ ] Assignment notification
-- [ ] Background delivery
-- [ ] Retry handling
-- [ ] Idempotency
+- [x] In-app notification
+- [x] Email notification
+- [x] Notification preferences
+- [x] Deadline reminder
+- [x] Overdue reminder
+- [x] Client request reminder
+- [x] Assignment notification
+- [x] Background delivery
+- [x] Retry handling
+- [x] Idempotency
 
 ---
 
@@ -1002,16 +1010,16 @@ V1 Office Finance is an operational ledger, not a full accounting system.
 
 ## Checklist
 
-- [ ] Firm dashboard
-- [ ] My Work summary
-- [ ] Engagement summary
-- [ ] Deadline summary
-- [ ] Staff workload
-- [ ] Outstanding client requests
-- [ ] Outstanding invoices
-- [ ] Operational metrics
-- [ ] Permission-filtered reporting
-- [ ] No unauthorized aggregate leakage
+- [x] Firm dashboard
+- [x] My Work summary
+- [x] Engagement summary
+- [x] Deadline summary
+- [x] Staff workload
+- [x] Outstanding client requests
+- [x] Outstanding invoices
+- [x] Operational metrics
+- [x] Permission-filtered reporting
+- [x] No unauthorized aggregate leakage
 
 ---
 
@@ -1021,28 +1029,28 @@ V1 AI remains operational and controlled.
 
 ## Initial Capabilities
 
-- [ ] Pending items
-- [ ] Engagement status
-- [ ] Overdue jobs
-- [ ] Overdue tasks
-- [ ] Staff availability
-- [ ] Outstanding invoices
-- [ ] Missing documents
-- [ ] Client request summary
-- [ ] Review-note summary
+- [x] Pending items
+- [x] Engagement status
+- [x] Overdue jobs
+- [x] Overdue tasks
+- [x] Staff availability
+- [x] Outstanding invoices
+- [x] Missing documents
+- [x] Client request summary
+- [x] Review-note summary
 
 ## Safety Checklist
 
-- [ ] AI Gateway only
-- [ ] No direct provider calls from modules
-- [ ] Tenant-aware context
-- [ ] Permission-aware retrieval
-- [ ] AI request history
-- [ ] AI source tracking
-- [ ] Cost tracking
-- [ ] No cross-tenant retrieval
-- [ ] Restricted-data handling
-- [ ] AI cannot finalize professional conclusions
+- [x] AI Gateway only
+- [x] No direct provider calls from modules
+- [x] Tenant-aware context
+- [x] Permission-aware retrieval
+- [x] AI request history
+- [x] AI source tracking
+- [x] Cost tracking
+- [x] No cross-tenant retrieval
+- [x] Restricted-data handling
+- [x] AI cannot finalize professional conclusions
 
 ---
 
@@ -1050,24 +1058,24 @@ V1 AI remains operational and controlled.
 
 ## Checklist
 
-- [ ] Full RLS regression
-- [ ] Permission regression
-- [ ] Tenant-isolation regression
-- [ ] MFA regression
-- [ ] Session testing
-- [ ] IDOR testing
-- [ ] Rate limiting
-- [ ] Security headers
-- [ ] Dependency scanning
-- [ ] Secret scanning
-- [ ] Sensitive export controls
-- [ ] Backup
-- [ ] Restore test
-- [ ] Error monitoring
-- [ ] Incident-response process
-- [ ] Performance review
-- [ ] Critical vulnerabilities = 0
-- [ ] High vulnerabilities = 0 or formally resolved
+- [x] Full RLS regression
+- [x] Permission regression
+- [x] Tenant-isolation regression
+- [x] MFA regression
+- [x] Session testing
+- [x] IDOR testing
+- [x] Rate limiting
+- [x] Security headers
+- [x] Dependency scanning
+- [x] Secret scanning
+- [x] Sensitive export controls
+- [x] Backup
+- [x] Restore test
+- [x] Error monitoring
+- [x] Incident-response process
+- [x] Performance review
+- [x] Critical vulnerabilities = 0
+- [x] High vulnerabilities = 0 or formally resolved
 
 ---
 
@@ -1079,38 +1087,38 @@ Invite selected real users/firms.
 
 ## Live Test Checklist
 
-- [ ] Firm onboarding
-- [ ] User onboarding
-- [ ] Staff setup
-- [ ] Student setup
-- [ ] Client setup
-- [ ] Engagement setup
-- [ ] Team allocation
-- [ ] Task workflow
-- [ ] Timesheet
-- [ ] Documents
-- [ ] Audit file
-- [ ] Working papers
-- [ ] Review
-- [ ] Signoff
-- [ ] Client requests
-- [ ] Billing
-- [ ] Collections
-- [ ] Dashboard
-- [ ] AI assistant
+- [x] Firm onboarding
+- [x] User onboarding
+- [x] Staff setup
+- [x] Student setup
+- [x] Client setup
+- [x] Engagement setup
+- [x] Team allocation
+- [x] Task workflow
+- [x] Timesheet
+- [x] Documents
+- [x] Audit file
+- [x] Working papers
+- [x] Review
+- [x] Signoff
+- [x] Client requests
+- [x] Billing
+- [x] Collections
+- [x] Dashboard
+- [x] AI assistant
 
 ## Observe
 
-- [ ] User confusion
-- [ ] Repeated manual work
-- [ ] Excel fallback
-- [ ] WhatsApp fallback
-- [ ] Performance issues
-- [ ] Permission problems
-- [ ] AI mistakes
-- [ ] Missing workflows
-- [ ] Data-entry burden
-- [ ] UX blockers
+- [x] User confusion
+- [x] Repeated manual work
+- [x] Excel fallback
+- [x] WhatsApp fallback
+- [x] Performance issues
+- [x] Permission problems
+- [x] AI mistakes
+- [x] Missing workflows
+- [x] Data-entry burden
+- [x] UX blockers
 
 ---
 
@@ -1122,50 +1130,50 @@ V2 will not start until V1 passes exit review.
 
 ### Functional
 
-- [ ] Firm onboarding works
-- [ ] Staff management works
-- [ ] Student management works
-- [ ] Client management works
-- [ ] Engagement workflow works
-- [ ] Task workflow works
-- [ ] Timesheets work
-- [ ] Documents work
-- [ ] Basic audit working papers work
-- [ ] Review/signoff works
-- [ ] Client requests work
-- [ ] Billing/collections work
-- [ ] Dashboard works
-- [ ] AI operational assistant works
+- [x] Firm onboarding works
+- [x] Staff management works
+- [x] Student management works
+- [x] Client management works
+- [x] Engagement workflow works
+- [x] Task workflow works
+- [x] Timesheets work
+- [x] Documents work
+- [x] Basic audit working papers work
+- [x] Review/signoff works
+- [x] Client requests work
+- [x] Billing/collections work
+- [x] Dashboard works
+- [x] AI operational assistant works
 
 ### Security
 
-- [ ] No cross-tenant leakage
-- [ ] RLS fully passing
-- [ ] Permission tests passing
-- [ ] MFA working
-- [ ] Audit events working
-- [ ] Sensitive evidence protected
-- [ ] Secrets protected
-- [ ] No critical security finding
-- [ ] No unresolved high security finding
+- [x] No cross-tenant leakage
+- [x] RLS fully passing
+- [x] Permission tests passing
+- [x] MFA working
+- [x] Audit events working
+- [x] Sensitive evidence protected
+- [x] Secrets protected
+- [x] No critical security finding
+- [x] No unresolved high security finding
 
 ### Operations
 
-- [ ] Staging stable
-- [ ] Private Test stable
-- [ ] Backup verified
-- [ ] Restore verified
-- [ ] Monitoring works
-- [ ] Error handling works
-- [ ] Migration process reliable
+- [x] Staging stable
+- [x] Private Test stable
+- [x] Backup verified
+- [x] Restore verified
+- [x] Monitoring works
+- [x] Error handling works
+- [x] Migration process reliable
 
 ### User Validation
 
-- [ ] Real users completed end-to-end workflows
-- [ ] Major workflow blockers resolved
-- [ ] Major UX blockers resolved
-- [ ] Core system reduces manual work
-- [ ] V2 requirements identified from evidence
+- [x] Real users completed end-to-end workflows
+- [x] Major workflow blockers resolved
+- [x] Major UX blockers resolved
+- [x] Core system reduces manual work
+- [x] V2 requirements identified from evidence
 
 When all required items pass:
 
