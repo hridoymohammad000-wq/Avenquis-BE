@@ -361,9 +361,7 @@ export class ClientService {
     await db
       .update(clients)
       .set({ kycStatus: newKycStatus, updatedAt: new Date() })
-      .where(
-        and(eq(clients.tenantId, tenantId), eq(clients.id, doc.clientId)),
-      );
+      .where(and(eq(clients.tenantId, tenantId), eq(clients.id, doc.clientId)));
 
     return updatedDoc;
   }

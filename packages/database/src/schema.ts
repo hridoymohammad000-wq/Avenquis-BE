@@ -750,11 +750,494 @@ export const clientKycDocuments = pgTable(
       .defaultNow(),
   },
   (table) => ({
-    tenantIdIdx: index("client_kyc_documents_tenant_id_idx").on(
+    tenantIdIdx: index("client_kyc_documents_tenant_id_idx").on(table.tenantId),
+    clientIdIdx: index("client_kyc_documents_client_id_idx").on(table.clientId),
+  }),
+);
+
+// ============================================================================
+// ENGAGEMENT MANAGEMENT & AUDITING
+// ============================================================================
+
+export const engagements = pgTable(
+  "engagements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    engagementCode: varchar("engagement_code", { length: 50 }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    engagementType: varchar("engagement_type", { length: 100 }).notNull(), // statutory_audit, tax_advisory, accounting_services, special_audit, vat_consulting, valuation_advisory
+    financialYear: varchar("financial_year", { length: 50 }).notNull(), // e.g. FY 2025-26
+    startDate: timestamp("start_date", { withTimezone: true }).notNull(),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    budgetedHours: integer("budgeted_hours").notNull().default(0),
+    budgetedFee: integer("budgeted_fee").notNull().default(0),
+    currency: varchar("currency", { length: 10 }).notNull().default("BDT"),
+    status: varchar("status", { length: 50 }).notNull().default("planning"), // planning, fieldwork, review, partner_signoff, completed, archived
+    engagementPartnerMembershipId: uuid(
+      "engagement_partner_membership_id",
+    ).references(() => memberships.id, { onDelete: "set null" }),
+    engagementManagerMembershipId: uuid(
+      "engagement_manager_membership_id",
+    ).references(() => memberships.id, { onDelete: "set null" }),
+    auditQualityReviewerMembershipId: uuid(
+      "audit_quality_reviewer_membership_id",
+    ).references(() => memberships.id, { onDelete: "set null" }),
+    independenceCleared: boolean("independence_cleared")
+      .notNull()
+      .default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementCodeIdx: uniqueIndex(
+      "engagements_tenant_engagement_code_idx",
+    ).on(table.tenantId, table.engagementCode),
+    tenantIdIdx: index("engagements_tenant_id_idx").on(table.tenantId),
+    clientIdIdx: index("engagements_client_id_idx").on(table.clientId),
+  }),
+);
+
+export const engagementTeamMembers = pgTable(
+  "engagement_team_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 100 }).notNull(), // lead_partner, engagement_manager, senior_auditor, staff_auditor, article_student, eqcr_partner
+    allocatedHours: integer("allocated_hours").notNull().default(0),
+    startDate: timestamp("start_date", { withTimezone: true }),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngagementMemberIdx: uniqueIndex(
+      "engagement_team_members_tenant_eng_member_idx",
+    ).on(table.tenantId, table.engagementId, table.membershipId),
+    tenantIdIdx: index("engagement_team_members_tenant_id_idx").on(
       table.tenantId,
     ),
-    clientIdIdx: index("client_kyc_documents_client_id_idx").on(
-      table.clientId,
+    engagementIdIdx: index("engagement_team_members_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+export const engagementIndependenceDeclarations = pgTable(
+  "engagement_independence_declarations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    declarationStatus: varchar("declaration_status", { length: 50 })
+      .notNull()
+      .default("pending"), // pending, cleared, conflict_flagged
+    hasFinancialInterest: boolean("has_financial_interest")
+      .notNull()
+      .default(false),
+    hasPersonalRelationship: boolean("has_personal_relationship")
+      .notNull()
+      .default(false),
+    remarks: text("remarks"),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("engagement_independence_declarations_tenant_id_idx").on(
+      table.tenantId,
+    ),
+    engagementIdIdx: index(
+      "engagement_independence_declarations_engagement_id_idx",
+    ).on(table.engagementId),
+  }),
+);
+
+// ============================================================================
+// WORKING PAPERS & DOCUMENT VAULT
+// ============================================================================
+
+export const workingPapers = pgTable(
+  "working_papers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    wpCode: varchar("wp_code", { length: 50 }).notNull(), // e.g. A-100, B-200, TAX-01
+    title: varchar("title", { length: 255 }).notNull(),
+    section: varchar("section", { length: 100 }).notNull(), // planning, assets, liabilities, equity, revenue, expenses, taxation, completion, permanent_file
+    fileUrl: text("file_url"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, prepared, reviewed, approved, rejected
+    preparedByMembershipId: uuid("prepared_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    preparedAt: timestamp("prepared_at", { withTimezone: true }),
+    reviewedByMembershipId: uuid("reviewed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    version: integer("version").notNull().default(1),
+    remarks: text("remarks"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEngWpCodeIdx: uniqueIndex("working_papers_tenant_eng_wp_code_idx").on(
+      table.tenantId,
+      table.engagementId,
+      table.wpCode,
+    ),
+    tenantIdIdx: index("working_papers_tenant_id_idx").on(table.tenantId),
+    engagementIdIdx: index("working_papers_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+export const reviewNotes = pgTable(
+  "review_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    workingPaperId: uuid("working_paper_id")
+      .notNull()
+      .references(() => workingPapers.id, { onDelete: "cascade" }),
+    authorMembershipId: uuid("author_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("open"), // open, addressed, cleared
+    addressedByMembershipId: uuid("addressed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    addressedAt: timestamp("addressed_at", { withTimezone: true }),
+    clearedByMembershipId: uuid("cleared_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("review_notes_tenant_id_idx").on(table.tenantId),
+    workingPaperIdIdx: index("review_notes_working_paper_id_idx").on(
+      table.workingPaperId,
+    ),
+  }),
+);
+
+export const clientDocumentRequests = pgTable(
+  "client_document_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    requestTitle: varchar("request_title", { length: 255 }).notNull(),
+    description: text("description"),
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, submitted, approved, rejected
+    uploadedFileUrl: text("uploaded_file_url"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("client_document_requests_tenant_id_idx").on(
+      table.tenantId,
+    ),
+    engagementIdIdx: index("client_document_requests_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+// ============================================================================
+// TASK MANAGEMENT, TIMESHEETS & BILLING
+// ============================================================================
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    assigneeMembershipId: uuid("assignee_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    priority: varchar("priority", { length: 50 }).notNull().default("medium"), // low, medium, high, urgent
+    status: varchar("status", { length: 50 }).notNull().default("todo"), // todo, in_progress, review, completed, cancelled
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    estimatedHours: integer("estimated_hours").notNull().default(0),
+    actualHours: integer("actual_hours").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("tasks_tenant_id_idx").on(table.tenantId),
+    engagementIdIdx: index("tasks_engagement_id_idx").on(table.engagementId),
+    assigneeMembershipIdIdx: index("tasks_assignee_membership_id_idx").on(
+      table.assigneeMembershipId,
+    ),
+  }),
+);
+
+export const timesheetEntries = pgTable(
+  "timesheet_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    membershipId: uuid("membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "set null",
+    }),
+    taskId: uuid("task_id").references(() => tasks.id, {
+      onDelete: "set null",
+    }),
+    workDate: timestamp("work_date", { withTimezone: true }).notNull(),
+    hours: integer("hours").notNull(), // e.g. 8 hours
+    activityType: varchar("activity_type", { length: 100 }).notNull(), // audit_fieldwork, tax_preparation, client_meeting, report_writing, review, administrative, training
+    description: text("description"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, submitted, approved, rejected
+    approvedByMembershipId: uuid("approved_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("timesheet_entries_tenant_id_idx").on(table.tenantId),
+    membershipIdIdx: index("timesheet_entries_membership_id_idx").on(
+      table.membershipId,
+    ),
+    engagementIdIdx: index("timesheet_entries_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+export const invoices = pgTable(
+  "invoices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id").references(() => engagements.id, {
+      onDelete: "set null",
+    }),
+    invoiceNumber: varchar("invoice_number", { length: 50 }).notNull(),
+    amount: integer("amount").notNull(),
+    vatAmount: integer("vat_amount").notNull().default(0),
+    totalAmount: integer("total_amount").notNull(),
+    currency: varchar("currency", { length: 10 }).notNull().default("BDT"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, sent, partially_paid, paid, overdue, cancelled
+    issueDate: timestamp("issue_date", { withTimezone: true }).notNull(),
+    dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+    paidAmount: integer("paid_amount").notNull().default(0),
+    remarks: text("remarks"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantInvoiceNumberIdx: uniqueIndex(
+      "invoices_tenant_invoice_number_idx",
+    ).on(table.tenantId, table.invoiceNumber),
+    tenantIdIdx: index("invoices_tenant_id_idx").on(table.tenantId),
+    clientIdIdx: index("invoices_client_id_idx").on(table.clientId),
+  }),
+);
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    receiptNumber: varchar("receipt_number", { length: 50 }).notNull(),
+    amount: integer("amount").notNull(),
+    paymentDate: timestamp("payment_date", { withTimezone: true }).notNull(),
+    paymentMethod: varchar("payment_method", { length: 50 }).notNull(), // bank_transfer, cheque, cash, online
+    referenceNumber: varchar("reference_number", { length: 100 }),
+    remarks: text("remarks"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("payments_tenant_id_idx").on(table.tenantId),
+    invoiceIdIdx: index("payments_invoice_id_idx").on(table.invoiceId),
+  }),
+);
+
+// ============================================================================
+// SIGN-OFF WORKFLOW & DIGITAL CERTIFICATES
+// ============================================================================
+
+export const digitalCertificates = pgTable(
+  "digital_certificates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    certificateNumber: varchar("certificate_number", { length: 50 }).notNull(),
+    certificateType: varchar("certificate_type", { length: 100 }).notNull(), // independent_auditors_report, tax_clearance_certificate, special_audit_certificate, net_worth_certificate, compliance_certificate
+    title: varchar("title", { length: 255 }).notNull(),
+    auditOpinion: varchar("audit_opinion", { length: 50 }).notNull(), // unmodified, qualified, adverse, disclaimer
+    summaryOpinionText: text("summary_opinion_text").notNull(),
+    digitalSealHash: varchar("digital_seal_hash", { length: 255 }).notNull(),
+    signedByMembershipId: uuid("signed_by_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    signedAt: timestamp("signed_at", { withTimezone: true }).notNull(),
+    verificationToken: varchar("verification_token", {
+      length: 100,
+    }).notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("issued"), // issued, revoked
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revocationReason: text("revocation_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantCertNumberIdx: uniqueIndex(
+      "digital_certificates_tenant_cert_number_idx",
+    ).on(table.tenantId, table.certificateNumber),
+    verificationTokenIdx: uniqueIndex(
+      "digital_certificates_verification_token_idx",
+    ).on(table.verificationToken),
+    tenantIdIdx: index("digital_certificates_tenant_id_idx").on(table.tenantId),
+    engagementIdIdx: index("digital_certificates_engagement_id_idx").on(
+      table.engagementId,
+    ),
+  }),
+);
+
+export const signoffAuditLogs = pgTable(
+  "signoff_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    engagementId: uuid("engagement_id")
+      .notNull()
+      .references(() => engagements.id, { onDelete: "cascade" }),
+    signerMembershipId: uuid("signer_membership_id")
+      .notNull()
+      .references(() => memberships.id, { onDelete: "cascade" }),
+    signoffRole: varchar("signoff_role", { length: 50 }).notNull(), // audit_senior, engagement_manager, eqcr_partner, lead_partner
+    action: varchar("action", { length: 50 }).notNull(), // approved, rejected, signed_and_sealed
+    comments: text("comments"),
+    signedHash: varchar("signed_hash", { length: 255 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("signoff_audit_logs_tenant_id_idx").on(table.tenantId),
+    engagementIdIdx: index("signoff_audit_logs_engagement_id_idx").on(
+      table.engagementId,
     ),
   }),
 );

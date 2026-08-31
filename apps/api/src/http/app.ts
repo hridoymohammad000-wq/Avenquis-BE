@@ -12,6 +12,12 @@ import { designationRouter } from "./routes/designations.js";
 import { staffRouter } from "./routes/staff.js";
 import { studentRouter } from "./routes/students.js";
 import { clientRouter } from "./routes/clients.js";
+import { engagementRouter } from "./routes/engagements.js";
+import { workingPaperRouter } from "./routes/working-papers.js";
+import { taskRouter } from "./routes/tasks.js";
+import { timesheetRouter } from "./routes/timesheets.js";
+import { billingRouter } from "./routes/billing.js";
+import { certificateRouter } from "./routes/certificates.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -35,6 +41,12 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/staff", staffRouter);
   app.use("/api/v1/students", studentRouter);
   app.use("/api/v1/clients", clientRouter);
+  app.use("/api/v1/engagements", engagementRouter);
+  app.use("/api/v1/working-papers", workingPaperRouter);
+  app.use("/api/v1/tasks", taskRouter);
+  app.use("/api/v1/timesheets", timesheetRouter);
+  app.use("/api/v1/billing", billingRouter);
+  app.use("/api/v1/certificates", certificateRouter);
 
   if (testRouter) {
     app.use("/test", testRouter);
