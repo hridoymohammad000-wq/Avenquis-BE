@@ -1,32 +1,56 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc12) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc12 = __getOwnPropDesc(from, key)) || desc12.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
 // apps/api/src/http/app.ts
-import express2 from "express";
+var import_express20 = __toESM(require("express"));
 
 // apps/api/src/http/middlewares/request-id.ts
-import { randomUUID } from "node:crypto";
+var import_node_crypto = require("node:crypto");
 function requestIdMiddleware(req, res, next) {
   const reqId = req.get("X-Request-Id");
-  const id = reqId && /^[a-zA-Z0-9-]+$/.test(reqId) ? reqId : randomUUID();
+  const id = reqId && /^[a-zA-Z0-9-]+$/.test(reqId) ? reqId : (0, import_node_crypto.randomUUID)();
   req.id = id;
   res.setHeader("X-Request-Id", id);
   next();
 }
 
 // apps/api/src/http/middlewares/logging.ts
-import { pinoHttp } from "pino-http";
+var import_pino_http = require("pino-http");
 
 // apps/api/src/logging/logger.ts
-import pino from "pino";
+var import_pino = __toESM(require("pino"));
 
 // apps/api/src/config/env.ts
-import { z } from "zod";
-var envSchema = z.object({
-  PORT: z.coerce.number().default(3e3),
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  JWT_SECRET: z.string().default("avenquis_jwt_super_secret_key_production_grade_32_chars"),
-  JWT_EXPIRES_IN: z.string().default("1h"),
-  REFRESH_TOKEN_SECRET: z.string().default("avenquis_refresh_super_secret_key_production_grade_32"),
-  REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
-  DATABASE_URL: z.string().default("postgresql://postgres:postgres@localhost:5432/postgres")
+var import_zod = require("zod");
+var envSchema = import_zod.z.object({
+  PORT: import_zod.z.coerce.number().default(3e3),
+  NODE_ENV: import_zod.z.enum(["development", "production", "test"]).default("development"),
+  JWT_SECRET: import_zod.z.string().default("avenquis_jwt_super_secret_key_production_grade_32_chars"),
+  JWT_EXPIRES_IN: import_zod.z.string().default("1h"),
+  REFRESH_TOKEN_SECRET: import_zod.z.string().default("avenquis_refresh_super_secret_key_production_grade_32"),
+  REFRESH_TOKEN_EXPIRES_IN: import_zod.z.string().default("7d"),
+  DATABASE_URL: import_zod.z.string().default("postgresql://postgres:postgres@localhost:5432/postgres")
 });
 var _env = envSchema.safeParse(process.env);
 if (!_env.success) {
@@ -36,7 +60,7 @@ if (!_env.success) {
 var env = _env.data;
 
 // apps/api/src/logging/logger.ts
-var logger = pino({
+var logger = (0, import_pino.default)({
   level: env.NODE_ENV === "test" ? "silent" : env.NODE_ENV === "development" ? "debug" : "info",
   transport: env.NODE_ENV === "development" ? {
     target: "pino-pretty",
@@ -60,7 +84,7 @@ var logger = pino({
 });
 
 // apps/api/src/http/middlewares/logging.ts
-var loggingMiddleware = pinoHttp({
+var loggingMiddleware = (0, import_pino_http.pinoHttp)({
   logger,
   genReqId: (req) => req.id,
   customLogLevel: (req, res, err) => {
@@ -74,16 +98,16 @@ var loggingMiddleware = pinoHttp({
 });
 
 // apps/api/src/http/middlewares/security.ts
-import helmet from "helmet";
-import express from "express";
-import cookieParser from "cookie-parser";
+var import_helmet = __toESM(require("helmet"));
+var import_express = __toESM(require("express"));
+var import_cookie_parser = __toESM(require("cookie-parser"));
 var securityMiddlewares = [
-  helmet(),
+  (0, import_helmet.default)(),
   // Adds secure HTTP headers and disables X-Powered-By
-  cookieParser(),
-  express.json({ limit: "100kb" }),
+  (0, import_cookie_parser.default)(),
+  import_express.default.json({ limit: "100kb" }),
   // Safe body parsing limit
-  express.urlencoded({ extended: true, limit: "100kb" })
+  import_express.default.urlencoded({ extended: true, limit: "100kb" })
 ];
 
 // apps/api/src/errors/api-error.ts
@@ -144,8 +168,8 @@ function errorHandler(err, req, res, next) {
 }
 
 // apps/api/src/http/routes/health.ts
-import { Router } from "express";
-var healthRouter = Router();
+var import_express2 = require("express");
+var healthRouter = (0, import_express2.Router)();
 healthRouter.get("/", (req, res) => {
   res.status(200).json({
     status: "ok"
@@ -153,62 +177,62 @@ healthRouter.get("/", (req, res) => {
 });
 
 // apps/api/src/http/routes/auth.ts
-import { Router as Router2 } from "express";
-import { z as z2 } from "zod";
-import { db as db2, userProfiles } from "@avenquis/database";
-import { eq } from "drizzle-orm";
+var import_express3 = require("express");
+var import_zod2 = require("zod");
+var import_database2 = require("@avenquis/database");
+var import_drizzle_orm = require("drizzle-orm");
 
 // apps/api/src/services/auth.service.ts
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { authenticator } from "otplib";
-import crypto from "crypto";
+var import_bcryptjs = __toESM(require("bcryptjs"));
+var import_jsonwebtoken = __toESM(require("jsonwebtoken"));
+var import_otplib = require("otplib");
+var import_crypto = __toESM(require("crypto"));
 var AuthService = class {
   static async hashPassword(password) {
-    const salt = await bcrypt.genSalt(12);
-    return bcrypt.hash(password, salt);
+    const salt = await import_bcryptjs.default.genSalt(12);
+    return import_bcryptjs.default.hash(password, salt);
   }
   static async comparePassword(password, hash) {
-    return bcrypt.compare(password, hash);
+    return import_bcryptjs.default.compare(password, hash);
   }
   static generateTokens(payload) {
-    const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+    const accessToken = import_jsonwebtoken.default.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN
     });
-    const refreshToken = jwt.sign(payload, env.REFRESH_TOKEN_SECRET, {
+    const refreshToken = import_jsonwebtoken.default.sign(payload, env.REFRESH_TOKEN_SECRET, {
       expiresIn: env.REFRESH_TOKEN_EXPIRES_IN
     });
     return { accessToken, refreshToken };
   }
   static verifyAccessToken(token) {
-    return jwt.verify(token, env.JWT_SECRET);
+    return import_jsonwebtoken.default.verify(token, env.JWT_SECRET);
   }
   static verifyRefreshToken(token) {
-    return jwt.verify(token, env.REFRESH_TOKEN_SECRET);
+    return import_jsonwebtoken.default.verify(token, env.REFRESH_TOKEN_SECRET);
   }
   static generateMfaSecret(email) {
-    const secret = authenticator.generateSecret();
-    const otpauthUrl = authenticator.keyuri(email, "Avenquis OS", secret);
+    const secret = import_otplib.authenticator.generateSecret();
+    const otpauthUrl = import_otplib.authenticator.keyuri(email, "Avenquis OS", secret);
     return { secret, otpauthUrl };
   }
   static verifyMfaToken(token, secret) {
-    return authenticator.check(token, secret);
+    return import_otplib.authenticator.check(token, secret);
   }
   static generateBackupCodes(count3 = 8) {
     const codes = [];
     for (let i = 0; i < count3; i++) {
-      codes.push(crypto.randomBytes(4).toString("hex").toUpperCase());
+      codes.push(import_crypto.default.randomBytes(4).toString("hex").toUpperCase());
     }
     return codes;
   }
 };
 
 // apps/api/src/services/audit.service.ts
-import { db, activityEvents, securityEvents } from "@avenquis/database";
+var import_database = require("@avenquis/database");
 var AuditService = class {
   static async logActivity(params) {
     try {
-      await db.insert(activityEvents).values({
+      await import_database.db.insert(import_database.activityEvents).values({
         tenantId: params.tenantId,
         membershipId: params.membershipId ?? null,
         action: params.action,
@@ -223,7 +247,7 @@ var AuditService = class {
   }
   static async logSecurityEvent(params) {
     try {
-      await db.insert(securityEvents).values({
+      await import_database.db.insert(import_database.securityEvents).values({
         eventType: params.eventType,
         severity: params.severity ?? "info",
         details: params.details,
@@ -258,15 +282,15 @@ function authenticate(req, res, next) {
 }
 
 // apps/api/src/http/routes/auth.ts
-var authRouter = Router2();
-var registerSchema = z2.object({
-  email: z2.string().email(),
-  password: z2.string().min(8, "Password must be at least 8 characters long"),
-  fullName: z2.string().min(2, "Full name must be at least 2 characters long")
+var authRouter = (0, import_express3.Router)();
+var registerSchema = import_zod2.z.object({
+  email: import_zod2.z.string().email(),
+  password: import_zod2.z.string().min(8, "Password must be at least 8 characters long"),
+  fullName: import_zod2.z.string().min(2, "Full name must be at least 2 characters long")
 });
-var loginSchema = z2.object({
-  email: z2.string().email(),
-  password: z2.string().min(1, "Password is required")
+var loginSchema = import_zod2.z.object({
+  email: import_zod2.z.string().email(),
+  password: import_zod2.z.string().min(1, "Password is required")
 });
 authRouter.post("/register", async (req, res, next) => {
   try {
@@ -280,8 +304,8 @@ authRouter.post("/register", async (req, res, next) => {
       );
     }
     const { email, password, fullName } = parseResult.data;
-    const existing = await db2.query.userProfiles.findFirst({
-      where: eq(userProfiles.email, email)
+    const existing = await import_database2.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.email, email)
     });
     if (existing) {
       throw new ApiError(
@@ -291,7 +315,7 @@ authRouter.post("/register", async (req, res, next) => {
       );
     }
     const passwordHash = await AuthService.hashPassword(password);
-    const [newUser] = await db2.insert(userProfiles).values({
+    const [newUser] = await import_database2.db.insert(import_database2.userProfiles).values({
       email,
       fullName,
       passwordHash,
@@ -337,8 +361,8 @@ authRouter.post("/login", async (req, res, next) => {
       );
     }
     const { email, password } = parseResult.data;
-    const user = await db2.query.userProfiles.findFirst({
-      where: eq(userProfiles.email, email)
+    const user = await import_database2.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.email, email)
     });
     if (!user || !user.passwordHash) {
       throw new ApiError(
@@ -408,8 +432,8 @@ authRouter.post("/login", async (req, res, next) => {
 });
 authRouter.get("/me", authenticate, async (req, res, next) => {
   try {
-    const user = await db2.query.userProfiles.findFirst({
-      where: eq(userProfiles.id, req.user.id)
+    const user = await import_database2.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm.eq)(import_database2.userProfiles.id, req.user.id)
     });
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
@@ -440,23 +464,23 @@ authRouter.post("/logout", authenticate, (req, res) => {
 });
 
 // apps/api/src/http/routes/mfa.ts
-import { Router as Router3 } from "express";
-import { z as z3 } from "zod";
-import qrcode from "qrcode";
-import { db as db3, userProfiles as userProfiles2 } from "@avenquis/database";
-import { eq as eq2 } from "drizzle-orm";
-var mfaRouter = Router3();
+var import_express4 = require("express");
+var import_zod3 = require("zod");
+var import_qrcode = __toESM(require("qrcode"));
+var import_database3 = require("@avenquis/database");
+var import_drizzle_orm2 = require("drizzle-orm");
+var mfaRouter = (0, import_express4.Router)();
 mfaRouter.post("/setup", authenticate, async (req, res, next) => {
   try {
-    const user = await db3.query.userProfiles.findFirst({
-      where: eq2(userProfiles2.id, req.user.id)
+    const user = await import_database3.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user) {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
     }
     const { secret, otpauthUrl } = AuthService.generateMfaSecret(user.email);
-    const qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl);
-    await db3.update(userProfiles2).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where(eq2(userProfiles2.id, user.id));
+    const qrCodeDataUrl = await import_qrcode.default.toDataURL(otpauthUrl);
+    await import_database3.db.update(import_database3.userProfiles).set({ mfaSecret: secret, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
     res.json({
       success: true,
       data: {
@@ -470,15 +494,15 @@ mfaRouter.post("/setup", authenticate, async (req, res, next) => {
 });
 mfaRouter.post("/verify", authenticate, async (req, res, next) => {
   try {
-    const verifySchema = z3.object({
-      token: z3.string().min(6).max(6)
+    const verifySchema = import_zod3.z.object({
+      token: import_zod3.z.string().min(6).max(6)
     });
     const parseResult = verifySchema.safeParse(req.body);
     if (!parseResult.success) {
       throw new ApiError(400, "Invalid MFA token", "VALIDATION_ERROR");
     }
-    const user = await db3.query.userProfiles.findFirst({
-      where: eq2(userProfiles2.id, req.user.id)
+    const user = await import_database3.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaSecret) {
       throw new ApiError(
@@ -499,11 +523,11 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       );
     }
     const backupCodes = AuthService.generateBackupCodes(8);
-    await db3.update(userProfiles2).set({
+    await import_database3.db.update(import_database3.userProfiles).set({
       mfaEnabled: true,
       mfaBackupCodes: backupCodes,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where(eq2(userProfiles2.id, user.id));
+    }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
     const tokens = AuthService.generateTokens({
       userId: user.id,
       email: user.email,
@@ -529,15 +553,15 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
 });
 mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
   try {
-    const challengeSchema = z3.object({
-      token: z3.string().min(6)
+    const challengeSchema = import_zod3.z.object({
+      token: import_zod3.z.string().min(6)
     });
     const parseResult = challengeSchema.safeParse(req.body);
     if (!parseResult.success) {
       throw new ApiError(400, "Invalid MFA token format", "VALIDATION_ERROR");
     }
-    const user = await db3.query.userProfiles.findFirst({
-      where: eq2(userProfiles2.id, req.user.id)
+    const user = await import_database3.db.query.userProfiles.findFirst({
+      where: (0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, req.user.id)
     });
     if (!user || !user.mfaEnabled || !user.mfaSecret) {
       throw new ApiError(
@@ -558,7 +582,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
         isValid = true;
         const updatedBackupCodes = [...user.mfaBackupCodes];
         updatedBackupCodes.splice(backupIndex, 1);
-        await db3.update(userProfiles2).set({ mfaBackupCodes: updatedBackupCodes }).where(eq2(userProfiles2.id, user.id));
+        await import_database3.db.update(import_database3.userProfiles).set({ mfaBackupCodes: updatedBackupCodes }).where((0, import_drizzle_orm2.eq)(import_database3.userProfiles.id, user.id));
       }
     }
     if (!isValid) {
@@ -598,46 +622,40 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
 });
 
 // apps/api/src/http/routes/tenants.ts
-import { Router as Router4 } from "express";
-import { z as z4 } from "zod";
+var import_express5 = require("express");
+var import_zod4 = require("zod");
 
 // apps/api/src/services/tenant.service.ts
-import {
-  db as db4,
-  tenants,
-  memberships,
-  roles,
-  membershipRoles
-} from "@avenquis/database";
-import { eq as eq3, and, lte, or, isNull, gt } from "drizzle-orm";
+var import_database4 = require("@avenquis/database");
+var import_drizzle_orm3 = require("drizzle-orm");
 var TenantService = class {
   static async getUserMemberships(userId) {
-    return db4.select({
-      membershipId: memberships.id,
-      tenantId: memberships.tenantId,
-      tenantName: tenants.name,
-      tenantSlug: tenants.slug,
-      status: memberships.status,
-      startAt: memberships.startAt,
-      expiresAt: memberships.expiresAt
-    }).from(memberships).innerJoin(tenants, eq3(memberships.tenantId, tenants.id)).where(
-      and(
-        eq3(memberships.userId, userId),
-        eq3(memberships.status, "active"),
-        eq3(tenants.status, "active"),
-        lte(memberships.startAt, /* @__PURE__ */ new Date()),
-        or(
-          isNull(memberships.expiresAt),
-          gt(memberships.expiresAt, /* @__PURE__ */ new Date())
+    return import_database4.db.select({
+      membershipId: import_database4.memberships.id,
+      tenantId: import_database4.memberships.tenantId,
+      tenantName: import_database4.tenants.name,
+      tenantSlug: import_database4.tenants.slug,
+      status: import_database4.memberships.status,
+      startAt: import_database4.memberships.startAt,
+      expiresAt: import_database4.memberships.expiresAt
+    }).from(import_database4.memberships).innerJoin(import_database4.tenants, (0, import_drizzle_orm3.eq)(import_database4.memberships.tenantId, import_database4.tenants.id)).where(
+      (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database4.memberships.userId, userId),
+        (0, import_drizzle_orm3.eq)(import_database4.memberships.status, "active"),
+        (0, import_drizzle_orm3.eq)(import_database4.tenants.status, "active"),
+        (0, import_drizzle_orm3.lte)(import_database4.memberships.startAt, /* @__PURE__ */ new Date()),
+        (0, import_drizzle_orm3.or)(
+          (0, import_drizzle_orm3.isNull)(import_database4.memberships.expiresAt),
+          (0, import_drizzle_orm3.gt)(import_database4.memberships.expiresAt, /* @__PURE__ */ new Date())
         )
       )
     );
   }
   static async validateTenantMembership(userId, tenantId) {
-    const membership = await db4.query.memberships.findFirst({
-      where: and(
-        eq3(memberships.userId, userId),
-        eq3(memberships.tenantId, tenantId)
+    const membership = await import_database4.db.query.memberships.findFirst({
+      where: (0, import_drizzle_orm3.and)(
+        (0, import_drizzle_orm3.eq)(import_database4.memberships.userId, userId),
+        (0, import_drizzle_orm3.eq)(import_database4.memberships.tenantId, tenantId)
       )
     });
     if (!membership) {
@@ -669,8 +687,8 @@ var TenantService = class {
         "MEMBERSHIP_EXPIRED"
       );
     }
-    const tenant = await db4.query.tenants.findFirst({
-      where: eq3(tenants.id, tenantId)
+    const tenant = await import_database4.db.query.tenants.findFirst({
+      where: (0, import_drizzle_orm3.eq)(import_database4.tenants.id, tenantId)
     });
     if (!tenant || tenant.status !== "active") {
       throw new ApiError(
@@ -682,22 +700,22 @@ var TenantService = class {
     return { membership, tenant };
   }
   static async createTenant(params) {
-    return db4.transaction(async (tx) => {
-      const [newTenant] = await tx.insert(tenants).values({
+    return import_database4.db.transaction(async (tx) => {
+      const [newTenant] = await tx.insert(import_database4.tenants).values({
         name: params.name,
         slug: params.slug,
         status: "active"
       }).returning();
-      const [membership] = await tx.insert(memberships).values({
+      const [membership] = await tx.insert(import_database4.memberships).values({
         tenantId: newTenant.id,
         userId: params.ownerUserId,
         status: "active"
       }).returning();
       let adminRole = await tx.query.roles.findFirst({
-        where: and(eq3(roles.tenantId, newTenant.id), eq3(roles.code, "admin"))
+        where: (0, import_drizzle_orm3.and)((0, import_drizzle_orm3.eq)(import_database4.roles.tenantId, newTenant.id), (0, import_drizzle_orm3.eq)(import_database4.roles.code, "admin"))
       });
       if (!adminRole) {
-        const [createdRole] = await tx.insert(roles).values({
+        const [createdRole] = await tx.insert(import_database4.roles).values({
           tenantId: newTenant.id,
           code: "admin",
           name: "Tenant Administrator",
@@ -706,7 +724,7 @@ var TenantService = class {
         }).returning();
         adminRole = createdRole;
       }
-      await tx.insert(membershipRoles).values({
+      await tx.insert(import_database4.membershipRoles).values({
         membershipId: membership.id,
         roleId: adminRole.id
       });
@@ -716,28 +734,22 @@ var TenantService = class {
 };
 
 // apps/api/src/services/permission.service.ts
-import {
-  db as db5,
-  membershipRoles as membershipRoles2,
-  rolePermissions,
-  permissions,
-  roles as roles2
-} from "@avenquis/database";
-import { eq as eq4, inArray } from "drizzle-orm";
+var import_database5 = require("@avenquis/database");
+var import_drizzle_orm4 = require("drizzle-orm");
 var PermissionService = class {
   static async getMembershipPermissions(membershipId) {
-    const assignedRoles = await db5.select({ roleId: membershipRoles2.roleId }).from(membershipRoles2).where(eq4(membershipRoles2.membershipId, membershipId));
+    const assignedRoles = await import_database5.db.select({ roleId: import_database5.membershipRoles.roleId }).from(import_database5.membershipRoles).where((0, import_drizzle_orm4.eq)(import_database5.membershipRoles.membershipId, membershipId));
     if (assignedRoles.length === 0) {
       return [];
     }
     const roleIds = assignedRoles.map((r) => r.roleId);
-    const roleDetails = await db5.select({ code: roles2.code }).from(roles2).where(inArray(roles2.id, roleIds));
+    const roleDetails = await import_database5.db.select({ code: import_database5.roles.code }).from(import_database5.roles).where((0, import_drizzle_orm4.inArray)(import_database5.roles.id, roleIds));
     if (roleDetails.some(
       (r) => r.code === "admin" || r.code === "owner" || r.code === "system_admin"
     )) {
       return ["*"];
     }
-    const perms = await db5.select({ code: permissions.code }).from(rolePermissions).innerJoin(permissions, eq4(rolePermissions.permissionId, permissions.id)).where(inArray(rolePermissions.roleId, roleIds));
+    const perms = await import_database5.db.select({ code: import_database5.permissions.code }).from(import_database5.rolePermissions).innerJoin(import_database5.permissions, (0, import_drizzle_orm4.eq)(import_database5.rolePermissions.permissionId, import_database5.permissions.id)).where((0, import_drizzle_orm4.inArray)(import_database5.rolePermissions.roleId, roleIds));
     return Array.from(new Set(perms.map((p) => p.code)));
   }
   static hasPermission(userPermissions, requiredPermission) {
@@ -832,10 +844,10 @@ function requirePermission(requiredPermission, options) {
 }
 
 // apps/api/src/http/routes/tenants.ts
-var tenantRouter = Router4();
-var createTenantSchema = z4.object({
-  name: z4.string().min(2, "Name must be at least 2 characters"),
-  slug: z4.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
+var tenantRouter = (0, import_express5.Router)();
+var createTenantSchema = import_zod4.z.object({
+  name: import_zod4.z.string().min(2, "Name must be at least 2 characters"),
+  slug: import_zod4.z.string().min(2, "Slug must be at least 2 characters").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens")
 });
 tenantRouter.get("/", authenticate, async (req, res, next) => {
   try {
@@ -884,8 +896,8 @@ tenantRouter.post("/", authenticate, async (req, res, next) => {
 });
 tenantRouter.post("/switch", authenticate, async (req, res, next) => {
   try {
-    const switchSchema = z4.object({
-      tenantId: z4.string().uuid("Invalid tenant ID format")
+    const switchSchema = import_zod4.z.object({
+      tenantId: import_zod4.z.string().uuid("Invalid tenant ID format")
     });
     const parseResult = switchSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -958,30 +970,22 @@ tenantRouter.get(
 );
 
 // apps/api/src/http/routes/departments.ts
-import { Router as Router5 } from "express";
-import { z as z5 } from "zod";
+var import_express6 = require("express");
+var import_zod5 = require("zod");
 
 // apps/api/src/services/staff.service.ts
-import {
-  db as db6,
-  departments,
-  designations,
-  staffProfiles,
-  staffLifecycleEvents,
-  memberships as memberships2,
-  userProfiles as userProfiles3
-} from "@avenquis/database";
-import { eq as eq5, and as and2, desc, ilike, or as or2 } from "drizzle-orm";
+var import_database6 = require("@avenquis/database");
+var import_drizzle_orm5 = require("drizzle-orm");
 var StaffService = class {
   // --- Departments ---
   static async listDepartments(tenantId) {
-    return db6.select().from(departments).where(eq5(departments.tenantId, tenantId)).orderBy(departments.name);
+    return import_database6.db.select().from(import_database6.departments).where((0, import_drizzle_orm5.eq)(import_database6.departments.tenantId, tenantId)).orderBy(import_database6.departments.name);
   }
   static async createDepartment(tenantId, data) {
-    const existing = await db6.query.departments.findFirst({
-      where: and2(
-        eq5(departments.tenantId, tenantId),
-        eq5(departments.code, data.code.toUpperCase())
+    const existing = await import_database6.db.query.departments.findFirst({
+      where: (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.departments.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.departments.code, data.code.toUpperCase())
       )
     });
     if (existing) {
@@ -991,7 +995,7 @@ var StaffService = class {
         "DEPARTMENT_EXISTS"
       );
     }
-    const [dept] = await db6.insert(departments).values({
+    const [dept] = await import_database6.db.insert(import_database6.departments).values({
       tenantId,
       name: data.name,
       code: data.code.toUpperCase(),
@@ -1002,13 +1006,13 @@ var StaffService = class {
   }
   // --- Designations ---
   static async listDesignations(tenantId) {
-    return db6.select().from(designations).where(eq5(designations.tenantId, tenantId)).orderBy(desc(designations.level), designations.name);
+    return import_database6.db.select().from(import_database6.designations).where((0, import_drizzle_orm5.eq)(import_database6.designations.tenantId, tenantId)).orderBy((0, import_drizzle_orm5.desc)(import_database6.designations.level), import_database6.designations.name);
   }
   static async createDesignation(tenantId, data) {
-    const existing = await db6.query.designations.findFirst({
-      where: and2(
-        eq5(designations.tenantId, tenantId),
-        eq5(designations.code, data.code.toUpperCase())
+    const existing = await import_database6.db.query.designations.findFirst({
+      where: (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.designations.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.designations.code, data.code.toUpperCase())
       )
     });
     if (existing) {
@@ -1018,7 +1022,7 @@ var StaffService = class {
         "DESIGNATION_EXISTS"
       );
     }
-    const [desig] = await db6.insert(designations).values({
+    const [desig] = await import_database6.db.insert(import_database6.designations).values({
       tenantId,
       name: data.name,
       code: data.code.toUpperCase(),
@@ -1031,95 +1035,95 @@ var StaffService = class {
   static async listStaff(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq5(staffProfiles.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId)];
     if (options?.departmentId) {
-      conditions.push(eq5(staffProfiles.departmentId, options.departmentId));
+      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, options.departmentId));
     }
     if (options?.designationId) {
-      conditions.push(eq5(staffProfiles.designationId, options.designationId));
+      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, options.designationId));
     }
     if (options?.status) {
-      conditions.push(eq5(staffProfiles.status, options.status));
+      conditions.push((0, import_drizzle_orm5.eq)(import_database6.staffProfiles.status, options.status));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
       conditions.push(
-        or2(
-          ilike(staffProfiles.employeeCode, searchPattern),
-          ilike(userProfiles3.fullName, searchPattern),
-          ilike(userProfiles3.email, searchPattern)
+        (0, import_drizzle_orm5.or)(
+          (0, import_drizzle_orm5.ilike)(import_database6.staffProfiles.employeeCode, searchPattern),
+          (0, import_drizzle_orm5.ilike)(import_database6.userProfiles.fullName, searchPattern),
+          (0, import_drizzle_orm5.ilike)(import_database6.userProfiles.email, searchPattern)
         )
       );
     }
-    const rows = await db6.select({
-      id: staffProfiles.id,
-      tenantId: staffProfiles.tenantId,
-      membershipId: staffProfiles.membershipId,
-      employeeCode: staffProfiles.employeeCode,
-      departmentId: staffProfiles.departmentId,
-      departmentName: departments.name,
-      designationId: staffProfiles.designationId,
-      designationName: designations.name,
-      employmentType: staffProfiles.employmentType,
-      status: staffProfiles.status,
-      joiningDate: staffProfiles.joiningDate,
-      exitDate: staffProfiles.exitDate,
-      phone: staffProfiles.phone,
-      emergencyContact: staffProfiles.emergencyContact,
-      bio: staffProfiles.bio,
-      fullName: userProfiles3.fullName,
-      email: userProfiles3.email,
-      avatarUrl: userProfiles3.avatarUrl,
-      createdAt: staffProfiles.createdAt
-    }).from(staffProfiles).innerJoin(memberships2, eq5(staffProfiles.membershipId, memberships2.id)).innerJoin(userProfiles3, eq5(memberships2.userId, userProfiles3.id)).leftJoin(departments, eq5(staffProfiles.departmentId, departments.id)).leftJoin(designations, eq5(staffProfiles.designationId, designations.id)).where(and2(...conditions)).limit(limit).offset(offset).orderBy(staffProfiles.employeeCode);
+    const rows = await import_database6.db.select({
+      id: import_database6.staffProfiles.id,
+      tenantId: import_database6.staffProfiles.tenantId,
+      membershipId: import_database6.staffProfiles.membershipId,
+      employeeCode: import_database6.staffProfiles.employeeCode,
+      departmentId: import_database6.staffProfiles.departmentId,
+      departmentName: import_database6.departments.name,
+      designationId: import_database6.staffProfiles.designationId,
+      designationName: import_database6.designations.name,
+      employmentType: import_database6.staffProfiles.employmentType,
+      status: import_database6.staffProfiles.status,
+      joiningDate: import_database6.staffProfiles.joiningDate,
+      exitDate: import_database6.staffProfiles.exitDate,
+      phone: import_database6.staffProfiles.phone,
+      emergencyContact: import_database6.staffProfiles.emergencyContact,
+      bio: import_database6.staffProfiles.bio,
+      fullName: import_database6.userProfiles.fullName,
+      email: import_database6.userProfiles.email,
+      avatarUrl: import_database6.userProfiles.avatarUrl,
+      createdAt: import_database6.staffProfiles.createdAt
+    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_drizzle_orm5.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where((0, import_drizzle_orm5.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database6.staffProfiles.employeeCode);
     return rows;
   }
   static async getStaffById(tenantId, staffId) {
-    const [staff] = await db6.select({
-      id: staffProfiles.id,
-      tenantId: staffProfiles.tenantId,
-      membershipId: staffProfiles.membershipId,
-      employeeCode: staffProfiles.employeeCode,
-      departmentId: staffProfiles.departmentId,
-      departmentName: departments.name,
-      designationId: staffProfiles.designationId,
-      designationName: designations.name,
-      employmentType: staffProfiles.employmentType,
-      status: staffProfiles.status,
-      joiningDate: staffProfiles.joiningDate,
-      exitDate: staffProfiles.exitDate,
-      phone: staffProfiles.phone,
-      emergencyContact: staffProfiles.emergencyContact,
-      address: staffProfiles.address,
-      bio: staffProfiles.bio,
-      fullName: userProfiles3.fullName,
-      email: userProfiles3.email,
-      avatarUrl: userProfiles3.avatarUrl,
-      createdAt: staffProfiles.createdAt,
-      updatedAt: staffProfiles.updatedAt
-    }).from(staffProfiles).innerJoin(memberships2, eq5(staffProfiles.membershipId, memberships2.id)).innerJoin(userProfiles3, eq5(memberships2.userId, userProfiles3.id)).leftJoin(departments, eq5(staffProfiles.departmentId, departments.id)).leftJoin(designations, eq5(staffProfiles.designationId, designations.id)).where(
-      and2(
-        eq5(staffProfiles.tenantId, tenantId),
-        eq5(staffProfiles.id, staffId)
+    const [staff] = await import_database6.db.select({
+      id: import_database6.staffProfiles.id,
+      tenantId: import_database6.staffProfiles.tenantId,
+      membershipId: import_database6.staffProfiles.membershipId,
+      employeeCode: import_database6.staffProfiles.employeeCode,
+      departmentId: import_database6.staffProfiles.departmentId,
+      departmentName: import_database6.departments.name,
+      designationId: import_database6.staffProfiles.designationId,
+      designationName: import_database6.designations.name,
+      employmentType: import_database6.staffProfiles.employmentType,
+      status: import_database6.staffProfiles.status,
+      joiningDate: import_database6.staffProfiles.joiningDate,
+      exitDate: import_database6.staffProfiles.exitDate,
+      phone: import_database6.staffProfiles.phone,
+      emergencyContact: import_database6.staffProfiles.emergencyContact,
+      address: import_database6.staffProfiles.address,
+      bio: import_database6.staffProfiles.bio,
+      fullName: import_database6.userProfiles.fullName,
+      email: import_database6.userProfiles.email,
+      avatarUrl: import_database6.userProfiles.avatarUrl,
+      createdAt: import_database6.staffProfiles.createdAt,
+      updatedAt: import_database6.staffProfiles.updatedAt
+    }).from(import_database6.staffProfiles).innerJoin(import_database6.memberships, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.membershipId, import_database6.memberships.id)).innerJoin(import_database6.userProfiles, (0, import_drizzle_orm5.eq)(import_database6.memberships.userId, import_database6.userProfiles.id)).leftJoin(import_database6.departments, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.departmentId, import_database6.departments.id)).leftJoin(import_database6.designations, (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.designationId, import_database6.designations.id)).where(
+      (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
       )
     );
     if (!staff) {
       throw new ApiError(404, "Staff profile not found", "STAFF_NOT_FOUND");
     }
-    const history = await db6.select().from(staffLifecycleEvents).where(
-      and2(
-        eq5(staffLifecycleEvents.tenantId, tenantId),
-        eq5(staffLifecycleEvents.staffId, staffId)
+    const history = await import_database6.db.select().from(import_database6.staffLifecycleEvents).where(
+      (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.staffLifecycleEvents.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.staffLifecycleEvents.staffId, staffId)
       )
-    ).orderBy(desc(staffLifecycleEvents.effectiveDate));
+    ).orderBy((0, import_drizzle_orm5.desc)(import_database6.staffLifecycleEvents.effectiveDate));
     return { ...staff, lifecycleHistory: history };
   }
   static async createStaff(tenantId, data) {
-    return db6.transaction(async (tx) => {
+    return import_database6.db.transaction(async (tx) => {
       const existingCode = await tx.query.staffProfiles.findFirst({
-        where: and2(
-          eq5(staffProfiles.tenantId, tenantId),
-          eq5(staffProfiles.employeeCode, data.employeeCode)
+        where: (0, import_drizzle_orm5.and)(
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.employeeCode, data.employeeCode)
         )
       });
       if (existingCode) {
@@ -1129,7 +1133,7 @@ var StaffService = class {
           "EMPLOYEE_CODE_EXISTS"
         );
       }
-      const [newStaff] = await tx.insert(staffProfiles).values({
+      const [newStaff] = await tx.insert(import_database6.staffProfiles).values({
         tenantId,
         membershipId: data.membershipId,
         employeeCode: data.employeeCode,
@@ -1143,7 +1147,7 @@ var StaffService = class {
         bio: data.bio,
         address: data.address
       }).returning();
-      await tx.insert(staffLifecycleEvents).values({
+      await tx.insert(import_database6.staffLifecycleEvents).values({
         tenantId,
         staffId: newStaff.id,
         eventType: "joined",
@@ -1155,39 +1159,39 @@ var StaffService = class {
     });
   }
   static async updateStaff(tenantId, staffId, data) {
-    const existing = await db6.query.staffProfiles.findFirst({
-      where: and2(
-        eq5(staffProfiles.tenantId, tenantId),
-        eq5(staffProfiles.id, staffId)
+    const existing = await import_database6.db.query.staffProfiles.findFirst({
+      where: (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
       )
     });
     if (!existing) {
       throw new ApiError(404, "Staff profile not found", "STAFF_NOT_FOUND");
     }
-    const [updated] = await db6.update(staffProfiles).set({
+    const [updated] = await import_database6.db.update(import_database6.staffProfiles).set({
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and2(
-        eq5(staffProfiles.tenantId, tenantId),
-        eq5(staffProfiles.id, staffId)
+      (0, import_drizzle_orm5.and)(
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
       )
     ).returning();
     return updated;
   }
   static async recordLifecycleEvent(tenantId, staffId, data) {
-    return db6.transaction(async (tx) => {
+    return import_database6.db.transaction(async (tx) => {
       const staff = await tx.query.staffProfiles.findFirst({
-        where: and2(
-          eq5(staffProfiles.tenantId, tenantId),
-          eq5(staffProfiles.id, staffId)
+        where: (0, import_drizzle_orm5.and)(
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
         )
       });
       if (!staff) {
         throw new ApiError(404, "Staff profile not found", "STAFF_NOT_FOUND");
       }
       const effectiveDate = data.effectiveDate ?? /* @__PURE__ */ new Date();
-      const [event] = await tx.insert(staffLifecycleEvents).values({
+      const [event] = await tx.insert(import_database6.staffLifecycleEvents).values({
         tenantId,
         staffId,
         eventType: data.eventType,
@@ -1214,10 +1218,10 @@ var StaffService = class {
       if (data.newDesignationId !== void 0) {
         updates.designationId = data.newDesignationId;
       }
-      await tx.update(staffProfiles).set(updates).where(
-        and2(
-          eq5(staffProfiles.tenantId, tenantId),
-          eq5(staffProfiles.id, staffId)
+      await tx.update(import_database6.staffProfiles).set(updates).where(
+        (0, import_drizzle_orm5.and)(
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.tenantId, tenantId),
+          (0, import_drizzle_orm5.eq)(import_database6.staffProfiles.id, staffId)
         )
       );
       return event;
@@ -1226,12 +1230,12 @@ var StaffService = class {
 };
 
 // apps/api/src/http/routes/departments.ts
-var departmentRouter = Router5();
-var createDeptSchema = z5.object({
-  name: z5.string().min(2, "Department name must be at least 2 characters"),
-  code: z5.string().min(2, "Department code must be at least 2 characters").regex(/^[a-zA-Z0-9_-]+$/, "Department code must be alphanumeric"),
-  description: z5.string().optional(),
-  headMembershipId: z5.string().uuid().optional()
+var departmentRouter = (0, import_express6.Router)();
+var createDeptSchema = import_zod5.z.object({
+  name: import_zod5.z.string().min(2, "Department name must be at least 2 characters"),
+  code: import_zod5.z.string().min(2, "Department code must be at least 2 characters").regex(/^[a-zA-Z0-9_-]+$/, "Department code must be alphanumeric"),
+  description: import_zod5.z.string().optional(),
+  headMembershipId: import_zod5.z.string().uuid().optional()
 });
 departmentRouter.get(
   "/",
@@ -1290,14 +1294,14 @@ departmentRouter.post(
 );
 
 // apps/api/src/http/routes/designations.ts
-import { Router as Router6 } from "express";
-import { z as z6 } from "zod";
-var designationRouter = Router6();
-var createDesigSchema = z6.object({
-  name: z6.string().min(2, "Designation name must be at least 2 characters"),
-  code: z6.string().min(2, "Designation code must be at least 2 characters").regex(/^[a-zA-Z0-9_-]+$/, "Designation code must be alphanumeric"),
-  level: z6.number().int().min(1).default(1),
-  description: z6.string().optional()
+var import_express7 = require("express");
+var import_zod6 = require("zod");
+var designationRouter = (0, import_express7.Router)();
+var createDesigSchema = import_zod6.z.object({
+  name: import_zod6.z.string().min(2, "Designation name must be at least 2 characters"),
+  code: import_zod6.z.string().min(2, "Designation code must be at least 2 characters").regex(/^[a-zA-Z0-9_-]+$/, "Designation code must be alphanumeric"),
+  level: import_zod6.z.number().int().min(1).default(1),
+  description: import_zod6.z.string().optional()
 });
 designationRouter.get(
   "/",
@@ -1356,34 +1360,34 @@ designationRouter.post(
 );
 
 // apps/api/src/http/routes/staff.ts
-import { Router as Router7 } from "express";
-import { z as z7 } from "zod";
-var staffRouter = Router7();
-var createStaffSchema = z7.object({
-  membershipId: z7.string().uuid("Invalid membership ID"),
-  employeeCode: z7.string().min(1, "Employee code is required").regex(/^[a-zA-Z0-9_-]+$/, "Employee code must be alphanumeric"),
-  departmentId: z7.string().uuid().optional(),
-  designationId: z7.string().uuid().optional(),
-  employmentType: z7.enum(["full_time", "part_time", "contract", "intern"]).default("full_time"),
-  status: z7.enum(["active", "probation", "notice_period", "exited", "suspended"]).default("active"),
-  joiningDate: z7.string().datetime().or(z7.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().transform((val) => val ? new Date(val) : void 0),
-  phone: z7.string().optional(),
-  emergencyContact: z7.record(z7.string(), z7.unknown()).optional(),
-  bio: z7.string().optional(),
-  address: z7.record(z7.string(), z7.unknown()).optional()
+var import_express8 = require("express");
+var import_zod7 = require("zod");
+var staffRouter = (0, import_express8.Router)();
+var createStaffSchema = import_zod7.z.object({
+  membershipId: import_zod7.z.string().uuid("Invalid membership ID"),
+  employeeCode: import_zod7.z.string().min(1, "Employee code is required").regex(/^[a-zA-Z0-9_-]+$/, "Employee code must be alphanumeric"),
+  departmentId: import_zod7.z.string().uuid().optional(),
+  designationId: import_zod7.z.string().uuid().optional(),
+  employmentType: import_zod7.z.enum(["full_time", "part_time", "contract", "intern"]).default("full_time"),
+  status: import_zod7.z.enum(["active", "probation", "notice_period", "exited", "suspended"]).default("active"),
+  joiningDate: import_zod7.z.string().datetime().or(import_zod7.z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().transform((val) => val ? new Date(val) : void 0),
+  phone: import_zod7.z.string().optional(),
+  emergencyContact: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()).optional(),
+  bio: import_zod7.z.string().optional(),
+  address: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()).optional()
 });
-var updateStaffSchema = z7.object({
-  departmentId: z7.string().uuid().nullable().optional(),
-  designationId: z7.string().uuid().nullable().optional(),
-  employmentType: z7.enum(["full_time", "part_time", "contract", "intern"]).optional(),
-  status: z7.enum(["active", "probation", "notice_period", "exited", "suspended"]).optional(),
-  phone: z7.string().optional(),
-  emergencyContact: z7.record(z7.string(), z7.unknown()).optional(),
-  bio: z7.string().optional(),
-  address: z7.record(z7.string(), z7.unknown()).optional()
+var updateStaffSchema = import_zod7.z.object({
+  departmentId: import_zod7.z.string().uuid().nullable().optional(),
+  designationId: import_zod7.z.string().uuid().nullable().optional(),
+  employmentType: import_zod7.z.enum(["full_time", "part_time", "contract", "intern"]).optional(),
+  status: import_zod7.z.enum(["active", "probation", "notice_period", "exited", "suspended"]).optional(),
+  phone: import_zod7.z.string().optional(),
+  emergencyContact: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()).optional(),
+  bio: import_zod7.z.string().optional(),
+  address: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()).optional()
 });
-var lifecycleEventSchema = z7.object({
-  eventType: z7.enum([
+var lifecycleEventSchema = import_zod7.z.object({
+  eventType: import_zod7.z.enum([
     "joined",
     "probation_cleared",
     "promoted",
@@ -1393,12 +1397,12 @@ var lifecycleEventSchema = z7.object({
     "suspended",
     "reinstated"
   ]),
-  effectiveDate: z7.string().datetime().or(z7.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().transform((val) => val ? new Date(val) : void 0),
-  remarks: z7.string().optional(),
-  metadata: z7.record(z7.string(), z7.unknown()).optional(),
-  newStatus: z7.enum(["active", "probation", "notice_period", "exited", "suspended"]).optional(),
-  newDepartmentId: z7.string().uuid().optional(),
-  newDesignationId: z7.string().uuid().optional()
+  effectiveDate: import_zod7.z.string().datetime().or(import_zod7.z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional().transform((val) => val ? new Date(val) : void 0),
+  remarks: import_zod7.z.string().optional(),
+  metadata: import_zod7.z.record(import_zod7.z.string(), import_zod7.z.unknown()).optional(),
+  newStatus: import_zod7.z.enum(["active", "probation", "notice_period", "exited", "suspended"]).optional(),
+  newDepartmentId: import_zod7.z.string().uuid().optional(),
+  newDesignationId: import_zod7.z.string().uuid().optional()
 });
 staffRouter.get(
   "/",
@@ -1572,36 +1576,27 @@ staffRouter.post(
 );
 
 // apps/api/src/http/routes/students.ts
-import { Router as Router8 } from "express";
-import { z as z8 } from "zod";
+var import_express9 = require("express");
+var import_zod8 = require("zod");
 
 // apps/api/src/services/student.service.ts
-import {
-  db as db7,
-  studentProfiles,
-  studentTrainingRecords,
-  studentLeaveRecords,
-  studentExamRecords,
-  studentAssignmentHistory,
-  memberships as memberships3,
-  userProfiles as userProfiles4
-} from "@avenquis/database";
-import { eq as eq6, and as and3, desc as desc2, ilike as ilike2, or as or3 } from "drizzle-orm";
+var import_database7 = require("@avenquis/database");
+var import_drizzle_orm6 = require("drizzle-orm");
 var StudentService = class {
   static async listStudents(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq6(studentProfiles.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId)];
     if (options?.status) {
-      conditions.push(eq6(studentProfiles.status, options.status));
+      conditions.push((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.status, options.status));
     }
     if (options?.courseLevel) {
-      conditions.push(eq6(studentProfiles.courseLevel, options.courseLevel));
+      conditions.push((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.courseLevel, options.courseLevel));
     }
     if (options?.principalMembershipId) {
       conditions.push(
-        eq6(
-          studentProfiles.principalMembershipId,
+        (0, import_drizzle_orm6.eq)(
+          import_database7.studentProfiles.principalMembershipId,
           options.principalMembershipId
         )
       );
@@ -1609,81 +1604,81 @@ var StudentService = class {
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
       conditions.push(
-        or3(
-          ilike2(studentProfiles.registrationNumber, searchPattern),
-          ilike2(userProfiles4.fullName, searchPattern),
-          ilike2(userProfiles4.email, searchPattern)
+        (0, import_drizzle_orm6.or)(
+          (0, import_drizzle_orm6.ilike)(import_database7.studentProfiles.registrationNumber, searchPattern),
+          (0, import_drizzle_orm6.ilike)(import_database7.userProfiles.fullName, searchPattern),
+          (0, import_drizzle_orm6.ilike)(import_database7.userProfiles.email, searchPattern)
         )
       );
     }
-    const rows = await db7.select({
-      id: studentProfiles.id,
-      tenantId: studentProfiles.tenantId,
-      membershipId: studentProfiles.membershipId,
-      registrationNumber: studentProfiles.registrationNumber,
-      principalMembershipId: studentProfiles.principalMembershipId,
-      courseLevel: studentProfiles.courseLevel,
-      articleshipStartDate: studentProfiles.articleshipStartDate,
-      articleshipEndDate: studentProfiles.articleshipEndDate,
-      status: studentProfiles.status,
-      fullName: userProfiles4.fullName,
-      email: userProfiles4.email,
-      avatarUrl: userProfiles4.avatarUrl,
-      createdAt: studentProfiles.createdAt
-    }).from(studentProfiles).innerJoin(memberships3, eq6(studentProfiles.membershipId, memberships3.id)).innerJoin(userProfiles4, eq6(memberships3.userId, userProfiles4.id)).where(and3(...conditions)).limit(limit).offset(offset).orderBy(studentProfiles.registrationNumber);
+    const rows = await import_database7.db.select({
+      id: import_database7.studentProfiles.id,
+      tenantId: import_database7.studentProfiles.tenantId,
+      membershipId: import_database7.studentProfiles.membershipId,
+      registrationNumber: import_database7.studentProfiles.registrationNumber,
+      principalMembershipId: import_database7.studentProfiles.principalMembershipId,
+      courseLevel: import_database7.studentProfiles.courseLevel,
+      articleshipStartDate: import_database7.studentProfiles.articleshipStartDate,
+      articleshipEndDate: import_database7.studentProfiles.articleshipEndDate,
+      status: import_database7.studentProfiles.status,
+      fullName: import_database7.userProfiles.fullName,
+      email: import_database7.userProfiles.email,
+      avatarUrl: import_database7.userProfiles.avatarUrl,
+      createdAt: import_database7.studentProfiles.createdAt
+    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_drizzle_orm6.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where((0, import_drizzle_orm6.and)(...conditions)).limit(limit).offset(offset).orderBy(import_database7.studentProfiles.registrationNumber);
     return rows;
   }
   static async getStudentById(tenantId, studentId) {
-    const [student] = await db7.select({
-      id: studentProfiles.id,
-      tenantId: studentProfiles.tenantId,
-      membershipId: studentProfiles.membershipId,
-      registrationNumber: studentProfiles.registrationNumber,
-      principalMembershipId: studentProfiles.principalMembershipId,
-      courseLevel: studentProfiles.courseLevel,
-      articleshipStartDate: studentProfiles.articleshipStartDate,
-      articleshipEndDate: studentProfiles.articleshipEndDate,
-      status: studentProfiles.status,
-      emergencyContact: studentProfiles.emergencyContact,
-      address: studentProfiles.address,
-      fullName: userProfiles4.fullName,
-      email: userProfiles4.email,
-      avatarUrl: userProfiles4.avatarUrl,
-      createdAt: studentProfiles.createdAt,
-      updatedAt: studentProfiles.updatedAt
-    }).from(studentProfiles).innerJoin(memberships3, eq6(studentProfiles.membershipId, memberships3.id)).innerJoin(userProfiles4, eq6(memberships3.userId, userProfiles4.id)).where(
-      and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const [student] = await import_database7.db.select({
+      id: import_database7.studentProfiles.id,
+      tenantId: import_database7.studentProfiles.tenantId,
+      membershipId: import_database7.studentProfiles.membershipId,
+      registrationNumber: import_database7.studentProfiles.registrationNumber,
+      principalMembershipId: import_database7.studentProfiles.principalMembershipId,
+      courseLevel: import_database7.studentProfiles.courseLevel,
+      articleshipStartDate: import_database7.studentProfiles.articleshipStartDate,
+      articleshipEndDate: import_database7.studentProfiles.articleshipEndDate,
+      status: import_database7.studentProfiles.status,
+      emergencyContact: import_database7.studentProfiles.emergencyContact,
+      address: import_database7.studentProfiles.address,
+      fullName: import_database7.userProfiles.fullName,
+      email: import_database7.userProfiles.email,
+      avatarUrl: import_database7.userProfiles.avatarUrl,
+      createdAt: import_database7.studentProfiles.createdAt,
+      updatedAt: import_database7.studentProfiles.updatedAt
+    }).from(import_database7.studentProfiles).innerJoin(import_database7.memberships, (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.membershipId, import_database7.memberships.id)).innerJoin(import_database7.userProfiles, (0, import_drizzle_orm6.eq)(import_database7.memberships.userId, import_database7.userProfiles.id)).where(
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     );
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const trainingRecords = await db7.select().from(studentTrainingRecords).where(
-      and3(
-        eq6(studentTrainingRecords.tenantId, tenantId),
-        eq6(studentTrainingRecords.studentId, studentId)
+    const trainingRecords = await import_database7.db.select().from(import_database7.studentTrainingRecords).where(
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentTrainingRecords.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentTrainingRecords.studentId, studentId)
       )
-    ).orderBy(desc2(studentTrainingRecords.createdAt));
-    const leaveRecords = await db7.select().from(studentLeaveRecords).where(
-      and3(
-        eq6(studentLeaveRecords.tenantId, tenantId),
-        eq6(studentLeaveRecords.studentId, studentId)
+    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentTrainingRecords.createdAt));
+    const leaveRecords = await import_database7.db.select().from(import_database7.studentLeaveRecords).where(
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.studentId, studentId)
       )
-    ).orderBy(desc2(studentLeaveRecords.startDate));
-    const examRecords = await db7.select().from(studentExamRecords).where(
-      and3(
-        eq6(studentExamRecords.tenantId, tenantId),
-        eq6(studentExamRecords.studentId, studentId)
+    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentLeaveRecords.startDate));
+    const examRecords = await import_database7.db.select().from(import_database7.studentExamRecords).where(
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentExamRecords.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentExamRecords.studentId, studentId)
       )
-    ).orderBy(desc2(studentExamRecords.createdAt));
-    const assignmentHistory = await db7.select().from(studentAssignmentHistory).where(
-      and3(
-        eq6(studentAssignmentHistory.tenantId, tenantId),
-        eq6(studentAssignmentHistory.studentId, studentId)
+    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentExamRecords.createdAt));
+    const assignmentHistory = await import_database7.db.select().from(import_database7.studentAssignmentHistory).where(
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentAssignmentHistory.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentAssignmentHistory.studentId, studentId)
       )
-    ).orderBy(desc2(studentAssignmentHistory.startDate));
+    ).orderBy((0, import_drizzle_orm6.desc)(import_database7.studentAssignmentHistory.startDate));
     return {
       ...student,
       trainingRecords,
@@ -1746,10 +1741,10 @@ var StudentService = class {
     };
   }
   static async createStudent(tenantId, data) {
-    const existing = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.registrationNumber, data.registrationNumber)
+    const existing = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.registrationNumber, data.registrationNumber)
       )
     });
     if (existing) {
@@ -1759,7 +1754,7 @@ var StudentService = class {
         "REGISTRATION_NUMBER_EXISTS"
       );
     }
-    const [newStudent] = await db7.insert(studentProfiles).values({
+    const [newStudent] = await import_database7.db.insert(import_database7.studentProfiles).values({
       tenantId,
       membershipId: data.membershipId,
       registrationNumber: data.registrationNumber,
@@ -1774,37 +1769,37 @@ var StudentService = class {
     return newStudent;
   }
   static async updateStudent(tenantId, studentId, data) {
-    const existing = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const existing = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!existing) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const [updated] = await db7.update(studentProfiles).set({
+    const [updated] = await import_database7.db.update(import_database7.studentProfiles).set({
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     ).returning();
     return updated;
   }
   static async logTraining(tenantId, studentId, data) {
-    const student = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const student = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const [record] = await db7.insert(studentTrainingRecords).values({
+    const [record] = await import_database7.db.insert(import_database7.studentTrainingRecords).values({
       tenantId,
       studentId,
       topic: data.topic,
@@ -1816,16 +1811,16 @@ var StudentService = class {
     return record;
   }
   static async applyLeave(tenantId, studentId, data) {
-    const student = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const student = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const [leave] = await db7.insert(studentLeaveRecords).values({
+    const [leave] = await import_database7.db.insert(import_database7.studentLeaveRecords).values({
       tenantId,
       studentId,
       leaveType: data.leaveType,
@@ -1838,39 +1833,39 @@ var StudentService = class {
     return leave;
   }
   static async updateLeaveStatus(tenantId, leaveId, data) {
-    const existing = await db7.query.studentLeaveRecords.findFirst({
-      where: and3(
-        eq6(studentLeaveRecords.tenantId, tenantId),
-        eq6(studentLeaveRecords.id, leaveId)
+    const existing = await import_database7.db.query.studentLeaveRecords.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.id, leaveId)
       )
     });
     if (!existing) {
       throw new ApiError(404, "Leave record not found", "LEAVE_NOT_FOUND");
     }
-    const [updated] = await db7.update(studentLeaveRecords).set({
+    const [updated] = await import_database7.db.update(import_database7.studentLeaveRecords).set({
       status: data.status,
       approvedByMembershipId: data.approvedByMembershipId,
       remarks: data.remarks ?? existing.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and3(
-        eq6(studentLeaveRecords.tenantId, tenantId),
-        eq6(studentLeaveRecords.id, leaveId)
+      (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentLeaveRecords.id, leaveId)
       )
     ).returning();
     return updated;
   }
   static async recordExamResult(tenantId, studentId, data) {
-    const student = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const student = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const [exam] = await db7.insert(studentExamRecords).values({
+    const [exam] = await import_database7.db.insert(import_database7.studentExamRecords).values({
       tenantId,
       studentId,
       session: data.session,
@@ -1881,21 +1876,21 @@ var StudentService = class {
       examDate: data.examDate
     }).returning();
     if (data.resultStatus === "passed" && data.level === "knowledge") {
-      await db7.update(studentProfiles).set({ courseLevel: "application", updatedAt: /* @__PURE__ */ new Date() }).where(eq6(studentProfiles.id, studentId));
+      await import_database7.db.update(import_database7.studentProfiles).set({ courseLevel: "application", updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId));
     }
     return exam;
   }
   static async logAssignment(tenantId, studentId, data) {
-    const student = await db7.query.studentProfiles.findFirst({
-      where: and3(
-        eq6(studentProfiles.tenantId, tenantId),
-        eq6(studentProfiles.id, studentId)
+    const student = await import_database7.db.query.studentProfiles.findFirst({
+      where: (0, import_drizzle_orm6.and)(
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.tenantId, tenantId),
+        (0, import_drizzle_orm6.eq)(import_database7.studentProfiles.id, studentId)
       )
     });
     if (!student) {
       throw new ApiError(404, "Student profile not found", "STUDENT_NOT_FOUND");
     }
-    const [assignment] = await db7.insert(studentAssignmentHistory).values({
+    const [assignment] = await import_database7.db.insert(import_database7.studentAssignmentHistory).values({
       tenantId,
       studentId,
       clientName: data.clientName,
@@ -1910,59 +1905,59 @@ var StudentService = class {
 };
 
 // apps/api/src/http/routes/students.ts
-var studentRouter = Router8();
-var createStudentSchema = z8.object({
-  membershipId: z8.string().uuid(),
-  registrationNumber: z8.string().min(2).max(100),
-  principalMembershipId: z8.string().uuid().optional(),
-  courseLevel: z8.enum(["knowledge", "application", "advanced"]).default("knowledge"),
-  articleshipStartDate: z8.string().transform((val) => new Date(val)).optional(),
-  articleshipEndDate: z8.string().transform((val) => new Date(val)).optional(),
-  status: z8.enum(["active", "completed", "transferred", "suspended"]).default("active"),
-  emergencyContact: z8.record(z8.string(), z8.unknown()).optional(),
-  address: z8.record(z8.string(), z8.unknown()).optional()
+var studentRouter = (0, import_express9.Router)();
+var createStudentSchema = import_zod8.z.object({
+  membershipId: import_zod8.z.string().uuid(),
+  registrationNumber: import_zod8.z.string().min(2).max(100),
+  principalMembershipId: import_zod8.z.string().uuid().optional(),
+  courseLevel: import_zod8.z.enum(["knowledge", "application", "advanced"]).default("knowledge"),
+  articleshipStartDate: import_zod8.z.string().transform((val) => new Date(val)).optional(),
+  articleshipEndDate: import_zod8.z.string().transform((val) => new Date(val)).optional(),
+  status: import_zod8.z.enum(["active", "completed", "transferred", "suspended"]).default("active"),
+  emergencyContact: import_zod8.z.record(import_zod8.z.string(), import_zod8.z.unknown()).optional(),
+  address: import_zod8.z.record(import_zod8.z.string(), import_zod8.z.unknown()).optional()
 });
-var updateStudentSchema = z8.object({
-  courseLevel: z8.enum(["knowledge", "application", "advanced"]).optional(),
-  principalMembershipId: z8.string().uuid().nullable().optional(),
-  articleshipEndDate: z8.string().transform((val) => new Date(val)).nullable().optional(),
-  status: z8.enum(["active", "completed", "transferred", "suspended"]).optional(),
-  emergencyContact: z8.record(z8.string(), z8.unknown()).optional(),
-  address: z8.record(z8.string(), z8.unknown()).optional()
+var updateStudentSchema = import_zod8.z.object({
+  courseLevel: import_zod8.z.enum(["knowledge", "application", "advanced"]).optional(),
+  principalMembershipId: import_zod8.z.string().uuid().nullable().optional(),
+  articleshipEndDate: import_zod8.z.string().transform((val) => new Date(val)).nullable().optional(),
+  status: import_zod8.z.enum(["active", "completed", "transferred", "suspended"]).optional(),
+  emergencyContact: import_zod8.z.record(import_zod8.z.string(), import_zod8.z.unknown()).optional(),
+  address: import_zod8.z.record(import_zod8.z.string(), import_zod8.z.unknown()).optional()
 });
-var logTrainingSchema = z8.object({
-  topic: z8.string().min(2).max(255),
-  hoursCompleted: z8.number().int().min(1),
-  supervisorMembershipId: z8.string().uuid().optional(),
-  remarks: z8.string().optional(),
-  verifyNow: z8.boolean().optional()
+var logTrainingSchema = import_zod8.z.object({
+  topic: import_zod8.z.string().min(2).max(255),
+  hoursCompleted: import_zod8.z.number().int().min(1),
+  supervisorMembershipId: import_zod8.z.string().uuid().optional(),
+  remarks: import_zod8.z.string().optional(),
+  verifyNow: import_zod8.z.boolean().optional()
 });
-var applyLeaveSchema = z8.object({
-  leaveType: z8.enum(["study", "exam", "sick", "casual"]),
-  startDate: z8.string().transform((val) => new Date(val)),
-  endDate: z8.string().transform((val) => new Date(val)),
-  totalDays: z8.number().int().min(1),
-  remarks: z8.string().optional()
+var applyLeaveSchema = import_zod8.z.object({
+  leaveType: import_zod8.z.enum(["study", "exam", "sick", "casual"]),
+  startDate: import_zod8.z.string().transform((val) => new Date(val)),
+  endDate: import_zod8.z.string().transform((val) => new Date(val)),
+  totalDays: import_zod8.z.number().int().min(1),
+  remarks: import_zod8.z.string().optional()
 });
-var updateLeaveStatusSchema = z8.object({
-  status: z8.enum(["approved", "rejected"]),
-  remarks: z8.string().optional()
+var updateLeaveStatusSchema = import_zod8.z.object({
+  status: import_zod8.z.enum(["approved", "rejected"]),
+  remarks: import_zod8.z.string().optional()
 });
-var recordExamSchema = z8.object({
-  session: z8.string().min(2).max(100),
-  level: z8.enum(["knowledge", "application", "advanced"]),
-  subject: z8.string().min(2).max(255),
-  resultStatus: z8.enum(["passed", "failed", "appeared"]),
-  marks: z8.number().int().min(0).max(100).optional(),
-  examDate: z8.string().transform((val) => new Date(val)).optional()
+var recordExamSchema = import_zod8.z.object({
+  session: import_zod8.z.string().min(2).max(100),
+  level: import_zod8.z.enum(["knowledge", "application", "advanced"]),
+  subject: import_zod8.z.string().min(2).max(255),
+  resultStatus: import_zod8.z.enum(["passed", "failed", "appeared"]),
+  marks: import_zod8.z.number().int().min(0).max(100).optional(),
+  examDate: import_zod8.z.string().transform((val) => new Date(val)).optional()
 });
-var logAssignmentSchema = z8.object({
-  clientName: z8.string().min(2).max(255),
-  role: z8.string().min(2).max(100),
-  startDate: z8.string().transform((val) => new Date(val)),
-  endDate: z8.string().transform((val) => new Date(val)).optional(),
-  hoursLogged: z8.number().int().min(0).optional(),
-  remarks: z8.string().optional()
+var logAssignmentSchema = import_zod8.z.object({
+  clientName: import_zod8.z.string().min(2).max(255),
+  role: import_zod8.z.string().min(2).max(100),
+  startDate: import_zod8.z.string().transform((val) => new Date(val)),
+  endDate: import_zod8.z.string().transform((val) => new Date(val)).optional(),
+  hoursLogged: import_zod8.z.number().int().min(0).optional(),
+  remarks: import_zod8.z.string().optional()
 });
 studentRouter.get(
   "/",
@@ -2266,53 +2261,46 @@ studentRouter.post(
 );
 
 // apps/api/src/http/routes/clients.ts
-import { Router as Router9 } from "express";
-import { z as z9 } from "zod";
+var import_express10 = require("express");
+var import_zod9 = require("zod");
 
 // apps/api/src/services/client.service.ts
-import {
-  db as db8,
-  clients,
-  clientContacts,
-  clientKycDocuments,
-  memberships as memberships4,
-  userProfiles as userProfiles5
-} from "@avenquis/database";
-import { eq as eq7, and as and4, desc as desc3, ilike as ilike3, or as or4 } from "drizzle-orm";
+var import_database8 = require("@avenquis/database");
+var import_drizzle_orm7 = require("drizzle-orm");
 var ClientService = class {
   static async listClients(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq7(clients.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId)];
     if (options?.status) {
-      conditions.push(eq7(clients.status, options.status));
+      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.status, options.status));
     }
     if (options?.clientType) {
-      conditions.push(eq7(clients.clientType, options.clientType));
+      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.clientType, options.clientType));
     }
     if (options?.riskRating) {
-      conditions.push(eq7(clients.riskRating, options.riskRating));
+      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.riskRating, options.riskRating));
     }
     if (options?.kycStatus) {
-      conditions.push(eq7(clients.kycStatus, options.kycStatus));
+      conditions.push((0, import_drizzle_orm7.eq)(import_database8.clients.kycStatus, options.kycStatus));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = or4(
-        ilike3(clients.name, searchPattern),
-        ilike3(clients.clientCode, searchPattern),
-        ilike3(clients.primaryEmail, searchPattern)
+      const condOr = (0, import_drizzle_orm7.or)(
+        (0, import_drizzle_orm7.ilike)(import_database8.clients.name, searchPattern),
+        (0, import_drizzle_orm7.ilike)(import_database8.clients.clientCode, searchPattern),
+        (0, import_drizzle_orm7.ilike)(import_database8.clients.primaryEmail, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await db8.select().from(clients).where(and4(...conditions)).limit(limit).offset(offset).orderBy(desc3(clients.createdAt));
+    const rows = await import_database8.db.select().from(import_database8.clients).where((0, import_drizzle_orm7.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm7.desc)(import_database8.clients.createdAt));
     return rows;
   }
   static async createClient(tenantId, data) {
-    const existing = await db8.query.clients.findFirst({
-      where: and4(
-        eq7(clients.tenantId, tenantId),
-        eq7(clients.clientCode, data.clientCode)
+    const existing = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clients.clientCode, data.clientCode)
       )
     });
     if (existing) {
@@ -2322,7 +2310,7 @@ var ClientService = class {
         "CLIENT_CODE_EXISTS"
       );
     }
-    const [client] = await db8.insert(clients).values({
+    const [client] = await import_database8.db.insert(import_database8.clients).values({
       tenantId,
       clientCode: data.clientCode,
       name: data.name,
@@ -2341,31 +2329,31 @@ var ClientService = class {
     return client;
   }
   static async getClientById(tenantId, clientId) {
-    const client = await db8.query.clients.findFirst({
-      where: and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))
+    const client = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const contacts = await db8.select().from(clientContacts).where(
-      and4(
-        eq7(clientContacts.tenantId, tenantId),
-        eq7(clientContacts.clientId, clientId)
+    const contacts = await import_database8.db.select().from(import_database8.clientContacts).where(
+      (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clientContacts.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clientContacts.clientId, clientId)
       )
-    ).orderBy(desc3(clientContacts.isPrimary), clientContacts.fullName);
-    const kycDocuments = await db8.select().from(clientKycDocuments).where(
-      and4(
-        eq7(clientKycDocuments.tenantId, tenantId),
-        eq7(clientKycDocuments.clientId, clientId)
+    ).orderBy((0, import_drizzle_orm7.desc)(import_database8.clientContacts.isPrimary), import_database8.clientContacts.fullName);
+    const kycDocuments = await import_database8.db.select().from(import_database8.clientKycDocuments).where(
+      (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.clientId, clientId)
       )
-    ).orderBy(desc3(clientKycDocuments.createdAt));
+    ).orderBy((0, import_drizzle_orm7.desc)(import_database8.clientKycDocuments.createdAt));
     let leadPartner = null;
     if (client.leadPartnerMembershipId) {
-      const [partnerRow] = await db8.select({
-        membershipId: memberships4.id,
-        fullName: userProfiles5.fullName,
-        email: userProfiles5.email
-      }).from(memberships4).innerJoin(userProfiles5, eq7(memberships4.userId, userProfiles5.id)).where(eq7(memberships4.id, client.leadPartnerMembershipId));
+      const [partnerRow] = await import_database8.db.select({
+        membershipId: import_database8.memberships.id,
+        fullName: import_database8.userProfiles.fullName,
+        email: import_database8.userProfiles.email
+      }).from(import_database8.memberships).innerJoin(import_database8.userProfiles, (0, import_drizzle_orm7.eq)(import_database8.memberships.userId, import_database8.userProfiles.id)).where((0, import_drizzle_orm7.eq)(import_database8.memberships.id, client.leadPartnerMembershipId));
       leadPartner = partnerRow ?? null;
     }
     return {
@@ -2376,34 +2364,34 @@ var ClientService = class {
     };
   }
   static async updateClient(tenantId, clientId, data) {
-    const client = await db8.query.clients.findFirst({
-      where: and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))
+    const client = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const [updated] = await db8.update(clients).set({
+    const [updated] = await import_database8.db.update(import_database8.clients).set({
       ...data,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where(and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))).returning();
+    }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))).returning();
     return updated;
   }
   static async addContact(tenantId, clientId, data) {
-    const client = await db8.query.clients.findFirst({
-      where: and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))
+    const client = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
     if (data.isPrimary) {
-      await db8.update(clientContacts).set({ isPrimary: false }).where(
-        and4(
-          eq7(clientContacts.tenantId, tenantId),
-          eq7(clientContacts.clientId, clientId)
+      await import_database8.db.update(import_database8.clientContacts).set({ isPrimary: false }).where(
+        (0, import_drizzle_orm7.and)(
+          (0, import_drizzle_orm7.eq)(import_database8.clientContacts.tenantId, tenantId),
+          (0, import_drizzle_orm7.eq)(import_database8.clientContacts.clientId, clientId)
         )
       );
     }
-    const [contact] = await db8.insert(clientContacts).values({
+    const [contact] = await import_database8.db.insert(import_database8.clientContacts).values({
       tenantId,
       clientId,
       fullName: data.fullName,
@@ -2416,13 +2404,13 @@ var ClientService = class {
     return contact;
   }
   static async uploadKycDocument(tenantId, clientId, data) {
-    const client = await db8.query.clients.findFirst({
-      where: and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))
+    const client = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const [document] = await db8.insert(clientKycDocuments).values({
+    const [document] = await import_database8.db.insert(import_database8.clientKycDocuments).values({
       tenantId,
       clientId,
       documentType: data.documentType,
@@ -2435,10 +2423,10 @@ var ClientService = class {
     return document;
   }
   static async verifyKycDocument(tenantId, documentId, data) {
-    const doc = await db8.query.clientKycDocuments.findFirst({
-      where: and4(
-        eq7(clientKycDocuments.tenantId, tenantId),
-        eq7(clientKycDocuments.id, documentId)
+    const doc = await import_database8.db.query.clientKycDocuments.findFirst({
+      where: (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.id, documentId)
       )
     });
     if (!doc) {
@@ -2448,22 +2436,22 @@ var ClientService = class {
         "KYC_DOCUMENT_NOT_FOUND"
       );
     }
-    const [updatedDoc] = await db8.update(clientKycDocuments).set({
+    const [updatedDoc] = await import_database8.db.update(import_database8.clientKycDocuments).set({
       verificationStatus: data.verificationStatus,
       verifiedByMembershipId: data.verifierMembershipId,
       verifiedAt: /* @__PURE__ */ new Date(),
       remarks: data.remarks ?? doc.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and4(
-        eq7(clientKycDocuments.tenantId, tenantId),
-        eq7(clientKycDocuments.id, documentId)
+      (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.id, documentId)
       )
     ).returning();
-    const allDocs = await db8.select().from(clientKycDocuments).where(
-      and4(
-        eq7(clientKycDocuments.tenantId, tenantId),
-        eq7(clientKycDocuments.clientId, doc.clientId)
+    const allDocs = await import_database8.db.select().from(import_database8.clientKycDocuments).where(
+      (0, import_drizzle_orm7.and)(
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.tenantId, tenantId),
+        (0, import_drizzle_orm7.eq)(import_database8.clientKycDocuments.clientId, doc.clientId)
       )
     );
     const hasVerified = allDocs.some(
@@ -2478,60 +2466,60 @@ var ClientService = class {
     } else if (hasRejected) {
       newKycStatus = "rejected";
     }
-    await db8.update(clients).set({ kycStatus: newKycStatus, updatedAt: /* @__PURE__ */ new Date() }).where(and4(eq7(clients.tenantId, tenantId), eq7(clients.id, doc.clientId)));
+    await import_database8.db.update(import_database8.clients).set({ kycStatus: newKycStatus, updatedAt: /* @__PURE__ */ new Date() }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, doc.clientId)));
     return updatedDoc;
   }
   static async updateRiskRating(tenantId, clientId, riskRating) {
-    const client = await db8.query.clients.findFirst({
-      where: and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))
+    const client = await import_database8.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const [updated] = await db8.update(clients).set({
+    const [updated] = await import_database8.db.update(import_database8.clients).set({
       riskRating,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where(and4(eq7(clients.tenantId, tenantId), eq7(clients.id, clientId))).returning();
+    }).where((0, import_drizzle_orm7.and)((0, import_drizzle_orm7.eq)(import_database8.clients.tenantId, tenantId), (0, import_drizzle_orm7.eq)(import_database8.clients.id, clientId))).returning();
     return updated;
   }
 };
 
 // apps/api/src/http/routes/clients.ts
-var clientRouter = Router9();
-var createClientSchema = z9.object({
-  clientCode: z9.string().min(2).max(50),
-  name: z9.string().min(2).max(255),
-  clientType: z9.enum([
+var clientRouter = (0, import_express10.Router)();
+var createClientSchema = import_zod9.z.object({
+  clientCode: import_zod9.z.string().min(2).max(50),
+  name: import_zod9.z.string().min(2).max(255),
+  clientType: import_zod9.z.enum([
     "corporate",
     "individual",
     "government",
     "non_profit",
     "partnership"
   ]),
-  industry: z9.string().max(100).optional(),
-  taxIdentificationNumber: z9.string().max(100).optional(),
-  businessRegistrationNumber: z9.string().max(100).optional(),
-  primaryEmail: z9.string().email().optional(),
-  primaryPhone: z9.string().max(50).optional(),
-  address: z9.record(z9.string(), z9.unknown()).optional(),
-  riskRating: z9.enum(["low", "medium", "high", "unassessed"]).default("unassessed"),
-  kycStatus: z9.enum(["pending", "verified", "expired", "rejected"]).default("pending"),
-  status: z9.enum(["active", "onboarding", "inactive", "blacklisted"]).default("active"),
-  leadPartnerMembershipId: z9.string().uuid().optional()
+  industry: import_zod9.z.string().max(100).optional(),
+  taxIdentificationNumber: import_zod9.z.string().max(100).optional(),
+  businessRegistrationNumber: import_zod9.z.string().max(100).optional(),
+  primaryEmail: import_zod9.z.string().email().optional(),
+  primaryPhone: import_zod9.z.string().max(50).optional(),
+  address: import_zod9.z.record(import_zod9.z.string(), import_zod9.z.unknown()).optional(),
+  riskRating: import_zod9.z.enum(["low", "medium", "high", "unassessed"]).default("unassessed"),
+  kycStatus: import_zod9.z.enum(["pending", "verified", "expired", "rejected"]).default("pending"),
+  status: import_zod9.z.enum(["active", "onboarding", "inactive", "blacklisted"]).default("active"),
+  leadPartnerMembershipId: import_zod9.z.string().uuid().optional()
 });
 var updateClientSchema = createClientSchema.partial().omit({
   clientCode: true
 });
-var addContactSchema = z9.object({
-  fullName: z9.string().min(2).max(255),
-  designation: z9.string().max(100).optional(),
-  email: z9.string().email().optional(),
-  phone: z9.string().max(50).optional(),
-  isPrimary: z9.boolean().default(false),
-  notes: z9.string().optional()
+var addContactSchema = import_zod9.z.object({
+  fullName: import_zod9.z.string().min(2).max(255),
+  designation: import_zod9.z.string().max(100).optional(),
+  email: import_zod9.z.string().email().optional(),
+  phone: import_zod9.z.string().max(50).optional(),
+  isPrimary: import_zod9.z.boolean().default(false),
+  notes: import_zod9.z.string().optional()
 });
-var uploadKycSchema = z9.object({
-  documentType: z9.enum([
+var uploadKycSchema = import_zod9.z.object({
+  documentType: import_zod9.z.enum([
     "trade_license",
     "tin_certificate",
     "vat_certificate",
@@ -2539,17 +2527,17 @@ var uploadKycSchema = z9.object({
     "nid_passport",
     "utility_bill"
   ]),
-  documentNumber: z9.string().max(100).optional(),
-  fileUrl: z9.string().url().optional(),
-  expiryDate: z9.string().transform((val) => new Date(val)).optional(),
-  remarks: z9.string().optional()
+  documentNumber: import_zod9.z.string().max(100).optional(),
+  fileUrl: import_zod9.z.string().url().optional(),
+  expiryDate: import_zod9.z.string().transform((val) => new Date(val)).optional(),
+  remarks: import_zod9.z.string().optional()
 });
-var verifyKycSchema = z9.object({
-  verificationStatus: z9.enum(["verified", "rejected"]),
-  remarks: z9.string().optional()
+var verifyKycSchema = import_zod9.z.object({
+  verificationStatus: import_zod9.z.enum(["verified", "rejected"]),
+  remarks: import_zod9.z.string().optional()
 });
-var updateRiskSchema = z9.object({
-  riskRating: z9.enum(["low", "medium", "high", "unassessed"])
+var updateRiskSchema = import_zod9.z.object({
+  riskRating: import_zod9.z.enum(["low", "medium", "high", "unassessed"])
 });
 clientRouter.get(
   "/",
@@ -2799,75 +2787,67 @@ clientRouter.patch(
 );
 
 // apps/api/src/http/routes/engagements.ts
-import { Router as Router10 } from "express";
-import { z as z10 } from "zod";
+var import_express11 = require("express");
+var import_zod10 = require("zod");
 
 // apps/api/src/services/engagement.service.ts
-import {
-  db as db9,
-  engagements,
-  engagementTeamMembers,
-  engagementIndependenceDeclarations,
-  clients as clients2,
-  memberships as memberships5,
-  userProfiles as userProfiles6
-} from "@avenquis/database";
-import { eq as eq8, and as and5, desc as desc4, ilike as ilike4, or as or5 } from "drizzle-orm";
+var import_database9 = require("@avenquis/database");
+var import_drizzle_orm8 = require("drizzle-orm");
 var EngagementService = class {
   static async listEngagements(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq8(engagements.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId)];
     if (options?.clientId) {
-      conditions.push(eq8(engagements.clientId, options.clientId));
+      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.clientId, options.clientId));
     }
     if (options?.status) {
-      conditions.push(eq8(engagements.status, options.status));
+      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.status, options.status));
     }
     if (options?.engagementType) {
-      conditions.push(eq8(engagements.engagementType, options.engagementType));
+      conditions.push((0, import_drizzle_orm8.eq)(import_database9.engagements.engagementType, options.engagementType));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = or5(
-        ilike4(engagements.title, searchPattern),
-        ilike4(engagements.engagementCode, searchPattern),
-        ilike4(engagements.financialYear, searchPattern)
+      const condOr = (0, import_drizzle_orm8.or)(
+        (0, import_drizzle_orm8.ilike)(import_database9.engagements.title, searchPattern),
+        (0, import_drizzle_orm8.ilike)(import_database9.engagements.engagementCode, searchPattern),
+        (0, import_drizzle_orm8.ilike)(import_database9.engagements.financialYear, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await db9.select({
-      id: engagements.id,
-      tenantId: engagements.tenantId,
-      clientId: engagements.clientId,
-      clientName: clients2.name,
-      clientCode: clients2.clientCode,
-      engagementCode: engagements.engagementCode,
-      title: engagements.title,
-      engagementType: engagements.engagementType,
-      financialYear: engagements.financialYear,
-      startDate: engagements.startDate,
-      endDate: engagements.endDate,
-      budgetedHours: engagements.budgetedHours,
-      budgetedFee: engagements.budgetedFee,
-      currency: engagements.currency,
-      status: engagements.status,
-      independenceCleared: engagements.independenceCleared,
-      createdAt: engagements.createdAt
-    }).from(engagements).innerJoin(clients2, eq8(engagements.clientId, clients2.id)).where(and5(...conditions)).limit(limit).offset(offset).orderBy(desc4(engagements.createdAt));
+    const rows = await import_database9.db.select({
+      id: import_database9.engagements.id,
+      tenantId: import_database9.engagements.tenantId,
+      clientId: import_database9.engagements.clientId,
+      clientName: import_database9.clients.name,
+      clientCode: import_database9.clients.clientCode,
+      engagementCode: import_database9.engagements.engagementCode,
+      title: import_database9.engagements.title,
+      engagementType: import_database9.engagements.engagementType,
+      financialYear: import_database9.engagements.financialYear,
+      startDate: import_database9.engagements.startDate,
+      endDate: import_database9.engagements.endDate,
+      budgetedHours: import_database9.engagements.budgetedHours,
+      budgetedFee: import_database9.engagements.budgetedFee,
+      currency: import_database9.engagements.currency,
+      status: import_database9.engagements.status,
+      independenceCleared: import_database9.engagements.independenceCleared,
+      createdAt: import_database9.engagements.createdAt
+    }).from(import_database9.engagements).innerJoin(import_database9.clients, (0, import_drizzle_orm8.eq)(import_database9.engagements.clientId, import_database9.clients.id)).where((0, import_drizzle_orm8.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm8.desc)(import_database9.engagements.createdAt));
     return rows;
   }
   static async createEngagement(tenantId, data) {
-    const client = await db9.query.clients.findFirst({
-      where: and5(eq8(clients2.tenantId, tenantId), eq8(clients2.id, data.clientId))
+    const client = await import_database9.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm8.and)((0, import_drizzle_orm8.eq)(import_database9.clients.tenantId, tenantId), (0, import_drizzle_orm8.eq)(import_database9.clients.id, data.clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const existing = await db9.query.engagements.findFirst({
-      where: and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.engagementCode, data.engagementCode)
+    const existing = await import_database9.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.engagementCode, data.engagementCode)
       )
     });
     if (existing) {
@@ -2877,7 +2857,7 @@ var EngagementService = class {
         "ENGAGEMENT_CODE_EXISTS"
       );
     }
-    const [engagement] = await db9.insert(engagements).values({
+    const [engagement] = await import_database9.db.insert(import_database9.engagements).values({
       tenantId,
       clientId: data.clientId,
       engagementCode: data.engagementCode,
@@ -2898,52 +2878,52 @@ var EngagementService = class {
     return engagement;
   }
   static async getEngagementById(tenantId, engagementId) {
-    const engagement = await db9.query.engagements.findFirst({
-      where: and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+    const engagement = await import_database9.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const client = await db9.query.clients.findFirst({
-      where: eq8(clients2.id, engagement.clientId)
+    const client = await import_database9.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm8.eq)(import_database9.clients.id, engagement.clientId)
     });
-    const teamMembers = await db9.select({
-      id: engagementTeamMembers.id,
-      membershipId: engagementTeamMembers.membershipId,
-      role: engagementTeamMembers.role,
-      allocatedHours: engagementTeamMembers.allocatedHours,
-      startDate: engagementTeamMembers.startDate,
-      endDate: engagementTeamMembers.endDate,
-      fullName: userProfiles6.fullName,
-      email: userProfiles6.email
-    }).from(engagementTeamMembers).innerJoin(
-      memberships5,
-      eq8(engagementTeamMembers.membershipId, memberships5.id)
-    ).innerJoin(userProfiles6, eq8(memberships5.userId, userProfiles6.id)).where(
-      and5(
-        eq8(engagementTeamMembers.tenantId, tenantId),
-        eq8(engagementTeamMembers.engagementId, engagementId)
+    const teamMembers = await import_database9.db.select({
+      id: import_database9.engagementTeamMembers.id,
+      membershipId: import_database9.engagementTeamMembers.membershipId,
+      role: import_database9.engagementTeamMembers.role,
+      allocatedHours: import_database9.engagementTeamMembers.allocatedHours,
+      startDate: import_database9.engagementTeamMembers.startDate,
+      endDate: import_database9.engagementTeamMembers.endDate,
+      fullName: import_database9.userProfiles.fullName,
+      email: import_database9.userProfiles.email
+    }).from(import_database9.engagementTeamMembers).innerJoin(
+      import_database9.memberships,
+      (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, import_database9.memberships.id)
+    ).innerJoin(import_database9.userProfiles, (0, import_drizzle_orm8.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
+      (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId)
       )
     );
-    const independenceDeclarations = await db9.select({
-      id: engagementIndependenceDeclarations.id,
-      membershipId: engagementIndependenceDeclarations.membershipId,
-      declarationStatus: engagementIndependenceDeclarations.declarationStatus,
-      hasFinancialInterest: engagementIndependenceDeclarations.hasFinancialInterest,
-      hasPersonalRelationship: engagementIndependenceDeclarations.hasPersonalRelationship,
-      remarks: engagementIndependenceDeclarations.remarks,
-      clearedAt: engagementIndependenceDeclarations.clearedAt,
-      fullName: userProfiles6.fullName
-    }).from(engagementIndependenceDeclarations).innerJoin(
-      memberships5,
-      eq8(engagementIndependenceDeclarations.membershipId, memberships5.id)
-    ).innerJoin(userProfiles6, eq8(memberships5.userId, userProfiles6.id)).where(
-      and5(
-        eq8(engagementIndependenceDeclarations.tenantId, tenantId),
-        eq8(engagementIndependenceDeclarations.engagementId, engagementId)
+    const independenceDeclarations = await import_database9.db.select({
+      id: import_database9.engagementIndependenceDeclarations.id,
+      membershipId: import_database9.engagementIndependenceDeclarations.membershipId,
+      declarationStatus: import_database9.engagementIndependenceDeclarations.declarationStatus,
+      hasFinancialInterest: import_database9.engagementIndependenceDeclarations.hasFinancialInterest,
+      hasPersonalRelationship: import_database9.engagementIndependenceDeclarations.hasPersonalRelationship,
+      remarks: import_database9.engagementIndependenceDeclarations.remarks,
+      clearedAt: import_database9.engagementIndependenceDeclarations.clearedAt,
+      fullName: import_database9.userProfiles.fullName
+    }).from(import_database9.engagementIndependenceDeclarations).innerJoin(
+      import_database9.memberships,
+      (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.membershipId, import_database9.memberships.id)
+    ).innerJoin(import_database9.userProfiles, (0, import_drizzle_orm8.eq)(import_database9.memberships.userId, import_database9.userProfiles.id)).where(
+      (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
       )
     );
     return {
@@ -2954,54 +2934,54 @@ var EngagementService = class {
     };
   }
   static async updateEngagementStatus(tenantId, engagementId, status) {
-    const engagement = await db9.query.engagements.findFirst({
-      where: and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+    const engagement = await import_database9.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const [updated] = await db9.update(engagements).set({
+    const [updated] = await import_database9.db.update(import_database9.engagements).set({
       status,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+      (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     ).returning();
     return updated;
   }
   static async assignTeamMember(tenantId, engagementId, data) {
-    const engagement = await db9.query.engagements.findFirst({
-      where: and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+    const engagement = await import_database9.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const existing = await db9.query.engagementTeamMembers.findFirst({
-      where: and5(
-        eq8(engagementTeamMembers.tenantId, tenantId),
-        eq8(engagementTeamMembers.engagementId, engagementId),
-        eq8(engagementTeamMembers.membershipId, data.membershipId)
+    const existing = await import_database9.db.query.engagementTeamMembers.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, data.membershipId)
       )
     });
     let member;
     if (existing) {
-      [member] = await db9.update(engagementTeamMembers).set({
+      [member] = await import_database9.db.update(import_database9.engagementTeamMembers).set({
         role: data.role,
         allocatedHours: data.allocatedHours ?? existing.allocatedHours,
         startDate: data.startDate ?? existing.startDate,
         endDate: data.endDate ?? existing.endDate,
         updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq8(engagementTeamMembers.id, existing.id)).returning();
+      }).where((0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.id, existing.id)).returning();
     } else {
-      [member] = await db9.insert(engagementTeamMembers).values({
+      [member] = await import_database9.db.insert(import_database9.engagementTeamMembers).values({
         tenantId,
         engagementId,
         membershipId: data.membershipId,
@@ -3014,11 +2994,11 @@ var EngagementService = class {
     return member;
   }
   static async removeTeamMember(tenantId, engagementId, membershipId) {
-    const existing = await db9.query.engagementTeamMembers.findFirst({
-      where: and5(
-        eq8(engagementTeamMembers.tenantId, tenantId),
-        eq8(engagementTeamMembers.engagementId, engagementId),
-        eq8(engagementTeamMembers.membershipId, membershipId)
+    const existing = await import_database9.db.query.engagementTeamMembers.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.engagementId, engagementId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.membershipId, membershipId)
       )
     });
     if (!existing) {
@@ -3028,14 +3008,14 @@ var EngagementService = class {
         "TEAM_MEMBER_NOT_FOUND"
       );
     }
-    await db9.delete(engagementTeamMembers).where(eq8(engagementTeamMembers.id, existing.id));
+    await import_database9.db.delete(import_database9.engagementTeamMembers).where((0, import_drizzle_orm8.eq)(import_database9.engagementTeamMembers.id, existing.id));
     return { success: true };
   }
   static async submitIndependenceDeclaration(tenantId, engagementId, membershipId, data) {
-    const engagement = await db9.query.engagements.findFirst({
-      where: and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+    const engagement = await import_database9.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     });
     if (!engagement) {
@@ -3043,25 +3023,25 @@ var EngagementService = class {
     }
     const hasConflict = data.hasFinancialInterest || data.hasPersonalRelationship;
     const declarationStatus = hasConflict ? "conflict_flagged" : "cleared";
-    const existing = await db9.query.engagementIndependenceDeclarations.findFirst({
-      where: and5(
-        eq8(engagementIndependenceDeclarations.tenantId, tenantId),
-        eq8(engagementIndependenceDeclarations.engagementId, engagementId),
-        eq8(engagementIndependenceDeclarations.membershipId, membershipId)
+    const existing = await import_database9.db.query.engagementIndependenceDeclarations.findFirst({
+      where: (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.membershipId, membershipId)
       )
     });
     let declaration;
     if (existing) {
-      [declaration] = await db9.update(engagementIndependenceDeclarations).set({
+      [declaration] = await import_database9.db.update(import_database9.engagementIndependenceDeclarations).set({
         declarationStatus,
         hasFinancialInterest: data.hasFinancialInterest,
         hasPersonalRelationship: data.hasPersonalRelationship,
         remarks: data.remarks,
         clearedAt: hasConflict ? null : /* @__PURE__ */ new Date(),
         updatedAt: /* @__PURE__ */ new Date()
-      }).where(eq8(engagementIndependenceDeclarations.id, existing.id)).returning();
+      }).where((0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.id, existing.id)).returning();
     } else {
-      [declaration] = await db9.insert(engagementIndependenceDeclarations).values({
+      [declaration] = await import_database9.db.insert(import_database9.engagementIndependenceDeclarations).values({
         tenantId,
         engagementId,
         membershipId,
@@ -3072,21 +3052,21 @@ var EngagementService = class {
         clearedAt: hasConflict ? null : /* @__PURE__ */ new Date()
       }).returning();
     }
-    const allDeclarations = await db9.select().from(engagementIndependenceDeclarations).where(
-      and5(
-        eq8(engagementIndependenceDeclarations.tenantId, tenantId),
-        eq8(engagementIndependenceDeclarations.engagementId, engagementId)
+    const allDeclarations = await import_database9.db.select().from(import_database9.engagementIndependenceDeclarations).where(
+      (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagementIndependenceDeclarations.engagementId, engagementId)
       )
     );
     const hasDeclarations = allDeclarations.length > 0;
     const allCleared = hasDeclarations && allDeclarations.every((d) => d.declarationStatus === "cleared");
-    await db9.update(engagements).set({
+    await import_database9.db.update(import_database9.engagements).set({
       independenceCleared: allCleared,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and5(
-        eq8(engagements.tenantId, tenantId),
-        eq8(engagements.id, engagementId)
+      (0, import_drizzle_orm8.and)(
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm8.eq)(import_database9.engagements.id, engagementId)
       )
     );
     return declaration;
@@ -3094,12 +3074,12 @@ var EngagementService = class {
 };
 
 // apps/api/src/http/routes/engagements.ts
-var engagementRouter = Router10();
-var createEngagementSchema = z10.object({
-  clientId: z10.string().uuid(),
-  engagementCode: z10.string().min(2).max(50),
-  title: z10.string().min(2).max(255),
-  engagementType: z10.enum([
+var engagementRouter = (0, import_express11.Router)();
+var createEngagementSchema = import_zod10.z.object({
+  clientId: import_zod10.z.string().uuid(),
+  engagementCode: import_zod10.z.string().min(2).max(50),
+  title: import_zod10.z.string().min(2).max(255),
+  engagementType: import_zod10.z.enum([
     "statutory_audit",
     "tax_advisory",
     "accounting_services",
@@ -3107,18 +3087,18 @@ var createEngagementSchema = z10.object({
     "vat_consulting",
     "valuation_advisory"
   ]),
-  financialYear: z10.string().min(2).max(50),
-  startDate: z10.string().transform((val) => new Date(val)),
-  endDate: z10.string().transform((val) => new Date(val)).optional(),
-  budgetedHours: z10.number().int().min(0).optional(),
-  budgetedFee: z10.number().int().min(0).optional(),
-  currency: z10.string().max(10).default("BDT"),
-  engagementPartnerMembershipId: z10.string().uuid().optional(),
-  engagementManagerMembershipId: z10.string().uuid().optional(),
-  auditQualityReviewerMembershipId: z10.string().uuid().optional()
+  financialYear: import_zod10.z.string().min(2).max(50),
+  startDate: import_zod10.z.string().transform((val) => new Date(val)),
+  endDate: import_zod10.z.string().transform((val) => new Date(val)).optional(),
+  budgetedHours: import_zod10.z.number().int().min(0).optional(),
+  budgetedFee: import_zod10.z.number().int().min(0).optional(),
+  currency: import_zod10.z.string().max(10).default("BDT"),
+  engagementPartnerMembershipId: import_zod10.z.string().uuid().optional(),
+  engagementManagerMembershipId: import_zod10.z.string().uuid().optional(),
+  auditQualityReviewerMembershipId: import_zod10.z.string().uuid().optional()
 });
-var updateStatusSchema = z10.object({
-  status: z10.enum([
+var updateStatusSchema = import_zod10.z.object({
+  status: import_zod10.z.enum([
     "planning",
     "fieldwork",
     "review",
@@ -3127,9 +3107,9 @@ var updateStatusSchema = z10.object({
     "archived"
   ])
 });
-var assignTeamMemberSchema = z10.object({
-  membershipId: z10.string().uuid(),
-  role: z10.enum([
+var assignTeamMemberSchema = import_zod10.z.object({
+  membershipId: import_zod10.z.string().uuid(),
+  role: import_zod10.z.enum([
     "lead_partner",
     "engagement_manager",
     "senior_auditor",
@@ -3137,14 +3117,14 @@ var assignTeamMemberSchema = z10.object({
     "article_student",
     "eqcr_partner"
   ]),
-  allocatedHours: z10.number().int().min(0).optional(),
-  startDate: z10.string().transform((val) => new Date(val)).optional(),
-  endDate: z10.string().transform((val) => new Date(val)).optional()
+  allocatedHours: import_zod10.z.number().int().min(0).optional(),
+  startDate: import_zod10.z.string().transform((val) => new Date(val)).optional(),
+  endDate: import_zod10.z.string().transform((val) => new Date(val)).optional()
 });
-var submitIndependenceSchema = z10.object({
-  hasFinancialInterest: z10.boolean(),
-  hasPersonalRelationship: z10.boolean(),
-  remarks: z10.string().optional()
+var submitIndependenceSchema = import_zod10.z.object({
+  hasFinancialInterest: import_zod10.z.boolean(),
+  hasPersonalRelationship: import_zod10.z.boolean(),
+  remarks: import_zod10.z.string().optional()
 });
 engagementRouter.get(
   "/",
@@ -3353,60 +3333,52 @@ engagementRouter.post(
 );
 
 // apps/api/src/http/routes/working-papers.ts
-import { Router as Router11 } from "express";
-import { z as z11 } from "zod";
+var import_express12 = require("express");
+var import_zod11 = require("zod");
 
 // apps/api/src/services/working-paper.service.ts
-import {
-  db as db10,
-  workingPapers,
-  reviewNotes,
-  clientDocumentRequests,
-  engagements as engagements2,
-  memberships as memberships6,
-  userProfiles as userProfiles7
-} from "@avenquis/database";
-import { eq as eq9, and as and6, desc as desc5, ilike as ilike5, or as or6 } from "drizzle-orm";
+var import_database10 = require("@avenquis/database");
+var import_drizzle_orm9 = require("drizzle-orm");
 var WorkingPaperService = class {
   static async listWorkingPapers(tenantId, engagementId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const conditions = [
-      eq9(workingPapers.tenantId, tenantId),
-      eq9(workingPapers.engagementId, engagementId)
+      (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
+      (0, import_drizzle_orm9.eq)(import_database10.workingPapers.engagementId, engagementId)
     ];
     if (options?.section) {
-      conditions.push(eq9(workingPapers.section, options.section));
+      conditions.push((0, import_drizzle_orm9.eq)(import_database10.workingPapers.section, options.section));
     }
     if (options?.status) {
-      conditions.push(eq9(workingPapers.status, options.status));
+      conditions.push((0, import_drizzle_orm9.eq)(import_database10.workingPapers.status, options.status));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = or6(
-        ilike5(workingPapers.title, searchPattern),
-        ilike5(workingPapers.wpCode, searchPattern)
+      const condOr = (0, import_drizzle_orm9.or)(
+        (0, import_drizzle_orm9.ilike)(import_database10.workingPapers.title, searchPattern),
+        (0, import_drizzle_orm9.ilike)(import_database10.workingPapers.wpCode, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await db10.select().from(workingPapers).where(and6(...conditions)).limit(limit).offset(offset).orderBy(desc5(workingPapers.createdAt));
+    const rows = await import_database10.db.select().from(import_database10.workingPapers).where((0, import_drizzle_orm9.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm9.desc)(import_database10.workingPapers.createdAt));
     return rows;
   }
   static async createWorkingPaper(tenantId, data) {
-    const engagement = await db10.query.engagements.findFirst({
-      where: and6(
-        eq9(engagements2.tenantId, tenantId),
-        eq9(engagements2.id, data.engagementId)
+    const engagement = await import_database10.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const existing = await db10.query.workingPapers.findFirst({
-      where: and6(
-        eq9(workingPapers.tenantId, tenantId),
-        eq9(workingPapers.engagementId, data.engagementId),
-        eq9(workingPapers.wpCode, data.wpCode)
+    const existing = await import_database10.db.query.workingPapers.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.engagementId, data.engagementId),
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.wpCode, data.wpCode)
       )
     });
     if (existing) {
@@ -3416,7 +3388,7 @@ var WorkingPaperService = class {
         "WP_CODE_EXISTS"
       );
     }
-    const [wp] = await db10.insert(workingPapers).values({
+    const [wp] = await import_database10.db.insert(import_database10.workingPapers).values({
       tenantId,
       engagementId: data.engagementId,
       wpCode: data.wpCode,
@@ -3430,10 +3402,10 @@ var WorkingPaperService = class {
     return wp;
   }
   static async getWorkingPaperById(tenantId, wpId) {
-    const wp = await db10.query.workingPapers.findFirst({
-      where: and6(
-        eq9(workingPapers.tenantId, tenantId),
-        eq9(workingPapers.id, wpId)
+    const wp = await import_database10.db.query.workingPapers.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3443,40 +3415,40 @@ var WorkingPaperService = class {
         "WORKING_PAPER_NOT_FOUND"
       );
     }
-    const notes = await db10.select({
-      id: reviewNotes.id,
-      content: reviewNotes.content,
-      status: reviewNotes.status,
-      authorMembershipId: reviewNotes.authorMembershipId,
-      authorFullName: userProfiles7.fullName,
-      addressedAt: reviewNotes.addressedAt,
-      clearedAt: reviewNotes.clearedAt,
-      createdAt: reviewNotes.createdAt
-    }).from(reviewNotes).innerJoin(
-      memberships6,
-      eq9(reviewNotes.authorMembershipId, memberships6.id)
-    ).innerJoin(userProfiles7, eq9(memberships6.userId, userProfiles7.id)).where(
-      and6(
-        eq9(reviewNotes.tenantId, tenantId),
-        eq9(reviewNotes.workingPaperId, wpId)
+    const notes = await import_database10.db.select({
+      id: import_database10.reviewNotes.id,
+      content: import_database10.reviewNotes.content,
+      status: import_database10.reviewNotes.status,
+      authorMembershipId: import_database10.reviewNotes.authorMembershipId,
+      authorFullName: import_database10.userProfiles.fullName,
+      addressedAt: import_database10.reviewNotes.addressedAt,
+      clearedAt: import_database10.reviewNotes.clearedAt,
+      createdAt: import_database10.reviewNotes.createdAt
+    }).from(import_database10.reviewNotes).innerJoin(
+      import_database10.memberships,
+      (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.authorMembershipId, import_database10.memberships.id)
+    ).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where(
+      (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.workingPaperId, wpId)
       )
-    ).orderBy(desc5(reviewNotes.createdAt));
+    ).orderBy((0, import_drizzle_orm9.desc)(import_database10.reviewNotes.createdAt));
     let preparer = null;
     if (wp.preparedByMembershipId) {
-      const [p] = await db10.select({
-        membershipId: memberships6.id,
-        fullName: userProfiles7.fullName,
-        email: userProfiles7.email
-      }).from(memberships6).innerJoin(userProfiles7, eq9(memberships6.userId, userProfiles7.id)).where(eq9(memberships6.id, wp.preparedByMembershipId));
+      const [p] = await import_database10.db.select({
+        membershipId: import_database10.memberships.id,
+        fullName: import_database10.userProfiles.fullName,
+        email: import_database10.userProfiles.email
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm9.eq)(import_database10.memberships.id, wp.preparedByMembershipId));
       preparer = p ?? null;
     }
     let reviewer = null;
     if (wp.reviewedByMembershipId) {
-      const [r] = await db10.select({
-        membershipId: memberships6.id,
-        fullName: userProfiles7.fullName,
-        email: userProfiles7.email
-      }).from(memberships6).innerJoin(userProfiles7, eq9(memberships6.userId, userProfiles7.id)).where(eq9(memberships6.id, wp.reviewedByMembershipId));
+      const [r] = await import_database10.db.select({
+        membershipId: import_database10.memberships.id,
+        fullName: import_database10.userProfiles.fullName,
+        email: import_database10.userProfiles.email
+      }).from(import_database10.memberships).innerJoin(import_database10.userProfiles, (0, import_drizzle_orm9.eq)(import_database10.memberships.userId, import_database10.userProfiles.id)).where((0, import_drizzle_orm9.eq)(import_database10.memberships.id, wp.reviewedByMembershipId));
       reviewer = r ?? null;
     }
     return {
@@ -3487,10 +3459,10 @@ var WorkingPaperService = class {
     };
   }
   static async signoffWorkingPaper(tenantId, wpId, action, membershipId, remarks) {
-    const wp = await db10.query.workingPapers.findFirst({
-      where: and6(
-        eq9(workingPapers.tenantId, tenantId),
-        eq9(workingPapers.id, wpId)
+    const wp = await import_database10.db.query.workingPapers.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3518,7 +3490,7 @@ var WorkingPaperService = class {
       reviewedByMembershipId = membershipId;
       reviewedAt = /* @__PURE__ */ new Date();
     }
-    const [updated] = await db10.update(workingPapers).set({
+    const [updated] = await import_database10.db.update(import_database10.workingPapers).set({
       status: updatedStatus,
       preparedByMembershipId,
       preparedAt,
@@ -3527,15 +3499,15 @@ var WorkingPaperService = class {
       remarks: remarks ?? wp.remarks,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and6(eq9(workingPapers.tenantId, tenantId), eq9(workingPapers.id, wpId))
+      (0, import_drizzle_orm9.and)((0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId), (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId))
     ).returning();
     return updated;
   }
   static async addReviewNote(tenantId, wpId, authorMembershipId, content) {
-    const wp = await db10.query.workingPapers.findFirst({
-      where: and6(
-        eq9(workingPapers.tenantId, tenantId),
-        eq9(workingPapers.id, wpId)
+    const wp = await import_database10.db.query.workingPapers.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.workingPapers.id, wpId)
       )
     });
     if (!wp) {
@@ -3545,7 +3517,7 @@ var WorkingPaperService = class {
         "WORKING_PAPER_NOT_FOUND"
       );
     }
-    const [note] = await db10.insert(reviewNotes).values({
+    const [note] = await import_database10.db.insert(import_database10.reviewNotes).values({
       tenantId,
       workingPaperId: wpId,
       authorMembershipId,
@@ -3555,10 +3527,10 @@ var WorkingPaperService = class {
     return note;
   }
   static async updateReviewNoteStatus(tenantId, noteId, action, membershipId) {
-    const note = await db10.query.reviewNotes.findFirst({
-      where: and6(
-        eq9(reviewNotes.tenantId, tenantId),
-        eq9(reviewNotes.id, noteId)
+    const note = await import_database10.db.query.reviewNotes.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.id, noteId)
       )
     });
     if (!note) {
@@ -3578,7 +3550,7 @@ var WorkingPaperService = class {
       clearedByMembershipId = membershipId;
       clearedAt = /* @__PURE__ */ new Date();
     }
-    const [updated] = await db10.update(reviewNotes).set({
+    const [updated] = await import_database10.db.update(import_database10.reviewNotes).set({
       status,
       addressedByMembershipId,
       addressedAt,
@@ -3586,30 +3558,30 @@ var WorkingPaperService = class {
       clearedAt,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and6(eq9(reviewNotes.tenantId, tenantId), eq9(reviewNotes.id, noteId))
+      (0, import_drizzle_orm9.and)((0, import_drizzle_orm9.eq)(import_database10.reviewNotes.tenantId, tenantId), (0, import_drizzle_orm9.eq)(import_database10.reviewNotes.id, noteId))
     ).returning();
     return updated;
   }
   static async listDocumentRequests(tenantId, engagementId) {
-    const requests = await db10.select().from(clientDocumentRequests).where(
-      and6(
-        eq9(clientDocumentRequests.tenantId, tenantId),
-        eq9(clientDocumentRequests.engagementId, engagementId)
+    const requests = await import_database10.db.select().from(import_database10.clientDocumentRequests).where(
+      (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.engagementId, engagementId)
       )
-    ).orderBy(desc5(clientDocumentRequests.createdAt));
+    ).orderBy((0, import_drizzle_orm9.desc)(import_database10.clientDocumentRequests.createdAt));
     return requests;
   }
   static async createDocumentRequest(tenantId, data) {
-    const engagement = await db10.query.engagements.findFirst({
-      where: and6(
-        eq9(engagements2.tenantId, tenantId),
-        eq9(engagements2.id, data.engagementId)
+    const engagement = await import_database10.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const [request] = await db10.insert(clientDocumentRequests).values({
+    const [request] = await import_database10.db.insert(import_database10.clientDocumentRequests).values({
       tenantId,
       engagementId: data.engagementId,
       requestTitle: data.requestTitle,
@@ -3620,10 +3592,10 @@ var WorkingPaperService = class {
     return request;
   }
   static async fulfillDocumentRequest(tenantId, requestId, uploadedFileUrl) {
-    const req = await db10.query.clientDocumentRequests.findFirst({
-      where: and6(
-        eq9(clientDocumentRequests.tenantId, tenantId),
-        eq9(clientDocumentRequests.id, requestId)
+    const req = await import_database10.db.query.clientDocumentRequests.findFirst({
+      where: (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     });
     if (!req) {
@@ -3633,15 +3605,15 @@ var WorkingPaperService = class {
         "DOCUMENT_REQUEST_NOT_FOUND"
       );
     }
-    const [updated] = await db10.update(clientDocumentRequests).set({
+    const [updated] = await import_database10.db.update(import_database10.clientDocumentRequests).set({
       uploadedFileUrl,
       status: "submitted",
       submittedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and6(
-        eq9(clientDocumentRequests.tenantId, tenantId),
-        eq9(clientDocumentRequests.id, requestId)
+      (0, import_drizzle_orm9.and)(
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.tenantId, tenantId),
+        (0, import_drizzle_orm9.eq)(import_database10.clientDocumentRequests.id, requestId)
       )
     ).returning();
     return updated;
@@ -3649,12 +3621,12 @@ var WorkingPaperService = class {
 };
 
 // apps/api/src/http/routes/working-papers.ts
-var workingPaperRouter = Router11();
-var createWpSchema = z11.object({
-  engagementId: z11.string().uuid(),
-  wpCode: z11.string().min(1).max(50),
-  title: z11.string().min(2).max(255),
-  section: z11.enum([
+var workingPaperRouter = (0, import_express12.Router)();
+var createWpSchema = import_zod11.z.object({
+  engagementId: import_zod11.z.string().uuid(),
+  wpCode: import_zod11.z.string().min(1).max(50),
+  title: import_zod11.z.string().min(2).max(255),
+  section: import_zod11.z.enum([
     "planning",
     "assets",
     "liabilities",
@@ -3665,27 +3637,27 @@ var createWpSchema = z11.object({
     "completion",
     "permanent_file"
   ]),
-  fileUrl: z11.string().url().optional(),
-  remarks: z11.string().optional()
+  fileUrl: import_zod11.z.string().url().optional(),
+  remarks: import_zod11.z.string().optional()
 });
-var signoffSchema = z11.object({
-  action: z11.enum(["prepare", "approve", "reject"]),
-  remarks: z11.string().optional()
+var signoffSchema = import_zod11.z.object({
+  action: import_zod11.z.enum(["prepare", "approve", "reject"]),
+  remarks: import_zod11.z.string().optional()
 });
-var addReviewNoteSchema = z11.object({
-  content: z11.string().min(2)
+var addReviewNoteSchema = import_zod11.z.object({
+  content: import_zod11.z.string().min(2)
 });
-var updateReviewNoteSchema = z11.object({
-  action: z11.enum(["address", "clear"])
+var updateReviewNoteSchema = import_zod11.z.object({
+  action: import_zod11.z.enum(["address", "clear"])
 });
-var createDocReqSchema = z11.object({
-  engagementId: z11.string().uuid(),
-  requestTitle: z11.string().min(2).max(255),
-  description: z11.string().optional(),
-  dueDate: z11.string().transform((val) => new Date(val)).optional()
+var createDocReqSchema = import_zod11.z.object({
+  engagementId: import_zod11.z.string().uuid(),
+  requestTitle: import_zod11.z.string().min(2).max(255),
+  description: import_zod11.z.string().optional(),
+  dueDate: import_zod11.z.string().transform((val) => new Date(val)).optional()
 });
-var fulfillDocReqSchema = z11.object({
-  uploadedFileUrl: z11.string().url()
+var fulfillDocReqSchema = import_zod11.z.object({
+  uploadedFileUrl: import_zod11.z.string().url()
 });
 workingPaperRouter.get(
   "/",
@@ -3973,67 +3945,67 @@ workingPaperRouter.patch(
 );
 
 // apps/api/src/http/routes/tasks.ts
-import { Router as Router12 } from "express";
-import { z as z12 } from "zod";
+var import_express13 = require("express");
+var import_zod12 = require("zod");
 
 // apps/api/src/services/task.service.ts
-import { db as db11, tasks, engagements as engagements3 } from "@avenquis/database";
-import { eq as eq10, and as and7, desc as desc6, ilike as ilike6, or as or7 } from "drizzle-orm";
+var import_database11 = require("@avenquis/database");
+var import_drizzle_orm10 = require("drizzle-orm");
 var TaskService = class {
   static async listTasks(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq10(tasks.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId)];
     if (options?.engagementId) {
-      conditions.push(eq10(tasks.engagementId, options.engagementId));
+      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.engagementId, options.engagementId));
     }
     if (options?.assigneeMembershipId) {
       conditions.push(
-        eq10(tasks.assigneeMembershipId, options.assigneeMembershipId)
+        (0, import_drizzle_orm10.eq)(import_database11.tasks.assigneeMembershipId, options.assigneeMembershipId)
       );
     }
     if (options?.status) {
-      conditions.push(eq10(tasks.status, options.status));
+      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.status, options.status));
     }
     if (options?.priority) {
-      conditions.push(eq10(tasks.priority, options.priority));
+      conditions.push((0, import_drizzle_orm10.eq)(import_database11.tasks.priority, options.priority));
     }
     if (options?.search) {
       const searchPattern = `%${options.search}%`;
-      const condOr = or7(
-        ilike6(tasks.title, searchPattern),
-        ilike6(tasks.description, searchPattern)
+      const condOr = (0, import_drizzle_orm10.or)(
+        (0, import_drizzle_orm10.ilike)(import_database11.tasks.title, searchPattern),
+        (0, import_drizzle_orm10.ilike)(import_database11.tasks.description, searchPattern)
       );
       if (condOr) conditions.push(condOr);
     }
-    const rows = await db11.select({
-      id: tasks.id,
-      tenantId: tasks.tenantId,
-      engagementId: tasks.engagementId,
-      engagementTitle: engagements3.title,
-      assigneeMembershipId: tasks.assigneeMembershipId,
-      title: tasks.title,
-      description: tasks.description,
-      priority: tasks.priority,
-      status: tasks.status,
-      dueDate: tasks.dueDate,
-      estimatedHours: tasks.estimatedHours,
-      actualHours: tasks.actualHours,
-      createdAt: tasks.createdAt
-    }).from(tasks).innerJoin(engagements3, eq10(tasks.engagementId, engagements3.id)).where(and7(...conditions)).limit(limit).offset(offset).orderBy(desc6(tasks.createdAt));
+    const rows = await import_database11.db.select({
+      id: import_database11.tasks.id,
+      tenantId: import_database11.tasks.tenantId,
+      engagementId: import_database11.tasks.engagementId,
+      engagementTitle: import_database11.engagements.title,
+      assigneeMembershipId: import_database11.tasks.assigneeMembershipId,
+      title: import_database11.tasks.title,
+      description: import_database11.tasks.description,
+      priority: import_database11.tasks.priority,
+      status: import_database11.tasks.status,
+      dueDate: import_database11.tasks.dueDate,
+      estimatedHours: import_database11.tasks.estimatedHours,
+      actualHours: import_database11.tasks.actualHours,
+      createdAt: import_database11.tasks.createdAt
+    }).from(import_database11.tasks).innerJoin(import_database11.engagements, (0, import_drizzle_orm10.eq)(import_database11.tasks.engagementId, import_database11.engagements.id)).where((0, import_drizzle_orm10.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm10.desc)(import_database11.tasks.createdAt));
     return rows;
   }
   static async createTask(tenantId, data) {
-    const engagement = await db11.query.engagements.findFirst({
-      where: and7(
-        eq10(engagements3.tenantId, tenantId),
-        eq10(engagements3.id, data.engagementId)
+    const engagement = await import_database11.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm10.and)(
+        (0, import_drizzle_orm10.eq)(import_database11.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm10.eq)(import_database11.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const [task] = await db11.insert(tasks).values({
+    const [task] = await import_database11.db.insert(import_database11.tasks).values({
       tenantId,
       engagementId: data.engagementId,
       assigneeMembershipId: data.assigneeMembershipId,
@@ -4048,35 +4020,35 @@ var TaskService = class {
     return task;
   }
   static async updateTaskStatus(tenantId, taskId, status, actualHours) {
-    const task = await db11.query.tasks.findFirst({
-      where: and7(eq10(tasks.tenantId, tenantId), eq10(tasks.id, taskId))
+    const task = await import_database11.db.query.tasks.findFirst({
+      where: (0, import_drizzle_orm10.and)((0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId), (0, import_drizzle_orm10.eq)(import_database11.tasks.id, taskId))
     });
     if (!task) {
       throw new ApiError(404, "Task not found", "TASK_NOT_FOUND");
     }
-    const [updated] = await db11.update(tasks).set({
+    const [updated] = await import_database11.db.update(import_database11.tasks).set({
       status,
       actualHours: actualHours ?? task.actualHours,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where(and7(eq10(tasks.tenantId, tenantId), eq10(tasks.id, taskId))).returning();
+    }).where((0, import_drizzle_orm10.and)((0, import_drizzle_orm10.eq)(import_database11.tasks.tenantId, tenantId), (0, import_drizzle_orm10.eq)(import_database11.tasks.id, taskId))).returning();
     return updated;
   }
 };
 
 // apps/api/src/http/routes/tasks.ts
-var taskRouter = Router12();
-var createTaskSchema = z12.object({
-  engagementId: z12.string().uuid(),
-  assigneeMembershipId: z12.string().uuid().optional(),
-  title: z12.string().min(2).max(255),
-  description: z12.string().optional(),
-  priority: z12.enum(["low", "medium", "high", "urgent"]).default("medium"),
-  dueDate: z12.string().transform((val) => new Date(val)).optional(),
-  estimatedHours: z12.number().int().min(0).optional()
+var taskRouter = (0, import_express13.Router)();
+var createTaskSchema = import_zod12.z.object({
+  engagementId: import_zod12.z.string().uuid(),
+  assigneeMembershipId: import_zod12.z.string().uuid().optional(),
+  title: import_zod12.z.string().min(2).max(255),
+  description: import_zod12.z.string().optional(),
+  priority: import_zod12.z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  dueDate: import_zod12.z.string().transform((val) => new Date(val)).optional(),
+  estimatedHours: import_zod12.z.number().int().min(0).optional()
 });
-var updateTaskStatusSchema = z12.object({
-  status: z12.enum(["todo", "in_progress", "review", "completed", "cancelled"]),
-  actualHours: z12.number().int().min(0).optional()
+var updateTaskStatusSchema = import_zod12.z.object({
+  status: import_zod12.z.enum(["todo", "in_progress", "review", "completed", "cancelled"]),
+  actualHours: import_zod12.z.number().int().min(0).optional()
 });
 taskRouter.get(
   "/",
@@ -4173,52 +4145,45 @@ taskRouter.patch(
 );
 
 // apps/api/src/http/routes/timesheets.ts
-import { Router as Router13 } from "express";
-import { z as z13 } from "zod";
+var import_express14 = require("express");
+var import_zod13 = require("zod");
 
 // apps/api/src/services/timesheet.service.ts
-import {
-  db as db12,
-  timesheetEntries,
-  engagements as engagements4,
-  tasks as tasks2,
-  memberships as memberships7,
-  userProfiles as userProfiles8
-} from "@avenquis/database";
-import { eq as eq11, and as and8, desc as desc7 } from "drizzle-orm";
+var import_database12 = require("@avenquis/database");
+var import_drizzle_orm11 = require("drizzle-orm");
 var TimesheetService = class {
   static async listTimesheets(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq11(timesheetEntries.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId)];
     if (options?.membershipId) {
-      conditions.push(eq11(timesheetEntries.membershipId, options.membershipId));
+      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.membershipId, options.membershipId));
     }
     if (options?.engagementId) {
-      conditions.push(eq11(timesheetEntries.engagementId, options.engagementId));
+      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.engagementId, options.engagementId));
     }
     if (options?.status) {
-      conditions.push(eq11(timesheetEntries.status, options.status));
+      conditions.push((0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.status, options.status));
     }
-    const rows = await db12.select({
-      id: timesheetEntries.id,
-      tenantId: timesheetEntries.tenantId,
-      membershipId: timesheetEntries.membershipId,
-      staffName: userProfiles8.fullName,
-      engagementId: timesheetEntries.engagementId,
-      engagementTitle: engagements4.title,
-      taskId: timesheetEntries.taskId,
-      workDate: timesheetEntries.workDate,
-      hours: timesheetEntries.hours,
-      activityType: timesheetEntries.activityType,
-      description: timesheetEntries.description,
-      status: timesheetEntries.status,
-      createdAt: timesheetEntries.createdAt
-    }).from(timesheetEntries).innerJoin(memberships7, eq11(timesheetEntries.membershipId, memberships7.id)).innerJoin(userProfiles8, eq11(memberships7.userId, userProfiles8.id)).leftJoin(engagements4, eq11(timesheetEntries.engagementId, engagements4.id)).where(and8(...conditions)).limit(limit).offset(offset).orderBy(desc7(timesheetEntries.workDate));
+    const rows = await import_database12.db.select({
+      id: import_database12.timesheetEntries.id,
+      tenantId: import_database12.timesheetEntries.tenantId,
+      membershipId: import_database12.timesheetEntries.membershipId,
+      staffName: import_database12.userProfiles.fullName,
+      engagementId: import_database12.timesheetEntries.engagementId,
+      engagementTitle: import_database12.engagements.title,
+      taskId: import_database12.timesheetEntries.taskId,
+      workDate: import_database12.timesheetEntries.workDate,
+      hours: import_database12.timesheetEntries.hours,
+      activityType: import_database12.timesheetEntries.activityType,
+      description: import_database12.timesheetEntries.description,
+      status: import_database12.timesheetEntries.status,
+      createdAt: import_database12.timesheetEntries.createdAt
+    }).from(import_database12.timesheetEntries).innerJoin(import_database12.memberships, (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.membershipId, import_database12.memberships.id)).innerJoin(import_database12.userProfiles, (0, import_drizzle_orm11.eq)(import_database12.memberships.userId, import_database12.userProfiles.id)).leftJoin(import_database12.engagements, (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.engagementId, import_database12.engagements.id)).where((0, import_drizzle_orm11.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm11.desc)(import_database12.timesheetEntries.workDate));
     return rows;
   }
   static async logTimesheet(tenantId, membershipId, data) {
-    const [entry] = await db12.insert(timesheetEntries).values({
+    const [entry] = await import_database12.db.insert(import_database12.timesheetEntries).values({
       tenantId,
       membershipId,
       engagementId: data.engagementId,
@@ -4230,20 +4195,20 @@ var TimesheetService = class {
       status: "submitted"
     }).returning();
     if (data.taskId) {
-      const task = await db12.query.tasks.findFirst({
-        where: eq11(tasks2.id, data.taskId)
+      const task = await import_database12.db.query.tasks.findFirst({
+        where: (0, import_drizzle_orm11.eq)(import_database12.tasks.id, data.taskId)
       });
       if (task) {
-        await db12.update(tasks2).set({ actualHours: task.actualHours + data.hours }).where(eq11(tasks2.id, data.taskId));
+        await import_database12.db.update(import_database12.tasks).set({ actualHours: task.actualHours + data.hours }).where((0, import_drizzle_orm11.eq)(import_database12.tasks.id, data.taskId));
       }
     }
     return entry;
   }
   static async approveTimesheet(tenantId, timesheetId, approverMembershipId, status) {
-    const entry = await db12.query.timesheetEntries.findFirst({
-      where: and8(
-        eq11(timesheetEntries.tenantId, tenantId),
-        eq11(timesheetEntries.id, timesheetId)
+    const entry = await import_database12.db.query.timesheetEntries.findFirst({
+      where: (0, import_drizzle_orm11.and)(
+        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     });
     if (!entry) {
@@ -4253,15 +4218,15 @@ var TimesheetService = class {
         "TIMESHEET_NOT_FOUND"
       );
     }
-    const [updated] = await db12.update(timesheetEntries).set({
+    const [updated] = await import_database12.db.update(import_database12.timesheetEntries).set({
       status,
       approvedByMembershipId: approverMembershipId,
       approvedAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and8(
-        eq11(timesheetEntries.tenantId, tenantId),
-        eq11(timesheetEntries.id, timesheetId)
+      (0, import_drizzle_orm11.and)(
+        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.tenantId, tenantId),
+        (0, import_drizzle_orm11.eq)(import_database12.timesheetEntries.id, timesheetId)
       )
     ).returning();
     return updated;
@@ -4269,13 +4234,13 @@ var TimesheetService = class {
 };
 
 // apps/api/src/http/routes/timesheets.ts
-var timesheetRouter = Router13();
-var logTimesheetSchema = z13.object({
-  engagementId: z13.string().uuid().optional(),
-  taskId: z13.string().uuid().optional(),
-  workDate: z13.string().transform((val) => new Date(val)),
-  hours: z13.number().int().min(1).max(24),
-  activityType: z13.enum([
+var timesheetRouter = (0, import_express14.Router)();
+var logTimesheetSchema = import_zod13.z.object({
+  engagementId: import_zod13.z.string().uuid().optional(),
+  taskId: import_zod13.z.string().uuid().optional(),
+  workDate: import_zod13.z.string().transform((val) => new Date(val)),
+  hours: import_zod13.z.number().int().min(1).max(24),
+  activityType: import_zod13.z.enum([
     "audit_fieldwork",
     "tax_preparation",
     "client_meeting",
@@ -4284,10 +4249,10 @@ var logTimesheetSchema = z13.object({
     "administrative",
     "training"
   ]),
-  description: z13.string().optional()
+  description: import_zod13.z.string().optional()
 });
-var approveTimesheetSchema = z13.object({
-  status: z13.enum(["approved", "rejected"])
+var approveTimesheetSchema = import_zod13.z.object({
+  status: import_zod13.z.enum(["approved", "rejected"])
 });
 timesheetRouter.get(
   "/",
@@ -4386,62 +4351,56 @@ timesheetRouter.patch(
 );
 
 // apps/api/src/http/routes/billing.ts
-import { Router as Router14 } from "express";
-import { z as z14 } from "zod";
+var import_express15 = require("express");
+var import_zod14 = require("zod");
 
 // apps/api/src/services/billing.service.ts
-import {
-  db as db13,
-  invoices,
-  payments,
-  clients as clients3,
-  engagements as engagements5
-} from "@avenquis/database";
-import { eq as eq12, and as and9, desc as desc8 } from "drizzle-orm";
+var import_database13 = require("@avenquis/database");
+var import_drizzle_orm12 = require("drizzle-orm");
 var BillingService = class {
   static async listInvoices(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq12(invoices.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId)];
     if (options?.clientId) {
-      conditions.push(eq12(invoices.clientId, options.clientId));
+      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.clientId, options.clientId));
     }
     if (options?.engagementId) {
-      conditions.push(eq12(invoices.engagementId, options.engagementId));
+      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.engagementId, options.engagementId));
     }
     if (options?.status) {
-      conditions.push(eq12(invoices.status, options.status));
+      conditions.push((0, import_drizzle_orm12.eq)(import_database13.invoices.status, options.status));
     }
-    const rows = await db13.select({
-      id: invoices.id,
-      tenantId: invoices.tenantId,
-      clientId: invoices.clientId,
-      clientName: clients3.name,
-      engagementId: invoices.engagementId,
-      invoiceNumber: invoices.invoiceNumber,
-      amount: invoices.amount,
-      vatAmount: invoices.vatAmount,
-      totalAmount: invoices.totalAmount,
-      currency: invoices.currency,
-      status: invoices.status,
-      issueDate: invoices.issueDate,
-      dueDate: invoices.dueDate,
-      paidAmount: invoices.paidAmount,
-      createdAt: invoices.createdAt
-    }).from(invoices).innerJoin(clients3, eq12(invoices.clientId, clients3.id)).leftJoin(engagements5, eq12(invoices.engagementId, engagements5.id)).where(and9(...conditions)).limit(limit).offset(offset).orderBy(desc8(invoices.createdAt));
+    const rows = await import_database13.db.select({
+      id: import_database13.invoices.id,
+      tenantId: import_database13.invoices.tenantId,
+      clientId: import_database13.invoices.clientId,
+      clientName: import_database13.clients.name,
+      engagementId: import_database13.invoices.engagementId,
+      invoiceNumber: import_database13.invoices.invoiceNumber,
+      amount: import_database13.invoices.amount,
+      vatAmount: import_database13.invoices.vatAmount,
+      totalAmount: import_database13.invoices.totalAmount,
+      currency: import_database13.invoices.currency,
+      status: import_database13.invoices.status,
+      issueDate: import_database13.invoices.issueDate,
+      dueDate: import_database13.invoices.dueDate,
+      paidAmount: import_database13.invoices.paidAmount,
+      createdAt: import_database13.invoices.createdAt
+    }).from(import_database13.invoices).innerJoin(import_database13.clients, (0, import_drizzle_orm12.eq)(import_database13.invoices.clientId, import_database13.clients.id)).leftJoin(import_database13.engagements, (0, import_drizzle_orm12.eq)(import_database13.invoices.engagementId, import_database13.engagements.id)).where((0, import_drizzle_orm12.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm12.desc)(import_database13.invoices.createdAt));
     return rows;
   }
   static async createInvoice(tenantId, data) {
-    const client = await db13.query.clients.findFirst({
-      where: and9(eq12(clients3.tenantId, tenantId), eq12(clients3.id, data.clientId))
+    const client = await import_database13.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.clients.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.clients.id, data.clientId))
     });
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
-    const existing = await db13.query.invoices.findFirst({
-      where: and9(
-        eq12(invoices.tenantId, tenantId),
-        eq12(invoices.invoiceNumber, data.invoiceNumber)
+    const existing = await import_database13.db.query.invoices.findFirst({
+      where: (0, import_drizzle_orm12.and)(
+        (0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId),
+        (0, import_drizzle_orm12.eq)(import_database13.invoices.invoiceNumber, data.invoiceNumber)
       )
     });
     if (existing) {
@@ -4453,7 +4412,7 @@ var BillingService = class {
     }
     const vatAmount = data.vatAmount ?? 0;
     const totalAmount = data.amount + vatAmount;
-    const [invoice] = await db13.insert(invoices).values({
+    const [invoice] = await import_database13.db.insert(import_database13.invoices).values({
       tenantId,
       clientId: data.clientId,
       engagementId: data.engagementId,
@@ -4471,13 +4430,13 @@ var BillingService = class {
     return invoice;
   }
   static async recordPayment(tenantId, invoiceId, data) {
-    const invoice = await db13.query.invoices.findFirst({
-      where: and9(eq12(invoices.tenantId, tenantId), eq12(invoices.id, invoiceId))
+    const invoice = await import_database13.db.query.invoices.findFirst({
+      where: (0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.invoices.id, invoiceId))
     });
     if (!invoice) {
       throw new ApiError(404, "Invoice not found", "INVOICE_NOT_FOUND");
     }
-    const [payment] = await db13.insert(payments).values({
+    const [payment] = await import_database13.db.insert(import_database13.payments).values({
       tenantId,
       invoiceId,
       receiptNumber: data.receiptNumber,
@@ -4494,35 +4453,35 @@ var BillingService = class {
     } else if (newPaidAmount > 0) {
       newStatus = "partially_paid";
     }
-    await db13.update(invoices).set({
+    await import_database13.db.update(import_database13.invoices).set({
       paidAmount: newPaidAmount,
       status: newStatus,
       updatedAt: /* @__PURE__ */ new Date()
-    }).where(and9(eq12(invoices.tenantId, tenantId), eq12(invoices.id, invoiceId)));
+    }).where((0, import_drizzle_orm12.and)((0, import_drizzle_orm12.eq)(import_database13.invoices.tenantId, tenantId), (0, import_drizzle_orm12.eq)(import_database13.invoices.id, invoiceId)));
     return payment;
   }
 };
 
 // apps/api/src/http/routes/billing.ts
-var billingRouter = Router14();
-var createInvoiceSchema = z14.object({
-  clientId: z14.string().uuid(),
-  engagementId: z14.string().uuid().optional(),
-  invoiceNumber: z14.string().min(2).max(50),
-  amount: z14.number().int().min(1),
-  vatAmount: z14.number().int().min(0).optional(),
-  currency: z14.string().max(10).default("BDT"),
-  issueDate: z14.string().transform((val) => new Date(val)),
-  dueDate: z14.string().transform((val) => new Date(val)),
-  remarks: z14.string().optional()
+var billingRouter = (0, import_express15.Router)();
+var createInvoiceSchema = import_zod14.z.object({
+  clientId: import_zod14.z.string().uuid(),
+  engagementId: import_zod14.z.string().uuid().optional(),
+  invoiceNumber: import_zod14.z.string().min(2).max(50),
+  amount: import_zod14.z.number().int().min(1),
+  vatAmount: import_zod14.z.number().int().min(0).optional(),
+  currency: import_zod14.z.string().max(10).default("BDT"),
+  issueDate: import_zod14.z.string().transform((val) => new Date(val)),
+  dueDate: import_zod14.z.string().transform((val) => new Date(val)),
+  remarks: import_zod14.z.string().optional()
 });
-var recordPaymentSchema = z14.object({
-  receiptNumber: z14.string().min(2).max(50),
-  amount: z14.number().int().min(1),
-  paymentDate: z14.string().transform((val) => new Date(val)),
-  paymentMethod: z14.enum(["bank_transfer", "cheque", "cash", "online"]),
-  referenceNumber: z14.string().max(100).optional(),
-  remarks: z14.string().optional()
+var recordPaymentSchema = import_zod14.z.object({
+  receiptNumber: import_zod14.z.string().min(2).max(50),
+  amount: import_zod14.z.number().int().min(1),
+  paymentDate: import_zod14.z.string().transform((val) => new Date(val)),
+  paymentMethod: import_zod14.z.enum(["bank_transfer", "cheque", "cash", "online"]),
+  referenceNumber: import_zod14.z.string().max(100).optional(),
+  remarks: import_zod14.z.string().optional()
 });
 billingRouter.get(
   "/invoices",
@@ -4617,35 +4576,27 @@ billingRouter.post(
 );
 
 // apps/api/src/http/routes/certificates.ts
-import { Router as Router15 } from "express";
-import { z as z15 } from "zod";
+var import_express16 = require("express");
+var import_zod15 = require("zod");
 
 // apps/api/src/services/certificate.service.ts
-import { createHash, randomBytes } from "crypto";
-import {
-  db as db14,
-  digitalCertificates,
-  signoffAuditLogs,
-  engagements as engagements6,
-  clients as clients4,
-  memberships as memberships8,
-  userProfiles as userProfiles9
-} from "@avenquis/database";
-import { eq as eq13, and as and10, desc as desc9 } from "drizzle-orm";
+var import_crypto2 = require("crypto");
+var import_database14 = require("@avenquis/database");
+var import_drizzle_orm13 = require("drizzle-orm");
 var CertificateService = class {
   static async signoffEngagement(tenantId, engagementId, signerMembershipId, data) {
-    const engagement = await db14.query.engagements.findFirst({
-      where: and10(
-        eq13(engagements6.tenantId, tenantId),
-        eq13(engagements6.id, engagementId)
+    const engagement = await import_database14.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
     const payload = `${tenantId}:${engagementId}:${signerMembershipId}:${data.signoffRole}:${data.action}:${Date.now()}`;
-    const signedHash = createHash("sha256").update(payload).digest("hex");
-    const [log] = await db14.insert(signoffAuditLogs).values({
+    const signedHash = (0, import_crypto2.createHash)("sha256").update(payload).digest("hex");
+    const [log] = await import_database14.db.insert(import_database14.signoffAuditLogs).values({
       tenantId,
       engagementId,
       signerMembershipId,
@@ -4655,32 +4606,32 @@ var CertificateService = class {
       signedHash
     }).returning();
     if (data.signoffRole === "lead_partner" && data.action === "approved") {
-      await db14.update(engagements6).set({
+      await import_database14.db.update(import_database14.engagements).set({
         status: "completed",
         updatedAt: /* @__PURE__ */ new Date()
       }).where(
-        and10(
-          eq13(engagements6.tenantId, tenantId),
-          eq13(engagements6.id, engagementId)
+        (0, import_drizzle_orm13.and)(
+          (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
+          (0, import_drizzle_orm13.eq)(import_database14.engagements.id, engagementId)
         )
       );
     }
     return log;
   }
   static async issueCertificate(tenantId, data) {
-    const engagement = await db14.query.engagements.findFirst({
-      where: and10(
-        eq13(engagements6.tenantId, tenantId),
-        eq13(engagements6.id, data.engagementId)
+    const engagement = await import_database14.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.engagements.id, data.engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const existing = await db14.query.digitalCertificates.findFirst({
-      where: and10(
-        eq13(digitalCertificates.tenantId, tenantId),
-        eq13(digitalCertificates.certificateNumber, data.certificateNumber)
+    const existing = await import_database14.db.query.digitalCertificates.findFirst({
+      where: (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.certificateNumber, data.certificateNumber)
       )
     });
     if (existing) {
@@ -4691,10 +4642,10 @@ var CertificateService = class {
       );
     }
     const signedAt = /* @__PURE__ */ new Date();
-    const verificationToken = `AVQ-CERT-${randomBytes(16).toString("hex")}`;
+    const verificationToken = `AVQ-CERT-${(0, import_crypto2.randomBytes)(16).toString("hex")}`;
     const rawSealPayload = `${tenantId}:${engagement.id}:${data.certificateNumber}:${data.auditOpinion}:${signedAt.toISOString()}:${data.signedByMembershipId}`;
-    const digitalSealHash = createHash("sha256").update(rawSealPayload).digest("hex");
-    const [certificate] = await db14.insert(digitalCertificates).values({
+    const digitalSealHash = (0, import_crypto2.createHash)("sha256").update(rawSealPayload).digest("hex");
+    const [certificate] = await import_database14.db.insert(import_database14.digitalCertificates).values({
       tenantId,
       engagementId: data.engagementId,
       certificateNumber: data.certificateNumber,
@@ -4711,32 +4662,32 @@ var CertificateService = class {
     return certificate;
   }
   static async getCertificateById(tenantId, certificateId) {
-    const cert = await db14.query.digitalCertificates.findFirst({
-      where: and10(
-        eq13(digitalCertificates.tenantId, tenantId),
-        eq13(digitalCertificates.id, certificateId)
+    const cert = await import_database14.db.query.digitalCertificates.findFirst({
+      where: (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     });
     if (!cert) {
       throw new ApiError(404, "Certificate not found", "CERTIFICATE_NOT_FOUND");
     }
-    const engagement = await db14.query.engagements.findFirst({
-      where: eq13(engagements6.id, cert.engagementId)
+    const engagement = await import_database14.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm13.eq)(import_database14.engagements.id, cert.engagementId)
     });
-    const client = engagement ? await db14.query.clients.findFirst({
-      where: eq13(clients4.id, engagement.clientId)
+    const client = engagement ? await import_database14.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm13.eq)(import_database14.clients.id, engagement.clientId)
     }) : null;
-    const [signer] = await db14.select({
-      membershipId: memberships8.id,
-      fullName: userProfiles9.fullName,
-      email: userProfiles9.email
-    }).from(memberships8).innerJoin(userProfiles9, eq13(memberships8.userId, userProfiles9.id)).where(eq13(memberships8.id, cert.signedByMembershipId));
-    const auditLogs = await db14.select().from(signoffAuditLogs).where(
-      and10(
-        eq13(signoffAuditLogs.tenantId, tenantId),
-        eq13(signoffAuditLogs.engagementId, cert.engagementId)
+    const [signer] = await import_database14.db.select({
+      membershipId: import_database14.memberships.id,
+      fullName: import_database14.userProfiles.fullName,
+      email: import_database14.userProfiles.email
+    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_drizzle_orm13.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_drizzle_orm13.eq)(import_database14.memberships.id, cert.signedByMembershipId));
+    const auditLogs = await import_database14.db.select().from(import_database14.signoffAuditLogs).where(
+      (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.signoffAuditLogs.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.signoffAuditLogs.engagementId, cert.engagementId)
       )
-    ).orderBy(desc9(signoffAuditLogs.createdAt));
+    ).orderBy((0, import_drizzle_orm13.desc)(import_database14.signoffAuditLogs.createdAt));
     return {
       ...cert,
       engagementTitle: engagement?.title,
@@ -4746,8 +4697,8 @@ var CertificateService = class {
     };
   }
   static async verifyCertificatePublic(verificationToken) {
-    const cert = await db14.query.digitalCertificates.findFirst({
-      where: eq13(digitalCertificates.verificationToken, verificationToken)
+    const cert = await import_database14.db.query.digitalCertificates.findFirst({
+      where: (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.verificationToken, verificationToken)
     });
     if (!cert) {
       throw new ApiError(
@@ -4756,15 +4707,15 @@ var CertificateService = class {
         "INVALID_VERIFICATION_TOKEN"
       );
     }
-    const engagement = await db14.query.engagements.findFirst({
-      where: eq13(engagements6.id, cert.engagementId)
+    const engagement = await import_database14.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm13.eq)(import_database14.engagements.id, cert.engagementId)
     });
-    const client = engagement ? await db14.query.clients.findFirst({
-      where: eq13(clients4.id, engagement.clientId)
+    const client = engagement ? await import_database14.db.query.clients.findFirst({
+      where: (0, import_drizzle_orm13.eq)(import_database14.clients.id, engagement.clientId)
     }) : null;
-    const [signer] = await db14.select({
-      fullName: userProfiles9.fullName
-    }).from(memberships8).innerJoin(userProfiles9, eq13(memberships8.userId, userProfiles9.id)).where(eq13(memberships8.id, cert.signedByMembershipId));
+    const [signer] = await import_database14.db.select({
+      fullName: import_database14.userProfiles.fullName
+    }).from(import_database14.memberships).innerJoin(import_database14.userProfiles, (0, import_drizzle_orm13.eq)(import_database14.memberships.userId, import_database14.userProfiles.id)).where((0, import_drizzle_orm13.eq)(import_database14.memberships.id, cert.signedByMembershipId));
     return {
       verified: cert.status === "issued",
       status: cert.status,
@@ -4782,24 +4733,24 @@ var CertificateService = class {
     };
   }
   static async revokeCertificate(tenantId, certificateId, reason) {
-    const cert = await db14.query.digitalCertificates.findFirst({
-      where: and10(
-        eq13(digitalCertificates.tenantId, tenantId),
-        eq13(digitalCertificates.id, certificateId)
+    const cert = await import_database14.db.query.digitalCertificates.findFirst({
+      where: (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     });
     if (!cert) {
       throw new ApiError(404, "Certificate not found", "CERTIFICATE_NOT_FOUND");
     }
-    const [updated] = await db14.update(digitalCertificates).set({
+    const [updated] = await import_database14.db.update(import_database14.digitalCertificates).set({
       status: "revoked",
       revokedAt: /* @__PURE__ */ new Date(),
       revocationReason: reason,
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and10(
-        eq13(digitalCertificates.tenantId, tenantId),
-        eq13(digitalCertificates.id, certificateId)
+      (0, import_drizzle_orm13.and)(
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.tenantId, tenantId),
+        (0, import_drizzle_orm13.eq)(import_database14.digitalCertificates.id, certificateId)
       )
     ).returning();
     return updated;
@@ -4807,34 +4758,34 @@ var CertificateService = class {
 };
 
 // apps/api/src/http/routes/certificates.ts
-var certificateRouter = Router15();
-var signoffEngagementSchema = z15.object({
-  engagementId: z15.string().uuid(),
-  signoffRole: z15.enum([
+var certificateRouter = (0, import_express16.Router)();
+var signoffEngagementSchema = import_zod15.z.object({
+  engagementId: import_zod15.z.string().uuid(),
+  signoffRole: import_zod15.z.enum([
     "audit_senior",
     "engagement_manager",
     "eqcr_partner",
     "lead_partner"
   ]),
-  action: z15.enum(["approved", "rejected", "signed_and_sealed"]),
-  comments: z15.string().optional()
+  action: import_zod15.z.enum(["approved", "rejected", "signed_and_sealed"]),
+  comments: import_zod15.z.string().optional()
 });
-var issueCertificateSchema = z15.object({
-  engagementId: z15.string().uuid(),
-  certificateNumber: z15.string().min(2).max(50),
-  certificateType: z15.enum([
+var issueCertificateSchema = import_zod15.z.object({
+  engagementId: import_zod15.z.string().uuid(),
+  certificateNumber: import_zod15.z.string().min(2).max(50),
+  certificateType: import_zod15.z.enum([
     "independent_auditors_report",
     "tax_clearance_certificate",
     "special_audit_certificate",
     "net_worth_certificate",
     "compliance_certificate"
   ]),
-  title: z15.string().min(2).max(255),
-  auditOpinion: z15.enum(["unmodified", "qualified", "adverse", "disclaimer"]),
-  summaryOpinionText: z15.string().min(10)
+  title: import_zod15.z.string().min(2).max(255),
+  auditOpinion: import_zod15.z.enum(["unmodified", "qualified", "adverse", "disclaimer"]),
+  summaryOpinionText: import_zod15.z.string().min(10)
 });
-var revokeCertificateSchema = z15.object({
-  reason: z15.string().min(5)
+var revokeCertificateSchema = import_zod15.z.object({
+  reason: import_zod15.z.string().min(5)
 });
 certificateRouter.get("/verify/:token", async (req, res, next) => {
   try {
@@ -4968,44 +4919,38 @@ certificateRouter.patch(
 );
 
 // apps/api/src/http/routes/notifications.ts
-import { Router as Router16 } from "express";
-import { z as z16 } from "zod";
+var import_express17 = require("express");
+var import_zod16 = require("zod");
 
 // apps/api/src/services/notification.service.ts
-import {
-  db as db15,
-  notifications,
-  activityFeedEvents,
-  memberships as memberships9,
-  userProfiles as userProfiles10
-} from "@avenquis/database";
-import { eq as eq14, and as and11, desc as desc10, count } from "drizzle-orm";
+var import_database15 = require("@avenquis/database");
+var import_drizzle_orm14 = require("drizzle-orm");
 var NotificationService = class {
   static async listNotifications(tenantId, recipientMembershipId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
     const conditions = [
-      eq14(notifications.tenantId, tenantId),
-      eq14(notifications.recipientMembershipId, recipientMembershipId)
+      (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
+      (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
     ];
     if (options?.isRead !== void 0) {
-      conditions.push(eq14(notifications.isRead, options.isRead));
+      conditions.push((0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, options.isRead));
     }
-    const rows = await db15.select().from(notifications).where(and11(...conditions)).limit(limit).offset(offset).orderBy(desc10(notifications.createdAt));
+    const rows = await import_database15.db.select().from(import_database15.notifications).where((0, import_drizzle_orm14.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm14.desc)(import_database15.notifications.createdAt));
     return rows;
   }
   static async getUnreadCount(tenantId, recipientMembershipId) {
-    const [row] = await db15.select({ count: count() }).from(notifications).where(
-      and11(
-        eq14(notifications.tenantId, tenantId),
-        eq14(notifications.recipientMembershipId, recipientMembershipId),
-        eq14(notifications.isRead, false)
+    const [row] = await import_database15.db.select({ count: (0, import_drizzle_orm14.count)() }).from(import_database15.notifications).where(
+      (0, import_drizzle_orm14.and)(
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, false)
       )
     );
     return { unreadCount: Number(row?.count ?? 0) };
   }
   static async createNotification(tenantId, data) {
-    const [notif] = await db15.insert(notifications).values({
+    const [notif] = await import_database15.db.insert(import_database15.notifications).values({
       tenantId,
       recipientMembershipId: data.recipientMembershipId,
       title: data.title,
@@ -5017,11 +4962,11 @@ var NotificationService = class {
     return notif;
   }
   static async markAsRead(tenantId, notificationId, recipientMembershipId) {
-    const notif = await db15.query.notifications.findFirst({
-      where: and11(
-        eq14(notifications.tenantId, tenantId),
-        eq14(notifications.id, notificationId),
-        eq14(notifications.recipientMembershipId, recipientMembershipId)
+    const notif = await import_database15.db.query.notifications.findFirst({
+      where: (0, import_drizzle_orm14.and)(
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.id, notificationId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId)
       )
     });
     if (!notif) {
@@ -5031,28 +4976,28 @@ var NotificationService = class {
         "NOTIFICATION_NOT_FOUND"
       );
     }
-    const [updated] = await db15.update(notifications).set({
+    const [updated] = await import_database15.db.update(import_database15.notifications).set({
       isRead: true,
       readAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and11(
-        eq14(notifications.tenantId, tenantId),
-        eq14(notifications.id, notificationId)
+      (0, import_drizzle_orm14.and)(
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.id, notificationId)
       )
     ).returning();
     return updated;
   }
   static async markAllAsRead(tenantId, recipientMembershipId) {
-    await db15.update(notifications).set({
+    await import_database15.db.update(import_database15.notifications).set({
       isRead: true,
       readAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).where(
-      and11(
-        eq14(notifications.tenantId, tenantId),
-        eq14(notifications.recipientMembershipId, recipientMembershipId),
-        eq14(notifications.isRead, false)
+      (0, import_drizzle_orm14.and)(
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.tenantId, tenantId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.recipientMembershipId, recipientMembershipId),
+        (0, import_drizzle_orm14.eq)(import_database15.notifications.isRead, false)
       )
     );
     return { success: true };
@@ -5060,32 +5005,32 @@ var NotificationService = class {
   static async listActivityFeed(tenantId, options) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    const conditions = [eq14(activityFeedEvents.tenantId, tenantId)];
+    const conditions = [(0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.tenantId, tenantId)];
     if (options?.entityType) {
-      conditions.push(eq14(activityFeedEvents.entityType, options.entityType));
+      conditions.push((0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.entityType, options.entityType));
     }
     if (options?.entityId) {
-      conditions.push(eq14(activityFeedEvents.entityId, options.entityId));
+      conditions.push((0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.entityId, options.entityId));
     }
-    const rows = await db15.select({
-      id: activityFeedEvents.id,
-      tenantId: activityFeedEvents.tenantId,
-      actorMembershipId: activityFeedEvents.actorMembershipId,
-      actorFullName: userProfiles10.fullName,
-      entityType: activityFeedEvents.entityType,
-      entityId: activityFeedEvents.entityId,
-      action: activityFeedEvents.action,
-      description: activityFeedEvents.description,
-      metadata: activityFeedEvents.metadata,
-      createdAt: activityFeedEvents.createdAt
-    }).from(activityFeedEvents).innerJoin(
-      memberships9,
-      eq14(activityFeedEvents.actorMembershipId, memberships9.id)
-    ).innerJoin(userProfiles10, eq14(memberships9.userId, userProfiles10.id)).where(and11(...conditions)).limit(limit).offset(offset).orderBy(desc10(activityFeedEvents.createdAt));
+    const rows = await import_database15.db.select({
+      id: import_database15.activityFeedEvents.id,
+      tenantId: import_database15.activityFeedEvents.tenantId,
+      actorMembershipId: import_database15.activityFeedEvents.actorMembershipId,
+      actorFullName: import_database15.userProfiles.fullName,
+      entityType: import_database15.activityFeedEvents.entityType,
+      entityId: import_database15.activityFeedEvents.entityId,
+      action: import_database15.activityFeedEvents.action,
+      description: import_database15.activityFeedEvents.description,
+      metadata: import_database15.activityFeedEvents.metadata,
+      createdAt: import_database15.activityFeedEvents.createdAt
+    }).from(import_database15.activityFeedEvents).innerJoin(
+      import_database15.memberships,
+      (0, import_drizzle_orm14.eq)(import_database15.activityFeedEvents.actorMembershipId, import_database15.memberships.id)
+    ).innerJoin(import_database15.userProfiles, (0, import_drizzle_orm14.eq)(import_database15.memberships.userId, import_database15.userProfiles.id)).where((0, import_drizzle_orm14.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm14.desc)(import_database15.activityFeedEvents.createdAt));
     return rows;
   }
   static async logActivityEvent(tenantId, actorMembershipId, data) {
-    const [event] = await db15.insert(activityFeedEvents).values({
+    const [event] = await import_database15.db.insert(import_database15.activityFeedEvents).values({
       tenantId,
       actorMembershipId,
       entityType: data.entityType,
@@ -5099,12 +5044,12 @@ var NotificationService = class {
 };
 
 // apps/api/src/http/routes/notifications.ts
-var notificationRouter = Router16();
-var createNotificationSchema = z16.object({
-  recipientMembershipId: z16.string().uuid(),
-  title: z16.string().min(2).max(255),
-  message: z16.string().min(2),
-  type: z16.enum([
+var notificationRouter = (0, import_express17.Router)();
+var createNotificationSchema = import_zod16.z.object({
+  recipientMembershipId: import_zod16.z.string().uuid(),
+  title: import_zod16.z.string().min(2).max(255),
+  message: import_zod16.z.string().min(2),
+  type: import_zod16.z.enum([
     "task_assignment",
     "review_note",
     "leave_approval",
@@ -5113,10 +5058,10 @@ var createNotificationSchema = z16.object({
     "independence_flag",
     "system_alert"
   ]),
-  link: z16.string().optional()
+  link: import_zod16.z.string().optional()
 });
-var logActivitySchema = z16.object({
-  entityType: z16.enum([
+var logActivitySchema = import_zod16.z.object({
+  entityType: import_zod16.z.enum([
     "client",
     "engagement",
     "working_paper",
@@ -5124,8 +5069,8 @@ var logActivitySchema = z16.object({
     "invoice",
     "certificate"
   ]),
-  entityId: z16.string().uuid(),
-  action: z16.enum([
+  entityId: import_zod16.z.string().uuid(),
+  action: import_zod16.z.enum([
     "created",
     "updated",
     "submitted",
@@ -5134,8 +5079,8 @@ var logActivitySchema = z16.object({
     "signed_and_sealed",
     "revoked"
   ]),
-  description: z16.string().min(2),
-  metadata: z16.record(z16.string(), z16.unknown()).optional()
+  description: import_zod16.z.string().min(2),
+  metadata: import_zod16.z.record(import_zod16.z.string(), import_zod16.z.unknown()).optional()
 });
 notificationRouter.get(
   "/",
@@ -5326,30 +5271,19 @@ notificationRouter.post(
 );
 
 // apps/api/src/http/routes/analytics.ts
-import { Router as Router17 } from "express";
+var import_express18 = require("express");
 
 // apps/api/src/services/analytics.service.ts
-import {
-  db as db16,
-  clients as clients5,
-  engagements as engagements7,
-  studentProfiles as studentProfiles2,
-  tasks as tasks3,
-  timesheetEntries as timesheetEntries2,
-  invoices as invoices2,
-  payments as payments2,
-  workingPapers as workingPapers2,
-  digitalCertificates as digitalCertificates2
-} from "@avenquis/database";
-import { eq as eq15, and as and12, sum, count as count2 } from "drizzle-orm";
+var import_database16 = require("@avenquis/database");
+var import_drizzle_orm15 = require("drizzle-orm");
 var AnalyticsService = class {
   static async getExecutiveDashboardMetrics(tenantId) {
-    const [clientCountRow] = await db16.select({ count: count2() }).from(clients5).where(eq15(clients5.tenantId, tenantId));
+    const [clientCountRow] = await import_database16.db.select({ count: (0, import_drizzle_orm15.count)() }).from(import_database16.clients).where((0, import_drizzle_orm15.eq)(import_database16.clients.tenantId, tenantId));
     const totalClients = Number(clientCountRow?.count ?? 0);
-    const allEngagements = await db16.select({
-      id: engagements7.id,
-      status: engagements7.status
-    }).from(engagements7).where(eq15(engagements7.tenantId, tenantId));
+    const allEngagements = await import_database16.db.select({
+      id: import_database16.engagements.id,
+      status: import_database16.engagements.status
+    }).from(import_database16.engagements).where((0, import_drizzle_orm15.eq)(import_database16.engagements.tenantId, tenantId));
     const totalEngagements = allEngagements.length;
     const engagementsByStatus = {
       planning: 0,
@@ -5363,14 +5297,14 @@ var AnalyticsService = class {
         engagementsByStatus[eng.status]++;
       }
     }
-    const [studentCountRow] = await db16.select({ count: count2() }).from(studentProfiles2).where(eq15(studentProfiles2.tenantId, tenantId));
+    const [studentCountRow] = await import_database16.db.select({ count: (0, import_drizzle_orm15.count)() }).from(import_database16.studentProfiles).where((0, import_drizzle_orm15.eq)(import_database16.studentProfiles.tenantId, tenantId));
     const caStudentsCount = Number(studentCountRow?.count ?? 0);
-    const [billedSumRow] = await db16.select({ totalBilled: sum(invoices2.totalAmount) }).from(invoices2).where(eq15(invoices2.tenantId, tenantId));
+    const [billedSumRow] = await import_database16.db.select({ totalBilled: (0, import_drizzle_orm15.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where((0, import_drizzle_orm15.eq)(import_database16.invoices.tenantId, tenantId));
     const totalRevenueBilled = Number(billedSumRow?.totalBilled ?? 0);
-    const [collectedSumRow] = await db16.select({ totalCollected: sum(payments2.amount) }).from(payments2).where(eq15(payments2.tenantId, tenantId));
+    const [collectedSumRow] = await import_database16.db.select({ totalCollected: (0, import_drizzle_orm15.sum)(import_database16.payments.amount) }).from(import_database16.payments).where((0, import_drizzle_orm15.eq)(import_database16.payments.tenantId, tenantId));
     const totalRevenueCollected = Number(collectedSumRow?.totalCollected ?? 0);
     const outstandingBilling = totalRevenueBilled - totalRevenueCollected;
-    const allWps = await db16.select({ status: workingPapers2.status }).from(workingPapers2).where(eq15(workingPapers2.tenantId, tenantId));
+    const allWps = await import_database16.db.select({ status: import_database16.workingPapers.status }).from(import_database16.workingPapers).where((0, import_drizzle_orm15.eq)(import_database16.workingPapers.tenantId, tenantId));
     const workingPapersByStatus = {
       draft: 0,
       prepared: 0,
@@ -5382,10 +5316,10 @@ var AnalyticsService = class {
         workingPapersByStatus[wp.status]++;
       }
     }
-    const allCerts = await db16.select({
-      status: digitalCertificates2.status,
-      auditOpinion: digitalCertificates2.auditOpinion
-    }).from(digitalCertificates2).where(eq15(digitalCertificates2.tenantId, tenantId));
+    const allCerts = await import_database16.db.select({
+      status: import_database16.digitalCertificates.status,
+      auditOpinion: import_database16.digitalCertificates.auditOpinion
+    }).from(import_database16.digitalCertificates).where((0, import_drizzle_orm15.eq)(import_database16.digitalCertificates.tenantId, tenantId));
     const certificatesIssuedCount = allCerts.filter(
       (c) => c.status === "issued"
     ).length;
@@ -5400,7 +5334,7 @@ var AnalyticsService = class {
         certificatesByOpinion[cert.auditOpinion]++;
       }
     }
-    const [timesheetHoursRow] = await db16.select({ totalHours: sum(timesheetEntries2.hours) }).from(timesheetEntries2).where(eq15(timesheetEntries2.tenantId, tenantId));
+    const [timesheetHoursRow] = await import_database16.db.select({ totalHours: (0, import_drizzle_orm15.sum)(import_database16.timesheetEntries.hours) }).from(import_database16.timesheetEntries).where((0, import_drizzle_orm15.eq)(import_database16.timesheetEntries.tenantId, tenantId));
     const totalLoggedHours = Number(timesheetHoursRow?.totalHours ?? 0);
     return {
       kpiSummary: {
@@ -5420,27 +5354,27 @@ var AnalyticsService = class {
     };
   }
   static async getEngagementHealthReport(tenantId, engagementId) {
-    const engagement = await db16.query.engagements.findFirst({
-      where: and12(
-        eq15(engagements7.tenantId, tenantId),
-        eq15(engagements7.id, engagementId)
+    const engagement = await import_database16.db.query.engagements.findFirst({
+      where: (0, import_drizzle_orm15.and)(
+        (0, import_drizzle_orm15.eq)(import_database16.engagements.tenantId, tenantId),
+        (0, import_drizzle_orm15.eq)(import_database16.engagements.id, engagementId)
       )
     });
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
-    const engagementTasks = await db16.select().from(tasks3).where(
-      and12(eq15(tasks3.tenantId, tenantId), eq15(tasks3.engagementId, engagementId))
+    const engagementTasks = await import_database16.db.select().from(import_database16.tasks).where(
+      (0, import_drizzle_orm15.and)((0, import_drizzle_orm15.eq)(import_database16.tasks.tenantId, tenantId), (0, import_drizzle_orm15.eq)(import_database16.tasks.engagementId, engagementId))
     );
     const totalTasks = engagementTasks.length;
     const completedTasks = engagementTasks.filter(
       (t) => t.status === "completed"
     ).length;
     const taskCompletionPercentage = totalTasks > 0 ? Math.round(completedTasks / totalTasks * 100) : 0;
-    const engagementWps = await db16.select().from(workingPapers2).where(
-      and12(
-        eq15(workingPapers2.tenantId, tenantId),
-        eq15(workingPapers2.engagementId, engagementId)
+    const engagementWps = await import_database16.db.select().from(import_database16.workingPapers).where(
+      (0, import_drizzle_orm15.and)(
+        (0, import_drizzle_orm15.eq)(import_database16.workingPapers.tenantId, tenantId),
+        (0, import_drizzle_orm15.eq)(import_database16.workingPapers.engagementId, engagementId)
       )
     );
     const totalWps = engagementWps.length;
@@ -5448,10 +5382,10 @@ var AnalyticsService = class {
       (w) => w.status === "approved"
     ).length;
     const wpApprovalPercentage = totalWps > 0 ? Math.round(approvedWps / totalWps * 100) : 0;
-    const [invRow] = await db16.select({ totalBilled: sum(invoices2.totalAmount) }).from(invoices2).where(
-      and12(
-        eq15(invoices2.tenantId, tenantId),
-        eq15(invoices2.engagementId, engagementId)
+    const [invRow] = await import_database16.db.select({ totalBilled: (0, import_drizzle_orm15.sum)(import_database16.invoices.totalAmount) }).from(import_database16.invoices).where(
+      (0, import_drizzle_orm15.and)(
+        (0, import_drizzle_orm15.eq)(import_database16.invoices.tenantId, tenantId),
+        (0, import_drizzle_orm15.eq)(import_database16.invoices.engagementId, engagementId)
       )
     );
     const totalBilled = Number(invRow?.totalBilled ?? 0);
@@ -5479,7 +5413,7 @@ var AnalyticsService = class {
 };
 
 // apps/api/src/http/routes/analytics.ts
-var analyticsRouter = Router17();
+var analyticsRouter = (0, import_express18.Router)();
 analyticsRouter.get(
   "/dashboard",
   authenticate,
@@ -5521,9 +5455,192 @@ analyticsRouter.get(
   }
 );
 
+// apps/api/src/http/routes/admin.ts
+var import_express19 = require("express");
+var import_zod17 = require("zod");
+
+// apps/api/src/services/admin.service.ts
+var import_database17 = require("@avenquis/database");
+var import_drizzle_orm16 = require("drizzle-orm");
+var AdminService = class {
+  static async listSecurityEvents(tenantId, options) {
+    const limit = options?.limit ?? 50;
+    const offset = options?.offset ?? 0;
+    const conditions = [(0, import_drizzle_orm16.eq)(import_database17.securityEvents.tenantId, tenantId)];
+    if (options?.severity) {
+      conditions.push((0, import_drizzle_orm16.eq)(import_database17.securityEvents.severity, options.severity));
+    }
+    const events = await import_database17.db.select({
+      id: import_database17.securityEvents.id,
+      tenantId: import_database17.securityEvents.tenantId,
+      membershipId: import_database17.securityEvents.membershipId,
+      userFullName: import_database17.userProfiles.fullName,
+      userEmail: import_database17.userProfiles.email,
+      eventType: import_database17.securityEvents.eventType,
+      severity: import_database17.securityEvents.severity,
+      details: import_database17.securityEvents.details,
+      ipAddress: import_database17.securityEvents.ipAddress,
+      createdAt: import_database17.securityEvents.createdAt
+    }).from(import_database17.securityEvents).leftJoin(import_database17.memberships, (0, import_drizzle_orm16.eq)(import_database17.securityEvents.membershipId, import_database17.memberships.id)).leftJoin(import_database17.userProfiles, (0, import_drizzle_orm16.eq)(import_database17.memberships.userId, import_database17.userProfiles.id)).where((0, import_drizzle_orm16.and)(...conditions)).limit(limit).offset(offset).orderBy((0, import_drizzle_orm16.desc)(import_database17.securityEvents.createdAt));
+    return events;
+  }
+  static async getSystemHealth() {
+    const dbCheck = await import_database17.db.query.tenants.findFirst();
+    const activeTenantsCount = (await import_database17.db.select().from(import_database17.tenants)).length;
+    return {
+      status: "healthy",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+      version: "1.0.0",
+      services: {
+        database: dbCheck ? "connected" : "idle",
+        authentication: "healthy",
+        multiTenantRls: "active"
+      },
+      metrics: {
+        activeTenantsCount,
+        uptimeSeconds: Math.floor(process.uptime())
+      }
+    };
+  }
+  static async getTenantDeploymentProfile(tenantId) {
+    const tenant = await import_database17.db.query.tenants.findFirst({
+      where: (0, import_drizzle_orm16.eq)(import_database17.tenants.id, tenantId)
+    });
+    const flags = await import_database17.db.query.featureFlags.findMany({
+      where: (0, import_drizzle_orm16.eq)(import_database17.featureFlags.tenantId, tenantId)
+    });
+    return {
+      tenantId,
+      tenantName: tenant?.name,
+      tenantSlug: tenant?.slug,
+      status: tenant?.status,
+      deploymentTier: "enterprise",
+      featureFlags: flags.map((f) => ({
+        code: f.code,
+        enabled: f.enabled
+      }))
+    };
+  }
+  static async updateFeatureFlag(tenantId, code, enabled) {
+    const existing = await import_database17.db.query.featureFlags.findFirst({
+      where: (0, import_drizzle_orm16.and)(
+        (0, import_drizzle_orm16.eq)(import_database17.featureFlags.tenantId, tenantId),
+        (0, import_drizzle_orm16.eq)(import_database17.featureFlags.code, code)
+      )
+    });
+    if (existing) {
+      const [updated] = await import_database17.db.update(import_database17.featureFlags).set({ enabled }).where((0, import_drizzle_orm16.eq)(import_database17.featureFlags.id, existing.id)).returning();
+      return updated;
+    }
+    const [inserted] = await import_database17.db.insert(import_database17.featureFlags).values({
+      tenantId,
+      code,
+      enabled
+    }).returning();
+    return inserted;
+  }
+};
+
+// apps/api/src/http/routes/admin.ts
+var adminRouter = (0, import_express19.Router)();
+var updateFeatureFlagSchema = import_zod17.z.object({
+  code: import_zod17.z.string().min(2).max(100),
+  enabled: import_zod17.z.boolean()
+});
+adminRouter.get(
+  "/system-health",
+  authenticate,
+  requirePermission("admin:read"),
+  async (_req, res, next) => {
+    try {
+      const health = await AdminService.getSystemHealth();
+      res.json({
+        success: true,
+        data: health
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+adminRouter.get(
+  "/security-events",
+  authenticate,
+  requireTenantContext,
+  requirePermission("admin:read"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId;
+      const severity = req.query.severity;
+      const limit = req.query.limit ? parseInt(req.query.limit, 10) : void 0;
+      const offset = req.query.offset ? parseInt(req.query.offset, 10) : void 0;
+      const events = await AdminService.listSecurityEvents(tenantId, {
+        severity,
+        limit,
+        offset
+      });
+      res.json({
+        success: true,
+        data: events
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+adminRouter.get(
+  "/deployment-profile",
+  authenticate,
+  requireTenantContext,
+  requirePermission("admin:read"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId;
+      const profile = await AdminService.getTenantDeploymentProfile(tenantId);
+      res.json({
+        success: true,
+        data: profile
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+adminRouter.patch(
+  "/feature-flags",
+  authenticate,
+  requireTenantContext,
+  requirePermission("admin:write"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId;
+      const parseResult = updateFeatureFlagSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        throw new ApiError(
+          400,
+          "Invalid feature flag payload",
+          "INVALID_PAYLOAD",
+          parseResult.error.flatten()
+        );
+      }
+      const flag = await AdminService.updateFeatureFlag(
+        tenantId,
+        parseResult.data.code,
+        parseResult.data.enabled
+      );
+      res.json({
+        success: true,
+        data: flag
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // apps/api/src/http/app.ts
 function createApp(testRouter) {
-  const app = express2();
+  const app = (0, import_express20.default)();
   app.use(requestIdMiddleware);
   app.use(loggingMiddleware);
   app.use(securityMiddlewares);
@@ -5547,6 +5664,7 @@ function createApp(testRouter) {
   app.use("/api/v1/certificates", certificateRouter);
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/analytics", analyticsRouter);
+  app.use("/api/v1/admin", adminRouter);
   if (testRouter) {
     app.use("/test", testRouter);
   }
