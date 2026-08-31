@@ -214,8 +214,8 @@ Focus:
 - [x] Phase 34: Multi-country Architecture & Regional Data (Region/country metadata)
 - [x] Phase 35: Country Regulatory Packs (Dynamic regulatory rules engine)
 - [x] Phase 36: Enterprise Security & Identity (SSO, SAML, advanced audit)
-- [ ] Phase 37: Advanced Integrations (Global ERP APIs)
-- [ ] Phase 38: International SaaS Readiness (Dedicated tenants, final QA)
+- [x] Phase 37: Advanced Integrations (Global ERP APIs)
+- [x] Phase 38: International SaaS Readiness (Dedicated tenants, final QA)
 
 Public launch happens only after V5 readiness and final security/QA approval.
 

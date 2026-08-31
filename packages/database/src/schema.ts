@@ -2758,3 +2758,93 @@ export const enterpriseAuditLogs = pgTable(
     actionAuditIdx: index("enterprise_audit_action_idx").on(table.action),
   })
 );
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 37 - ADVANCED INTEGRATIONS (ERP APIs)
+// ============================================================================
+
+export const globalIntegrations = pgTable(
+  "global_integrations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 100 }).notNull(), // e.g. "Xero", "SAP S/4HANA"
+    slug: varchar("slug", { length: 100 }).notNull().unique(), // 'xero', 'sap'
+    category: varchar("category", { length: 50 }).notNull(), // 'ERP', 'PAYROLL', 'CRM'
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  }
+);
+
+export const tenantIntegrations = pgTable(
+  "tenant_integrations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    integrationId: uuid("integration_id")
+      .notNull()
+      .references(() => globalIntegrations.id, { onDelete: "cascade" }),
+    status: varchar("status", { length: 50 }).notNull().default("DISCONNECTED"), // 'CONNECTED', 'DISCONNECTED', 'ERROR'
+    settings: jsonb("settings").default({}), // Configurations, Field Mappings
+    credentials: text("credentials"), // Encrypted OAuth tokens or API keys
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tenantIntIdx: index("tenant_integration_idx").on(table.tenantId),
+  })
+);
+
+export const integrationSyncLogs = pgTable(
+  "integration_sync_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantIntegrationId: uuid("tenant_integration_id")
+      .notNull()
+      .references(() => tenantIntegrations.id, { onDelete: "cascade" }),
+    syncType: varchar("sync_type", { length: 100 }).notNull(), // e.g. 'TRIAL_BALANCE_IMPORT'
+    status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS'
+    recordsProcessed: integer("records_processed").notNull().default(0),
+    errorDetails: text("error_details"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    syncLogIntIdx: index("sync_log_integration_idx").on(table.tenantIntegrationId),
+  })
+);
+
+// ============================================================================
+// V5 INTERNATIONAL SAAS: PHASE 38 - SAAS READINESS & DEDICATED TENANTS
+// ============================================================================
+
+export const dedicatedTenantConfigs = pgTable(
+  "dedicated_tenant_configs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    databaseUrlSecret: text("database_url_secret").notNull(), // Encrypted connection string
+    storageBucketName: varchar("storage_bucket_name", { length: 255 }).notNull(),
+    kmsKeyId: varchar("kms_key_id", { length: 255 }), // Bring Your Own Key (BYOK)
+    isProvisioned: boolean("is_provisioned").notNull().default(false),
+    provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  }
+);
+
+export const saasReadinessSignoffs = pgTable(
+  "saas_readiness_signoffs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    moduleName: varchar("module_name", { length: 100 }).notNull(), // e.g. "SECURITY", "COMPLIANCE", "PERFORMANCE"
+    status: varchar("status", { length: 50 }).notNull().default("PENDING"), // 'PENDING', 'APPROVED', 'REJECTED'
+    approvedBy: uuid("approved_by").references(() => userProfiles.id),
+    notes: text("notes"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  }
+);

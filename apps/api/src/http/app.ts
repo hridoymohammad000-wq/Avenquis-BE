@@ -47,6 +47,8 @@ import { i18nRouter } from "./routes/i18n.js";
 import { regionalRouter } from "./routes/regional.js";
 import { regulatoryPacksRouter } from "./routes/regulatory-packs.js";
 import { enterpriseSecurityRouter } from "./routes/enterprise-security.js";
+import { integrationsRouter } from "./routes/integrations.js";
+import { infrastructureRouter } from "./routes/infrastructure.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -106,6 +108,8 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/regional", regionalRouter); // Multi-country (Phase 34)
   app.use("/api/v1/regulatory", regulatoryPacksRouter); // Country Regulatory Packs (Phase 35)
   app.use("/api/v1/security", enterpriseSecurityRouter); // Enterprise Security & SSO (Phase 36)
+  app.use("/api/v1/integrations", integrationsRouter); // Global ERP APIs (Phase 37)
+  app.use("/api/v1/infrastructure", infrastructureRouter); // SaaS Readiness (Phase 38)
 
   if (testRouter) {
     app.use("/test", testRouter);
