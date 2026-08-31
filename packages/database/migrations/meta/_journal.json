@@ -50,6 +50,20 @@
       "when": 1788203190904,
       "tag": "0006_phase5_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788204125979,
+      "tag": "0007_public_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788204225980,
+      "tag": "0008_phase6_rls",
+      "breakpoints": true
     }
   ]
 }

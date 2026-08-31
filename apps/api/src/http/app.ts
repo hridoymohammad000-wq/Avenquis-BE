@@ -11,6 +11,7 @@ import { departmentRouter } from "./routes/departments.js";
 import { designationRouter } from "./routes/designations.js";
 import { staffRouter } from "./routes/staff.js";
 import { studentRouter } from "./routes/students.js";
+import { clientRouter } from "./routes/clients.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -33,6 +34,7 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/designations", designationRouter);
   app.use("/api/v1/staff", staffRouter);
   app.use("/api/v1/students", studentRouter);
+  app.use("/api/v1/clients", clientRouter);
 
   if (testRouter) {
     app.use("/test", testRouter);

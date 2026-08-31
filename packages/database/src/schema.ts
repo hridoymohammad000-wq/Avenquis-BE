@@ -638,3 +638,123 @@ export const studentAssignmentHistory = pgTable(
     ),
   }),
 );
+
+// ============================================================================
+// CLIENT CRM & KYC/AML COMPLIANCE
+// ============================================================================
+
+export const clients = pgTable(
+  "clients",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientCode: varchar("client_code", { length: 50 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    clientType: varchar("client_type", { length: 50 }).notNull(), // corporate, individual, government, non_profit, partnership
+    industry: varchar("industry", { length: 100 }),
+    taxIdentificationNumber: varchar("tax_identification_number", {
+      length: 100,
+    }),
+    businessRegistrationNumber: varchar("business_registration_number", {
+      length: 100,
+    }),
+    primaryEmail: varchar("primary_email", { length: 255 }),
+    primaryPhone: varchar("primary_phone", { length: 50 }),
+    address: jsonb("address"),
+    riskRating: varchar("risk_rating", { length: 50 })
+      .notNull()
+      .default("unassessed"), // low, medium, high, unassessed
+    kycStatus: varchar("kyc_status", { length: 50 })
+      .notNull()
+      .default("pending"), // pending, verified, expired, rejected
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, onboarding, inactive, blacklisted
+    leadPartnerMembershipId: uuid("lead_partner_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientCodeIdx: uniqueIndex("clients_tenant_client_code_idx").on(
+      table.tenantId,
+      table.clientCode,
+    ),
+    tenantIdIdx: index("clients_tenant_id_idx").on(table.tenantId),
+  }),
+);
+
+export const clientContacts = pgTable(
+  "client_contacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    fullName: varchar("full_name", { length: 255 }).notNull(),
+    designation: varchar("designation", { length: 100 }),
+    email: varchar("email", { length: 255 }),
+    phone: varchar("phone", { length: 50 }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("client_contacts_tenant_id_idx").on(table.tenantId),
+    clientIdIdx: index("client_contacts_client_id_idx").on(table.clientId),
+  }),
+);
+
+export const clientKycDocuments = pgTable(
+  "client_kyc_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    documentType: varchar("document_type", { length: 100 }).notNull(), // trade_license, tin_certificate, vat_certificate, incorporation_cert, nid_passport, utility_bill
+    documentNumber: varchar("document_number", { length: 100 }),
+    fileUrl: text("file_url"),
+    verificationStatus: varchar("verification_status", { length: 50 })
+      .notNull()
+      .default("pending"), // pending, verified, rejected
+    verifiedByMembershipId: uuid("verified_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    expiryDate: timestamp("expiry_date", { withTimezone: true }),
+    remarks: text("remarks"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdIdx: index("client_kyc_documents_tenant_id_idx").on(
+      table.tenantId,
+    ),
+    clientIdIdx: index("client_kyc_documents_client_id_idx").on(
+      table.clientId,
+    ),
+  }),
+);
