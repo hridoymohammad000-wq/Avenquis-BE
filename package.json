@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "pnpm --filter api dev",
     "build": "pnpm -r build",
-    "start": "pnpm --filter api start",
+    "build:backend": "esbuild apps/api/src/index.ts --bundle --platform=node --target=node20 --outfile=apps/api/dist/index.js --external:express --external:postgres --external:bcryptjs --external:jsonwebtoken --external:otplib --external:qrcode --external:helmet --external:pino --external:pino-http --external:cookie-parser",
+    "start": "node apps/api/dist/index.js",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
