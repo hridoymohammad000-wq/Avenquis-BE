@@ -15,7 +15,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
   DATABASE_URL: z
     .string()
-    .default("postgres://postgres:postgres@localhost:5432/avenquis_db"),
+    .default("postgresql://postgres:postgres@localhost:5432/postgres"),
 });
 
 const _env = envSchema.safeParse(process.env);

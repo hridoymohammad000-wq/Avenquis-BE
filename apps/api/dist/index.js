@@ -19291,7 +19291,7 @@ var envSchema = external_exports.object({
   JWT_EXPIRES_IN: external_exports.string().default("1h"),
   REFRESH_TOKEN_SECRET: external_exports.string().default("avenquis_refresh_super_secret_key_production_grade_32"),
   REFRESH_TOKEN_EXPIRES_IN: external_exports.string().default("7d"),
-  DATABASE_URL: external_exports.string().default("postgres://postgres:postgres@localhost:5432/avenquis_db")
+  DATABASE_URL: external_exports.string().default("postgresql://postgres:postgres@localhost:5432/postgres")
 });
 var _env = envSchema.safeParse(process.env);
 if (!_env.success) {
