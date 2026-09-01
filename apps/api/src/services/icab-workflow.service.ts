@@ -50,7 +50,7 @@ export class IcabWorkflowService {
     const [updated] = await db
       .update(icabForms)
       .set({
-        status: "pending_principal_signature", // the action actually applies the signature, let's mark it submitted_to_icab or similar based on flow. We'll mark it approved internally
+        status: "principal_signed",
         signedByPrincipalId: principalMembershipId,
         signedAt: new Date(),
         updatedAt: new Date(),

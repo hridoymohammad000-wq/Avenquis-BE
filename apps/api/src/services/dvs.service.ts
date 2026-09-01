@@ -38,7 +38,13 @@ export class DvsService {
       })
       .returning();
 
-    return record;
+    return {
+      ...record,
+      isAuthoritative: false,
+      provider: "ICAB_DVS_STUB",
+      verificationNote:
+        "Local offline generation. Direct ICAB API credentials required for authoritative verification.",
+    };
   }
 
   static async verifyDvsCode(tenantId: string, dvsCode: string) {
@@ -53,11 +59,17 @@ export class DvsService {
       throw new ApiError(404, "DVS Code not found or invalid", "DVS_NOT_FOUND");
     }
 
-    return record;
+    return {
+      ...record,
+      isAuthoritative: false,
+      provider: "ICAB_DVS_STUB",
+      verificationNote:
+        "Verified against local database record. Not verified via live ICAB server endpoint.",
+    };
   }
 
   static async getEngagementDvsRecords(tenantId: string, engagementId: string) {
-    return db
+    const records = await db
       .select()
       .from(dvsRecords)
       .where(
@@ -66,5 +78,11 @@ export class DvsService {
           eq(dvsRecords.engagementId, engagementId),
         ),
       );
+
+    return records.map((r) => ({
+      ...r,
+      isAuthoritative: false,
+      provider: "ICAB_DVS_STUB",
+    }));
   }
 }

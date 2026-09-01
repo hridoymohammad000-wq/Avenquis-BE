@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const DEV_JWT_SECRET = "dev-only-jwt-secret-change-me-32-bytes";
 const DEV_REFRESH_SECRET = "dev-only-refresh-secret-change-me-32";
+const DEV_MFA_ENCRYPTION_KEY = "dev-only-mfa-encryption-key-change-me-32";
 const DEV_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:5432/postgres";
 
@@ -14,6 +15,8 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("1h"),
   REFRESH_TOKEN_SECRET: z.string().min(32),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
+  MFA_ENCRYPTION_KEY: z.string().min(32),
+  ARTIFACT_ALLOWED_HOSTS: z.string().default(""),
   DATABASE_URL: z
     .string()
     .url()
@@ -47,6 +50,9 @@ export function parseEnv(source: NodeJS.ProcessEnv): ApiEnv {
     REFRESH_TOKEN_SECRET:
       source.REFRESH_TOKEN_SECRET ??
       (nodeEnv === "production" ? undefined : DEV_REFRESH_SECRET),
+    MFA_ENCRYPTION_KEY:
+      source.MFA_ENCRYPTION_KEY ??
+      (nodeEnv === "production" ? undefined : DEV_MFA_ENCRYPTION_KEY),
     DATABASE_URL:
       source.DATABASE_URL ??
       (nodeEnv === "production" ? undefined : DEV_DATABASE_URL),
@@ -64,12 +70,12 @@ export function parseEnv(source: NodeJS.ProcessEnv): ApiEnv {
   if (
     !result.success ||
     (nodeEnv === "production" &&
-      [values.JWT_SECRET, values.REFRESH_TOKEN_SECRET].some(
+      [values.JWT_SECRET, values.REFRESH_TOKEN_SECRET, values.MFA_ENCRYPTION_KEY].some(
         (value) => !value || isPlaceholder(value),
       ))
   ) {
     throw new Error(
-      "Invalid production configuration: JWT_SECRET, REFRESH_TOKEN_SECRET, and DATABASE_URL are required and must be valid",
+      "Invalid production configuration: JWT_SECRET, REFRESH_TOKEN_SECRET, MFA_ENCRYPTION_KEY, and DATABASE_URL are required and must be valid",
     );
   }
   return result.data;

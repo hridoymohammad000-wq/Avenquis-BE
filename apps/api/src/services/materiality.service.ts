@@ -3,7 +3,6 @@ import {
   materialityAssessments,
   riskAssessments,
   engagements,
-  tbLineItems,
   eq,
   and,
   desc,
@@ -52,19 +51,16 @@ export class MaterialityService {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
 
-    const overallMateriality = Math.round(
-      (data.benchmarkAmount * data.percentageApplied) / 10000,
-    );
+    const rawOverall = (data.benchmarkAmount * data.percentageApplied) / 10000;
+    const overallMateriality = Math.round(rawOverall * 100) / 100;
 
     const pmPct = data.performanceMaterialityPct ?? 7500;
-    const performanceMateriality = Math.round(
-      (overallMateriality * pmPct) / 10000,
-    );
+    const performanceMateriality =
+      Math.round(((overallMateriality * pmPct) / 10000) * 100) / 100;
 
     const ctPct = data.clearlyTrivialPct ?? 500;
-    const clearlyTrivialThreshold = Math.round(
-      (overallMateriality * ctPct) / 10000,
-    );
+    const clearlyTrivialThreshold =
+      Math.round(((overallMateriality * ctPct) / 10000) * 100) / 100;
 
     const [assessment] = await db
       .insert(materialityAssessments)
@@ -137,9 +133,12 @@ export class MaterialityService {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
 
-    // Calculate combined risk using ISA risk matrix
+    // Calculate combined risk using ISA risk matrix (case-insensitive)
+    const inherentKey = (data.inherentRisk ?? "").toLowerCase();
+    const controlKey = (data.controlRisk ?? "").toLowerCase();
+
     const combinedRiskLevel =
-      RISK_MATRIX[data.inherentRisk]?.[data.controlRisk] ?? "moderate";
+      RISK_MATRIX[inherentKey]?.[controlKey] ?? "moderate";
     const detectionRiskRequired =
       DETECTION_RISK_MAP[combinedRiskLevel] ?? "medium";
 

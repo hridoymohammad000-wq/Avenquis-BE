@@ -148,6 +148,7 @@ describe("Phase 15 Materiality Calculation & Risk Assessment API", () => {
 
       const data = res.body.data;
       riskAssessmentId = data.id;
+      expect(riskAssessmentId).toBeDefined();
 
       // High IR × Medium CR = Significant combined risk
       expect(data.combinedRiskLevel).toBe("significant");

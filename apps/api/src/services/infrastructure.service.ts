@@ -4,7 +4,7 @@ import {
   saasReadinessSignoffs,
   eq,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
+import { SecretService } from "./secret.service.js";
 
 export class InfrastructureService {
   static async getTenantConfig(tenantId: string) {
@@ -23,6 +23,8 @@ export class InfrastructureService {
       kmsKeyId?: string;
     }
   ) {
+    const encryptedDatabaseUrl = SecretService.encryptSecret(data.databaseUrlSecret);
+
     const [existing] = await db
       .select()
       .from(dedicatedTenantConfigs)
@@ -33,6 +35,7 @@ export class InfrastructureService {
         .update(dedicatedTenantConfigs)
         .set({
           ...data,
+          databaseUrlSecret: encryptedDatabaseUrl,
           isProvisioned: true,
           provisionedAt: new Date(),
         })
@@ -46,6 +49,7 @@ export class InfrastructureService {
       .values({
         tenantId,
         ...data,
+        databaseUrlSecret: encryptedDatabaseUrl,
         isProvisioned: true,
         provisionedAt: new Date(),
       })

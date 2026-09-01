@@ -11,9 +11,9 @@ export const trialBalanceRouter = Router();
 const lineItemSchema = z.object({
   accountCode: z.string().min(1).max(50),
   accountName: z.string().min(1).max(255),
-  debitAmount: z.number().int().min(0).default(0),
-  creditAmount: z.number().int().min(0).default(0),
-  priorYearBalance: z.number().int().optional(),
+  debitAmount: z.number().min(0).default(0),
+  creditAmount: z.number().min(0).default(0),
+  priorYearBalance: z.number().optional(),
   mappedFinancialStatementGroup: z
     .enum(["asset", "liability", "equity", "revenue", "expense"])
     .optional(),

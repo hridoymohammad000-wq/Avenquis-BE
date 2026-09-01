@@ -66,18 +66,20 @@ describe("Phase 36 Enterprise Security & Identity API", () => {
 
   describe("2. Enterprise Audit Logs", () => {
     it("should implicitly log the SSO configuration action in the audit log", async () => {
-      const res = await request(app)
+      const logsRes = await request(app)
         .get("/api/v1/security/audit-logs")
         .set("Authorization", `Bearer ${adminToken}`)
         .set("x-tenant-id", tenantAId);
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      
-      const log = res.body.data.find((l: any) => l.action === "CONFIGURE_SSO");
-      expect(log).toBeDefined();
-      expect(log.resourceType).toBe("SSO_PROVIDER");
+      expect(logsRes.status).toBe(200);
+      expect(logsRes.body.success).toBe(true);
+      expect(logsRes.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(
+        logsRes.body.data.some(
+          (log: { action: string; resourceType: string }) =>
+            log.action === "CONFIGURE_SSO" && log.resourceType === "SSO_PROVIDER",
+        ),
+      ).toBe(true);
     });
   });
 });

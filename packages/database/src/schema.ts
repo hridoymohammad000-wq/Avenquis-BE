@@ -79,6 +79,8 @@ export const userProfiles = pgTable("user_profiles", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   passwordHash: text("password_hash"),
+  /** Encrypted with the API MFA encryption key; never store the TOTP secret here in plaintext. */
+  mfaSecretEncrypted: text("mfa_secret_encrypted"),
   mfaSecret: text("mfa_secret"),
   mfaEnabled: boolean("mfa_enabled").notNull().default(false),
   mfaBackupCodes: jsonb("mfa_backup_codes"),

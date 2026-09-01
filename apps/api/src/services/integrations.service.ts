@@ -4,18 +4,23 @@ import {
   tenantIntegrations,
   integrationSyncLogs,
   eq,
-  desc,
+  and,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
+import { SecretService } from "./secret.service.js";
+
 export class IntegrationsService {
   static async getGlobalIntegrations(category?: string) {
-    const query = db
+    const filters = [eq(globalIntegrations.isActive, true)];
+    if (category) {
+      filters.push(eq(globalIntegrations.category, category));
+    }
+
+    return db
       .select()
       .from(globalIntegrations)
-      .where(eq(globalIntegrations.isActive, true));
-
-    return await query; // simplified for now, would use and() if category is provided
+      .where(and(...filters));
   }
 
   static async getTenantIntegrations(tenantId: string) {
@@ -42,7 +47,7 @@ export class IntegrationsService {
     tenantId: string,
     integrationId: string,
     credentials: string,
-    settings: any
+    settings: unknown
   ) {
     const [integration] = await db
       .select()
@@ -53,14 +58,8 @@ export class IntegrationsService {
       throw new ApiError(400, "Integration not found or inactive", "INTEGRATION_NOT_FOUND");
     }
 
-    const [existing] = await db
-      .select()
-      .from(tenantIntegrations)
-      .where(
-        eq(tenantIntegrations.tenantId, tenantId)
-      );
-      // Wait, a tenant can have multiple integrations, need AND filter
-      // Actually we will check if the specific integrationId is connected
+    const encryptedCredentials = SecretService.encryptSecret(credentials);
+
     const existingList = await db
       .select()
       .from(tenantIntegrations)
@@ -72,7 +71,7 @@ export class IntegrationsService {
       const [updated] = await db
         .update(tenantIntegrations)
         .set({
-          credentials,
+          credentials: encryptedCredentials,
           settings,
           status: "CONNECTED",
           updatedAt: new Date(),
@@ -87,7 +86,7 @@ export class IntegrationsService {
       .values({
         tenantId,
         integrationId,
-        credentials,
+        credentials: encryptedCredentials,
         settings,
         status: "CONNECTED",
       })

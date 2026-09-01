@@ -41,6 +41,7 @@ describe("Phase 22 ICAB Workflows API", () => {
         password: "StudentPassword123!",
         fullName: "Phase22 Articled Student",
       });
+    expect(studentRegRes.status).toBe(201);
 
     // Invite student to tenant A
     const inviteRes = await request(app)

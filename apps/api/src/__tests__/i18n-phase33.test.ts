@@ -67,7 +67,11 @@ describe("Phase 33 Internationalization (i18n) API", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(2);
-      expect(res.body.data.some((l: any) => l.code === "en")).toBe(true);
+      expect(
+        res.body.data.some(
+          (loc: { localeCode: string }) => loc.localeCode === "bn-BD",
+        ),
+      ).toBe(true);
     });
   });
 

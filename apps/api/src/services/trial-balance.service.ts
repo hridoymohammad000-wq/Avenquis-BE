@@ -8,8 +8,6 @@ import {
   eq,
   and,
   desc,
-  sum,
-  inArray,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
@@ -52,15 +50,15 @@ export class TrialBalanceService {
       );
     }
 
-    let totalDebit = 0;
-    let totalCredit = 0;
+    let totalDebitRaw = 0;
+    let totalCreditRaw = 0;
 
     const formattedItems = data.lineItems.map((item) => {
-      const debit = item.debitAmount ?? 0;
-      const credit = item.creditAmount ?? 0;
-      totalDebit += debit;
-      totalCredit += credit;
-      const netBalance = debit - credit;
+      const debit = Number(item.debitAmount ?? 0);
+      const credit = Number(item.creditAmount ?? 0);
+      totalDebitRaw += debit;
+      totalCreditRaw += credit;
+      const netBalance = Math.round((debit - credit) * 100) / 100;
       const isMapped = Boolean(
         item.mappedFinancialStatementGroup && item.mappedLeadSchedule,
       );
@@ -79,38 +77,42 @@ export class TrialBalanceService {
       };
     });
 
-    const isBalanced = totalDebit === totalCredit;
+    const totalDebit = Math.round(totalDebitRaw * 100) / 100;
+    const totalCredit = Math.round(totalCreditRaw * 100) / 100;
+    const isBalanced = Math.abs(totalDebit - totalCredit) < 0.001;
 
-    const [tb] = await db
-      .insert(trialBalances)
-      .values({
-        tenantId,
-        engagementId: data.engagementId,
-        name: data.name,
-        asOfDate: data.asOfDate,
-        currency: data.currency ?? "BDT",
-        totalDebit,
-        totalCredit,
-        isBalanced,
-        uploadedByMembershipId: uploaderMembershipId,
-      })
-      .returning();
+    return await db.transaction(async (tx) => {
+      const [tb] = await tx
+        .insert(trialBalances)
+        .values({
+          tenantId,
+          engagementId: data.engagementId,
+          name: data.name,
+          asOfDate: data.asOfDate,
+          currency: data.currency ?? "BDT",
+          totalDebit,
+          totalCredit,
+          isBalanced,
+          uploadedByMembershipId: uploaderMembershipId,
+        })
+        .returning();
 
-    const itemsToInsert = formattedItems.map((item) => ({
-      ...item,
-      trialBalanceId: tb.id,
-    }));
+      const itemsToInsert = formattedItems.map((item) => ({
+        ...item,
+        trialBalanceId: tb.id,
+      }));
 
-    const insertedLineItems = await db
-      .insert(tbLineItems)
-      .values(itemsToInsert)
-      .returning();
+      const insertedLineItems = await tx
+        .insert(tbLineItems)
+        .values(itemsToInsert)
+        .returning();
 
-    return {
-      ...tb,
-      lineItemsCount: insertedLineItems.length,
-      lineItems: insertedLineItems,
-    };
+      return {
+        ...tb,
+        lineItemsCount: insertedLineItems.length,
+        lineItems: insertedLineItems,
+      };
+    });
   }
 
   static async listTrialBalances(tenantId: string, engagementId: string) {
@@ -212,31 +214,32 @@ export class TrialBalanceService {
       );
     }
 
-    const updatedItems = [];
-    for (const item of mappings) {
-      const [updated] = await db
-        .update(tbLineItems)
-        .set({
-          mappedFinancialStatementGroup: item.mappedFinancialStatementGroup,
-          mappedLeadSchedule: item.mappedLeadSchedule,
-          isMapped: true,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(tbLineItems.tenantId, tenantId),
-            eq(tbLineItems.trialBalanceId, trialBalanceId),
-            eq(tbLineItems.id, item.lineItemId),
-          ),
-        )
-        .returning();
+    return await db.transaction(async (tx) => {
+      const updatedItems = [];
+      for (const item of mappings) {
+        const [updated] = await tx
+          .update(tbLineItems)
+          .set({
+            mappedFinancialStatementGroup: item.mappedFinancialStatementGroup,
+            mappedLeadSchedule: item.mappedLeadSchedule,
+            isMapped: true,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(tbLineItems.tenantId, tenantId),
+              eq(tbLineItems.trialBalanceId, trialBalanceId),
+              eq(tbLineItems.id, item.lineItemId),
+            ),
+          )
+          .returning();
 
-      if (updated) {
-        updatedItems.push(updated);
+        if (updated) {
+          updatedItems.push(updated);
+        }
       }
-    }
-
-    return updatedItems;
+      return updatedItems;
+    });
   }
 
   static async getLeadScheduleSummary(

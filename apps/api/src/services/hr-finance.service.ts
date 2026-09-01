@@ -5,7 +5,6 @@ import {
   eq,
   and,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
 
 export class HrFinanceService {
   // ──────────── HR PAYROLL ────────────

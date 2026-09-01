@@ -8,6 +8,7 @@ declare global {
         email: string;
         aal: "aal1" | "aal2";
       };
+      authToken?: string;
       tenantId?: string;
       tenant?: typeof tenants.$inferSelect;
       membership?: typeof memberships.$inferSelect;

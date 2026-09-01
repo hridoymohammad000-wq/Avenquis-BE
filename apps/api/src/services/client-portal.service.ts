@@ -5,9 +5,7 @@ import {
   eq,
   and,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
-// Simple mock for hash
-import crypto from "crypto";
+import { AuthService } from "./auth.service.js";
 
 export class ClientPortalService {
   // ──────────── CLIENT USER MANAGEMENT ────────────
@@ -20,10 +18,7 @@ export class ClientPortalService {
       passwordRaw: string;
     },
   ) {
-    const passwordHash = crypto
-      .createHash("sha256")
-      .update(data.passwordRaw)
-      .digest("hex");
+    const passwordHash = await AuthService.hashPassword(data.passwordRaw);
 
     const [user] = await db
       .insert(clientPortalUsers)
@@ -38,7 +33,8 @@ export class ClientPortalService {
       .returning();
 
     // omit hash before return
-    const { passwordHash: _ph, ...safeUser } = user;
+    const safeUser = { ...user } as Record<string, unknown>;
+    delete safeUser.passwordHash;
     return safeUser;
   }
 

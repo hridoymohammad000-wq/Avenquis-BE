@@ -18,7 +18,7 @@ const raiseExceptionSchema = z.object({
     "compliance_breach",
   ]),
   description: z.string().min(1),
-  financialImpact: z.number().int().optional(),
+  financialImpact: z.number().optional(),
 });
 
 const updateExceptionSchema = z.object({
@@ -30,7 +30,7 @@ const updateExceptionSchema = z.object({
     "waived",
   ]),
   managementResponse: z.string().optional(),
-  financialImpact: z.number().int().optional(),
+  financialImpact: z.number().optional(),
 });
 
 const createReviewSchema = z.object({

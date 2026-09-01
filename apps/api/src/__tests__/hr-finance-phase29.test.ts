@@ -36,7 +36,7 @@ describe("Phase 29 HR & Finance API", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     membershipId = memRes.body.data.memberships.find(
-      (m: any) => m.tenantId === tenantAId,
+      (m: { tenantId: string; id: string }) => m.tenantId === tenantAId,
     ).id;
 
     // 2. Client & Engagement

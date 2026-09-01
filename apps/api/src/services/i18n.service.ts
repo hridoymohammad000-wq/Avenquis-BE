@@ -52,12 +52,6 @@ export class I18nService {
     }
 
     // Upsert tenant locale (if we had a unique constraint, we could use onConflictDoUpdate)
-    // For now, let's just insert it. In a real app we'd check if it exists or use onConflict
-    const [existing] = await db
-      .select()
-      .from(tenantLocales)
-      .where(eq(tenantLocales.tenantId, tenantId));
-
     const match = await db
       .select()
       .from(tenantLocales)

@@ -73,9 +73,10 @@ infrastructureRouter.post(
 infrastructureRouter.get(
   "/signoffs",
   authenticate,
+  requireTenantContext,
+  requirePermission("admin:manage"),
   async (req, res, next) => {
     try {
-      // In a real app, require system-admin role here
       const result = await InfrastructureService.getReadinessSignoffs();
       res.json({ success: true, data: result });
     } catch (error) {
@@ -88,6 +89,8 @@ infrastructureRouter.get(
 infrastructureRouter.post(
   "/signoffs",
   authenticate,
+  requireTenantContext,
+  requirePermission("admin:manage"),
   async (req, res, next) => {
     try {
       const parseResult = signoffSchema.safeParse(req.body);

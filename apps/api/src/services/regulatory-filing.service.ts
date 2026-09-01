@@ -40,7 +40,12 @@ export class RegulatoryFilingService {
       })
       .returning();
 
-    return filing;
+    return {
+      ...filing,
+      isExternalIntegration: false,
+      submissionChannel: "INTERNAL_FIRM_TRACKER",
+      note: "Internal compliance ledger entry. Direct portal API connection not configured.",
+    };
   }
 
   static async updateFilingStatus(
@@ -74,11 +79,15 @@ export class RegulatoryFilingService {
       throw new ApiError(404, "Filing not found", "FILING_NOT_FOUND");
     }
 
-    return updated;
+    return {
+      ...updated,
+      isExternalIntegration: false,
+      submissionChannel: "INTERNAL_FIRM_TRACKER",
+    };
   }
 
   static async getEngagementFilings(tenantId: string, engagementId: string) {
-    return db
+    const filings = await db
       .select()
       .from(regulatoryFilings)
       .where(
@@ -87,5 +96,11 @@ export class RegulatoryFilingService {
           eq(regulatoryFilings.engagementId, engagementId),
         ),
       );
+
+    return filings.map((f) => ({
+      ...f,
+      isExternalIntegration: false,
+      submissionChannel: "INTERNAL_FIRM_TRACKER",
+    }));
   }
 }
