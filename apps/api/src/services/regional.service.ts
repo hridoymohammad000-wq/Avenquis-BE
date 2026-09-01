@@ -40,7 +40,7 @@ export class RegionalService {
       .from(globalCountries)
       .where(eq(globalCountries.code, data.countryCode));
 
-    if (!country) {
+    if (!country || !country.isActive) {
       throw new ApiError(400, "Invalid country code", "INVALID_COUNTRY_CODE");
     }
 
