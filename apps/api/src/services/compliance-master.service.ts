@@ -2,9 +2,12 @@ import {
   db,
   complianceTemplates,
   regulatoryCalendarEvents,
+  clients,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
+import { ApiError } from "../errors/api-error.js";
 
 export class ComplianceMasterService {
   // ──────────── TEMPLATES ────────────
@@ -17,6 +20,19 @@ export class ComplianceMasterService {
       checklistData: unknown;
     },
   ) {
+    const creator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, createdByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!creator)
+      throw new ApiError(
+        403,
+        "Invalid creator membership",
+        "INVALID_MEMBERSHIP",
+      );
+
     const [template] = await db
       .insert(complianceTemplates)
       .values({
@@ -55,6 +71,29 @@ export class ComplianceMasterService {
       eventType: string;
     },
   ) {
+    const creator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, createdByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!creator)
+      throw new ApiError(
+        403,
+        "Invalid creator membership",
+        "INVALID_MEMBERSHIP",
+      );
+    if (data.clientId) {
+      const client = await db.query.clients.findFirst({
+        where: and(
+          eq(clients.id, data.clientId),
+          eq(clients.tenantId, tenantId),
+        ),
+      });
+      if (!client)
+        throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
+    }
+
     const [event] = await db
       .insert(regulatoryCalendarEvents)
       .values({

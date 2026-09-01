@@ -10,7 +10,7 @@ The first target market is Bangladesh, but the platform is being designed from t
 
 ## Project Status
 
-**Current Stage:** Backend audit in progress (Phases 3–23 audited; fixes submitted through PR #8)
+**Current Stage:** Backend audit in progress (Phases 3–29 audited; fixes submitted through PR #10)
 **Test Suite Status:** TypeScript and targeted lint checks pass for the audited batches; full Supabase-backed integration verification is still pending.
 **Public Launch:** After V5 only  
 **Development Model:** Build → Private Test → Improve → Next Version → Final QA → Launch
@@ -42,12 +42,12 @@ This checklist records work that has actually been audited and verified in this 
 - [x] **Phase 21:** Audit quality controls — evaluator membership integrity hardened
 - [x] **Phase 22:** ICAB workflows and articleship rules — principal/approval state transitions hardened
 - [x] **Phase 23:** DVS support — generator authorization and non-authoritative status preserved
-- [ ] **Phase 24:** Regulatory compliance — audit pending
-- [ ] **Phase 25:** Tax and VAT workflows — audit pending
-- [ ] **Phase 26:** Regulatory calendar and templates — audit pending
-- [ ] **Phase 27:** AI and document intelligence — audit pending
-- [ ] **Phase 28:** Advanced analytics and forecasting — audit pending
-- [ ] **Phase 29:** Advanced HR and finance — audit pending
+- [x] **Phase 24:** Regulatory compliance — filing membership and status transitions hardened
+- [x] **Phase 25:** Tax and VAT workflows — assignee and forward-only status validation hardened
+- [x] **Phase 26:** Regulatory calendar and templates — creator and client ownership validation hardened
+- [x] **Phase 27:** AI and document intelligence — request linkage and mock disclosure audited
+- [x] **Phase 28:** Advanced analytics and forecasting — member/engagement and date validation hardened
+- [x] **Phase 29:** Advanced HR and finance — payroll and expense ownership validation hardened
 - [ ] **Phase 30:** Client portal and secure exchange — audit pending
 - [ ] **Phase 31:** Automation and APIs — audit pending
 - [ ] **Phase 32:** Enterprise scale and multi-office support — audit pending
@@ -67,6 +67,8 @@ This checklist records work that has actually been audited and verified in this 
 - [x] [PR #6 — Phases 15–17 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/6)
 - [x] [PR #7 — Phases 18–20 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/7)
 - [x] [PR #8 — Phases 21–23 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/8)
+- [x] [PR #9 — Phases 24–26 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/9)
+- [x] [PR #10 — Phases 27–29 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/10)
 
 #### Known Verification Limitations
 
@@ -1351,7 +1353,7 @@ Not complexity for its own sake.
 
 # Current Next Action
 
-Continue the backend audit with Phases 24–26. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
+Continue the backend audit with Phases 30–32. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
 
 ---
 
