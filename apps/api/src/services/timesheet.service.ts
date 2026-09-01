@@ -77,35 +77,82 @@ export class TimesheetService {
       description?: string;
     },
   ) {
-    const [entry] = await db
-      .insert(timesheetEntries)
-      .values({
-        tenantId,
-        membershipId,
-        engagementId: data.engagementId,
-        taskId: data.taskId,
-        workDate: data.workDate,
-        hours: data.hours,
-        activityType: data.activityType,
-        description: data.description,
-        status: "submitted",
-      })
-      .returning();
-
-    // Increment task actualHours if taskId provided
-    if (data.taskId) {
-      const task = await db.query.tasks.findFirst({
-        where: eq(tasks.id, data.taskId),
+    return db.transaction(async (tx) => {
+      const membership = await tx.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, membershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
       });
+      if (!membership) {
+        throw new ApiError(
+          400,
+          "Membership does not belong to this tenant",
+          "MEMBERSHIP_TENANT_MISMATCH",
+        );
+      }
+
+      if (data.engagementId) {
+        const engagement = await tx.query.engagements.findFirst({
+          where: and(
+            eq(engagements.id, data.engagementId),
+            eq(engagements.tenantId, tenantId),
+          ),
+        });
+        if (!engagement) {
+          throw new ApiError(
+            400,
+            "Engagement does not belong to this tenant",
+            "ENGAGEMENT_TENANT_MISMATCH",
+          );
+        }
+      }
+
+      let task;
+      if (data.taskId) {
+        task = await tx.query.tasks.findFirst({
+          where: and(eq(tasks.id, data.taskId), eq(tasks.tenantId, tenantId)),
+        });
+        if (!task) {
+          throw new ApiError(
+            400,
+            "Task does not belong to this tenant",
+            "TASK_TENANT_MISMATCH",
+          );
+        }
+        if (data.engagementId && task.engagementId !== data.engagementId) {
+          throw new ApiError(
+            400,
+            "Task does not belong to the selected engagement",
+            "TASK_ENGAGEMENT_MISMATCH",
+          );
+        }
+      }
+
+      const [entry] = await tx
+        .insert(timesheetEntries)
+        .values({
+          tenantId,
+          membershipId,
+          engagementId: data.engagementId,
+          taskId: data.taskId,
+          workDate: data.workDate,
+          hours: data.hours,
+          activityType: data.activityType,
+          description: data.description,
+          status: "submitted",
+        })
+        .returning();
+
       if (task) {
-        await db
+        await tx
           .update(tasks)
           .set({ actualHours: task.actualHours + data.hours })
-          .where(eq(tasks.id, data.taskId));
+          .where(and(eq(tasks.id, data.taskId!), eq(tasks.tenantId, tenantId)));
       }
-    }
 
-    return entry;
+      return entry;
+    });
   }
 
   static async approveTimesheet(

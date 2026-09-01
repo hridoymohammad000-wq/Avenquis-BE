@@ -69,6 +69,20 @@ export class NotificationService {
       link?: string;
     },
   ) {
+    const recipient = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, data.recipientMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!recipient) {
+      throw new ApiError(
+        400,
+        "Recipient membership does not belong to this tenant",
+        "MEMBERSHIP_TENANT_MISMATCH",
+      );
+    }
+
     const [notif] = await db
       .insert(notifications)
       .values({
@@ -117,6 +131,7 @@ export class NotificationService {
         and(
           eq(notifications.tenantId, tenantId),
           eq(notifications.id, notificationId),
+          eq(notifications.recipientMembershipId, recipientMembershipId),
         ),
       )
       .returning();
