@@ -10,10 +10,68 @@ The first target market is Bangladesh, but the platform is being designed from t
 
 ## Project Status
 
-**Current Stage:** V1 Core Firm OS Complete (13/13 Phases Implemented & 100% Verified Locally)  
-**Test Suite Status:** 129/129 Monorepo Tests Passing (`@avenquis/database` & `avenquis-backend-api`)  
+**Current Stage:** Backend audit in progress (Phases 3–14 audited; fixes submitted through PR #5)
+**Test Suite Status:** TypeScript and targeted lint checks pass for the audited batches; full Supabase-backed integration verification is still pending.
 **Public Launch:** After V5 only  
 **Development Model:** Build → Private Test → Improve → Next Version → Final QA → Launch
+
+### Backend Audit Progress — 38 Phases
+
+This checklist records work that has actually been audited and verified in this repository. A tick means the phase was reviewed and the listed hardening work was completed; it does not mean production or full Supabase integration readiness is complete.
+
+- [ ] **Phase 1:** Database setup, schema and migration foundation — final audit pending
+- [ ] **Phase 2:** Tenant isolation, RLS and request tenant context — final RLS revalidation pending
+- [x] **Phase 3:** Authentication, MFA and RBAC — audited in Phase 3–5 batch
+- [x] **Phase 4:** People and staff management — tenant ownership fixes completed
+- [x] **Phase 5:** CA student and articleship management — tenant ownership fixes completed
+- [x] **Phase 6:** Client CRM and KYC — membership tenant validation completed
+- [x] **Phase 7:** Engagement and independence — membership tenant validation completed
+- [x] **Phase 8:** Working papers, review workflow and team access — tenant validation completed
+- [x] **Phase 9:** Tasks, timesheets and billing — tenant validation and transaction fixes completed
+- [x] **Phase 10:** Partner sign-off and digital certificates — audited with Phase 9–11 batch
+- [x] **Phase 11:** Notifications and activity feed — recipient scoping fixes completed
+- [x] **Phase 12:** Analytics and reporting — tenant-scoped queries audited
+- [x] **Phase 13:** Admin and security logs — pagination/filter validation hardened
+- [x] **Phase 14:** Trial balance and account mapping — decimal-safe amounts and mapping validation completed
+- [ ] **Phase 15:** Materiality, risk assessment and assertions — audit pending
+- [ ] **Phase 16:** Controls, audit programs and procedures — audit pending
+- [ ] **Phase 17:** Sampling and evidence — audit pending
+- [ ] **Phase 18:** Exceptions and review — audit pending
+- [ ] **Phase 19:** Completion and reporting — audit pending
+- [ ] **Phase 20:** Permanent and current files — audit pending
+- [ ] **Phase 21:** Audit quality controls — audit pending
+- [ ] **Phase 22:** ICAB workflows and articleship rules — audit pending
+- [ ] **Phase 23:** DVS support — audit pending
+- [ ] **Phase 24:** Regulatory compliance — audit pending
+- [ ] **Phase 25:** Tax and VAT workflows — audit pending
+- [ ] **Phase 26:** Regulatory calendar and templates — audit pending
+- [ ] **Phase 27:** AI and document intelligence — audit pending
+- [ ] **Phase 28:** Advanced analytics and forecasting — audit pending
+- [ ] **Phase 29:** Advanced HR and finance — audit pending
+- [ ] **Phase 30:** Client portal and secure exchange — audit pending
+- [ ] **Phase 31:** Automation and APIs — audit pending
+- [ ] **Phase 32:** Enterprise scale and multi-office support — audit pending
+- [ ] **Phase 33:** Internationalization and multi-language — audit pending
+- [ ] **Phase 34:** Multi-country and regional data — audit pending
+- [ ] **Phase 35:** Country regulatory packs — audit pending
+- [ ] **Phase 36:** Enterprise security and identity — audit pending
+- [ ] **Phase 37:** Advanced integrations — audit pending
+- [ ] **Phase 38:** International SaaS readiness and final QA — audit pending
+
+#### Audit PRs
+
+- [x] [PR #2 — Phases 3–5 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/2)
+- [x] [PR #3 — Phases 6–8 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/3)
+- [x] [PR #4 — Phases 9–11 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/4)
+- [x] [PR #5 — Phases 12–14 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/5)
+
+#### Known Verification Limitations
+
+- [ ] Full 38-phase audit completed
+- [ ] Full Supabase/PostgreSQL integration suite executed after migrations
+- [ ] RLS session context verified on every API request path
+- [ ] Production secrets rotated after the previously exposed database credential
+- [ ] Final security and release gate approved
 
 **V1 Milestone Finalized:**  
 **Date:** Tuesday, 1 September 2026  
@@ -1290,9 +1348,7 @@ Not complexity for its own sake.
 
 # Current Next Action
 
-**Begin AVENQUIS V1 Phase 0–3 implementation.**
-
-Business modules must not begin until the Phase 0–3 security gate passes.
+Continue the backend audit with Phases 15–17. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
 
 ---
 
