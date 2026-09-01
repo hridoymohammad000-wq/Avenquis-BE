@@ -2,9 +2,11 @@ import {
   db,
   firmBranches,
   staffBranchAllocations,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
+import { ApiError } from "../errors/api-error.js";
 
 export class EnterpriseService {
   // ──────────── FIRM BRANCHES ────────────
@@ -49,6 +51,23 @@ export class EnterpriseService {
       isPrimary?: boolean;
     },
   ) {
+    const member = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, data.membershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    const branch = await db.query.firmBranches.findFirst({
+      where: and(
+        eq(firmBranches.id, data.branchId),
+        eq(firmBranches.tenantId, tenantId),
+      ),
+    });
+    if (!member)
+      throw new ApiError(404, "Membership not found", "MEMBERSHIP_NOT_FOUND");
+    if (!branch)
+      throw new ApiError(404, "Branch not found", "BRANCH_NOT_FOUND");
+
     const [allocation] = await db
       .insert(staffBranchAllocations)
       .values({
