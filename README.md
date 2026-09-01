@@ -10,7 +10,7 @@ The first target market is Bangladesh, but the platform is being designed from t
 
 ## Project Status
 
-**Current Stage:** Backend audit in progress (Phases 3–14 audited; fixes submitted through PR #5)
+**Current Stage:** Backend audit in progress (Phases 3–17 audited; fixes submitted through PR #6)
 **Test Suite Status:** TypeScript and targeted lint checks pass for the audited batches; full Supabase-backed integration verification is still pending.
 **Public Launch:** After V5 only  
 **Development Model:** Build → Private Test → Improve → Next Version → Final QA → Launch
@@ -33,9 +33,9 @@ This checklist records work that has actually been audited and verified in this 
 - [x] **Phase 12:** Analytics and reporting — tenant-scoped queries audited
 - [x] **Phase 13:** Admin and security logs — pagination/filter validation hardened
 - [x] **Phase 14:** Trial balance and account mapping — decimal-safe amounts and mapping validation completed
-- [ ] **Phase 15:** Materiality, risk assessment and assertions — audit pending
-- [ ] **Phase 16:** Controls, audit programs and procedures — audit pending
-- [ ] **Phase 17:** Sampling and evidence — audit pending
+- [x] **Phase 15:** Materiality, risk assessment and assertions — linkage and input validation hardened
+- [x] **Phase 16:** Controls, audit programs and procedures — membership and risk linkage validation hardened
+- [x] **Phase 17:** Sampling and evidence — procedure, engagement and membership linkage validation hardened
 - [ ] **Phase 18:** Exceptions and review — audit pending
 - [ ] **Phase 19:** Completion and reporting — audit pending
 - [ ] **Phase 20:** Permanent and current files — audit pending
@@ -64,6 +64,7 @@ This checklist records work that has actually been audited and verified in this 
 - [x] [PR #3 — Phases 6–8 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/3)
 - [x] [PR #4 — Phases 9–11 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/4)
 - [x] [PR #5 — Phases 12–14 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/5)
+- [x] [PR #6 — Phases 15–17 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/6)
 
 #### Known Verification Limitations
 
@@ -1348,7 +1349,7 @@ Not complexity for its own sake.
 
 # Current Next Action
 
-Continue the backend audit with Phases 15–17. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
+Continue the backend audit with Phases 18–20. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
 
 ---
 
