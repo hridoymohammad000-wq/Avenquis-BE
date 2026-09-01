@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   integer,
+  numeric,
   primaryKey,
   index,
   uniqueIndex,
@@ -146,7 +147,7 @@ export const membershipSessions = pgTable("membership_sessions", {
 
 export const permissions = pgTable("permissions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  code: varchar("code", { length: 100 }).notNull().unique(),
+  code: varchar("code", { length: 100 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -302,17 +303,26 @@ export const settings = pgTable("settings", {
     .defaultNow(),
 });
 
-export const featureFlags = pgTable("feature_flags", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: varchar("code", { length: 100 }).notNull().unique(),
-  enabled: boolean("enabled").notNull().default(false),
-  tenantId: uuid("tenant_id").references(() => tenants.id, {
-    onDelete: "cascade",
+export const featureFlags = pgTable(
+  "feature_flags",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    code: varchar("code", { length: 100 }).notNull(),
+    enabled: boolean("enabled").notNull().default(false),
+    tenantId: uuid("tenant_id").references(() => tenants.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantCodeUnique: uniqueIndex("feature_flags_tenant_code_unique").on(
+      table.tenantId,
+      table.code,
+    ),
   }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+);
 
 // ============================================================================
 // PHASE 4: PEOPLE & STAFF MANAGEMENT
@@ -1336,8 +1346,14 @@ export const trialBalances = pgTable(
     name: varchar("name", { length: 255 }).notNull(), // e.g. Unadjusted Trial Balance FY 2025
     asOfDate: timestamp("as_of_date", { withTimezone: true }).notNull(),
     currency: varchar("currency", { length: 10 }).notNull().default("BDT"),
-    totalDebit: integer("total_debit").notNull(),
-    totalCredit: integer("total_credit").notNull(),
+    totalDebit: numeric("total_debit", {
+      precision: 20,
+      scale: 2,
+    }).notNull(),
+    totalCredit: numeric("total_credit", {
+      precision: 20,
+      scale: 2,
+    }).notNull(),
     isBalanced: boolean("is_balanced").notNull().default(true),
     uploadedByMembershipId: uuid("uploaded_by_membership_id")
       .notNull()
@@ -1369,10 +1385,26 @@ export const tbLineItems = pgTable(
       .references(() => trialBalances.id, { onDelete: "cascade" }),
     accountCode: varchar("account_code", { length: 50 }).notNull(),
     accountName: varchar("account_name", { length: 255 }).notNull(),
-    debitAmount: integer("debit_amount").notNull().default(0),
-    creditAmount: integer("credit_amount").notNull().default(0),
-    netBalance: integer("net_balance").notNull(),
-    priorYearBalance: integer("prior_year_balance").default(0),
+    debitAmount: numeric("debit_amount", {
+      precision: 20,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+    creditAmount: numeric("credit_amount", {
+      precision: 20,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+    netBalance: numeric("net_balance", {
+      precision: 20,
+      scale: 2,
+    }).notNull(),
+    priorYearBalance: numeric("prior_year_balance", {
+      precision: 20,
+      scale: 2,
+    }).default("0"),
     mappedFinancialStatementGroup: varchar("mapped_fs_group", { length: 100 }), // asset, liability, equity, revenue, expense
     mappedLeadSchedule: varchar("mapped_lead_schedule", { length: 100 }), // cash_and_bank, trade_receivables, inventory, trade_payables, etc.
     isMapped: boolean("is_mapped").notNull().default(false),
@@ -2655,38 +2687,32 @@ export const tenantRegionalSettings = pgTable("tenant_regional_settings", {
 // V5 INTERNATIONAL SAAS: PHASE 35 - COUNTRY REGULATORY PACKS
 // ============================================================================
 
-export const globalRegulatoryBodies = pgTable(
-  "global_regulatory_bodies",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    countryCode: varchar("country_code", { length: 2 })
-      .notNull()
-      .references(() => globalCountries.code, { onDelete: "cascade" }),
-    name: varchar("name", { length: 255 }).notNull(), // e.g. "Institute of Chartered Accountants of Bangladesh"
-    code: varchar("code", { length: 50 }).notNull(), // e.g. "ICAB", "FRC", "ICAEW"
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  }
-);
+export const globalRegulatoryBodies = pgTable("global_regulatory_bodies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  countryCode: varchar("country_code", { length: 2 })
+    .notNull()
+    .references(() => globalCountries.code, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(), // e.g. "Institute of Chartered Accountants of Bangladesh"
+  code: varchar("code", { length: 50 }).notNull(), // e.g. "ICAB", "FRC", "ICAEW"
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
-export const regulatoryRulePacks = pgTable(
-  "regulatory_rule_packs",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    bodyId: uuid("body_id")
-      .notNull()
-      .references(() => globalRegulatoryBodies.id, { onDelete: "cascade" }),
-    name: varchar("name", { length: 255 }).notNull(), // e.g. "ICAB Audit Manual 2024"
-    version: varchar("version", { length: 50 }).notNull(),
-    description: text("description"),
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  }
-);
+export const regulatoryRulePacks = pgTable("regulatory_rule_packs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  bodyId: uuid("body_id")
+    .notNull()
+    .references(() => globalRegulatoryBodies.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(), // e.g. "ICAB Audit Manual 2024"
+  version: varchar("version", { length: 50 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const tenantRegulatoryPacks = pgTable(
   "tenant_regulatory_packs",
@@ -2704,7 +2730,10 @@ export const tenantRegulatoryPacks = pgTable(
       .defaultNow(),
   },
   (table) => ({
-    tenantPackIdx: index("tenant_regulatory_pack_idx").on(table.tenantId, table.packId),
+    tenantPackIdx: index("tenant_regulatory_pack_idx").on(
+      table.tenantId,
+      table.packId,
+    ),
   }),
 );
 
@@ -2734,7 +2763,7 @@ export const tenantSsoProviders = pgTable(
   },
   (table) => ({
     tenantSsoIdx: index("tenant_sso_idx").on(table.tenantId),
-  })
+  }),
 );
 
 export const enterpriseAuditLogs = pgTable(
@@ -2758,24 +2787,23 @@ export const enterpriseAuditLogs = pgTable(
   (table) => ({
     tenantAuditIdx: index("enterprise_audit_tenant_idx").on(table.tenantId),
     actionAuditIdx: index("enterprise_audit_action_idx").on(table.action),
-  })
+  }),
 );
 
 // ============================================================================
 // V5 INTERNATIONAL SAAS: PHASE 37 - ADVANCED INTEGRATIONS (ERP APIs)
 // ============================================================================
 
-export const globalIntegrations = pgTable(
-  "global_integrations",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    name: varchar("name", { length: 100 }).notNull(), // e.g. "Xero", "SAP S/4HANA"
-    slug: varchar("slug", { length: 100 }).notNull().unique(), // 'xero', 'sap'
-    category: varchar("category", { length: 50 }).notNull(), // 'ERP', 'PAYROLL', 'CRM'
-    isActive: boolean("is_active").notNull().default(true),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  }
-);
+export const globalIntegrations = pgTable("global_integrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull(), // e.g. "Xero", "SAP S/4HANA"
+  slug: varchar("slug", { length: 100 }).notNull().unique(), // 'xero', 'sap'
+  category: varchar("category", { length: 50 }).notNull(), // 'ERP', 'PAYROLL', 'CRM'
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const tenantIntegrations = pgTable(
   "tenant_integrations",
@@ -2791,12 +2819,16 @@ export const tenantIntegrations = pgTable(
     settings: jsonb("settings").default({}), // Configurations, Field Mappings
     credentials: text("credentials"), // Encrypted OAuth tokens or API keys
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => ({
     tenantIntIdx: index("tenant_integration_idx").on(table.tenantId),
-  })
+  }),
 );
 
 export const integrationSyncLogs = pgTable(
@@ -2810,43 +2842,45 @@ export const integrationSyncLogs = pgTable(
     status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS'
     recordsProcessed: integer("records_processed").notNull().default(0),
     errorDetails: text("error_details"),
-    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (table) => ({
-    syncLogIntIdx: index("sync_log_integration_idx").on(table.tenantIntegrationId),
-  })
+    syncLogIntIdx: index("sync_log_integration_idx").on(
+      table.tenantIntegrationId,
+    ),
+  }),
 );
 
 // ============================================================================
 // V5 INTERNATIONAL SAAS: PHASE 38 - SAAS READINESS & DEDICATED TENANTS
 // ============================================================================
 
-export const dedicatedTenantConfigs = pgTable(
-  "dedicated_tenant_configs",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: uuid("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
-    databaseUrlSecret: text("database_url_secret").notNull(), // Encrypted connection string
-    storageBucketName: varchar("storage_bucket_name", { length: 255 }).notNull(),
-    kmsKeyId: varchar("kms_key_id", { length: 255 }), // Bring Your Own Key (BYOK)
-    isProvisioned: boolean("is_provisioned").notNull().default(false),
-    provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  }
-);
+export const dedicatedTenantConfigs = pgTable("dedicated_tenant_configs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  databaseUrlSecret: text("database_url_secret").notNull(), // Encrypted connection string
+  storageBucketName: varchar("storage_bucket_name", { length: 255 }).notNull(),
+  kmsKeyId: varchar("kms_key_id", { length: 255 }), // Bring Your Own Key (BYOK)
+  isProvisioned: boolean("is_provisioned").notNull().default(false),
+  provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
-export const saasReadinessSignoffs = pgTable(
-  "saas_readiness_signoffs",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    moduleName: varchar("module_name", { length: 100 }).notNull(), // e.g. "SECURITY", "COMPLIANCE", "PERFORMANCE"
-    status: varchar("status", { length: 50 }).notNull().default("PENDING"), // 'PENDING', 'APPROVED', 'REJECTED'
-    approvedBy: uuid("approved_by").references(() => userProfiles.id),
-    notes: text("notes"),
-    approvedAt: timestamp("approved_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  }
-);
+export const saasReadinessSignoffs = pgTable("saas_readiness_signoffs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  moduleName: varchar("module_name", { length: 100 }).notNull(), // e.g. "SECURITY", "COMPLIANCE", "PERFORMANCE"
+  status: varchar("status", { length: 50 }).notNull().default("PENDING"), // 'PENDING', 'APPROVED', 'REJECTED'
+  approvedBy: uuid("approved_by").references(() => userProfiles.id),
+  notes: text("notes"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

@@ -9,7 +9,12 @@ import { ApiError } from "../../errors/api-error.js";
 export const adminRouter = Router();
 
 const updateFeatureFlagSchema = z.object({
-  code: z.string().min(2).max(100),
+  code: z
+    .string()
+    .trim()
+    .min(2)
+    .max(100)
+    .regex(/^[a-zA-Z0-9_.-]+$/),
   enabled: z.boolean(),
 });
 
@@ -41,18 +46,23 @@ adminRouter.get(
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
-      const severity = req.query.severity as string | undefined;
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string, 10)
-        : undefined;
-      const offset = req.query.offset
-        ? parseInt(req.query.offset as string, 10)
-        : undefined;
+      const paginationSchema = z.object({
+        limit: z.coerce.number().int().min(1).max(100).optional(),
+        offset: z.coerce.number().int().min(0).optional(),
+        severity: z.enum(["info", "warning", "critical"]).optional(),
+      });
+      const pagination = paginationSchema.safeParse(req.query);
+      if (!pagination.success) {
+        throw new ApiError(
+          400,
+          "Invalid security events query",
+          "INVALID_QUERY",
+          pagination.error.flatten(),
+        );
+      }
 
       const events = await AdminService.listSecurityEvents(tenantId, {
-        severity,
-        limit,
-        offset,
+        ...pagination.data,
       });
 
       res.json({
