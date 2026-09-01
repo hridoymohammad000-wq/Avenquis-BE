@@ -9,23 +9,23 @@ import { ApiError } from "../../errors/api-error.js";
 export const samplingEvidenceRouter = Router();
 
 const calculateSampleSchema = z.object({
-  populationSize: z.number().int().positive(),
-  confidenceLevelPct: z.number().int().min(1).max(10000).optional(),
-  tolerableErrorPct: z.number().int().min(1).max(10000).optional(),
+  populationSize: z.number().finite().int().positive(),
+  confidenceLevelPct: z.number().finite().int().min(1).max(10000).optional(),
+  tolerableErrorPct: z.number().finite().int().min(1).max(10000).optional(),
 });
 
 const saveSampleSchema = z.object({
   engagementId: z.string().uuid(),
   procedureId: z.string().uuid(),
-  populationSize: z.number().int().positive(),
+  populationSize: z.number().finite().int().positive(),
   selectionMethod: z.enum([
     "random",
     "monetary_unit",
     "haphazard",
     "systematic",
   ]),
-  confidenceLevelPct: z.number().int().min(1).max(10000).optional(),
-  tolerableErrorPct: z.number().int().min(1).max(10000).optional(),
+  confidenceLevelPct: z.number().finite().int().min(1).max(10000).optional(),
+  tolerableErrorPct: z.number().finite().int().min(1).max(10000).optional(),
 });
 
 const uploadEvidenceSchema = z.object({

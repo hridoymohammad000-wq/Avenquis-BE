@@ -30,10 +30,16 @@ const calculateMaterialitySchema = z.object({
     "total_expenses",
     "equity",
   ]),
-  benchmarkAmount: z.number(),
-  percentageApplied: z.number().int().min(1).max(10000), // basis points
-  performanceMaterialityPct: z.number().int().min(1).max(10000).optional(),
-  clearlyTrivialPct: z.number().int().min(1).max(10000).optional(),
+  benchmarkAmount: z.number().finite().nonnegative(),
+  percentageApplied: z.number().finite().int().min(1).max(10000), // basis points
+  performanceMaterialityPct: z
+    .number()
+    .finite()
+    .int()
+    .min(1)
+    .max(10000)
+    .optional(),
+  clearlyTrivialPct: z.number().finite().int().min(1).max(10000).optional(),
   rationale: z.string().optional(),
 });
 
