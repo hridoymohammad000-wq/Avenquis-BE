@@ -1,4 +1,11 @@
-import { db, dvsRecords, engagements, eq, and } from "@avenquis/database";
+import {
+  db,
+  dvsRecords,
+  engagements,
+  memberships,
+  eq,
+  and,
+} from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 import { randomBytes } from "crypto";
 
@@ -20,6 +27,20 @@ export class DvsService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    const generator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, generatedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!generator) {
+      throw new ApiError(
+        403,
+        "Invalid generator membership",
+        "INVALID_MEMBERSHIP",
+      );
     }
 
     // Mocking the DVS generation logic which would normally call ICAB's API

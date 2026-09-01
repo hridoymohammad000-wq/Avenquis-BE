@@ -2,6 +2,7 @@ import {
   db,
   regulatoryFilings,
   engagements,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
@@ -10,6 +11,7 @@ import { ApiError } from "../errors/api-error.js";
 export class RegulatoryFilingService {
   static async createFiling(
     tenantId: string,
+    createdByMembershipId: string,
     data: {
       engagementId: string;
       regulator: string;
@@ -27,6 +29,19 @@ export class RegulatoryFilingService {
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
+
+    const creator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, createdByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!creator)
+      throw new ApiError(
+        403,
+        "Invalid creator membership",
+        "INVALID_MEMBERSHIP",
+      );
 
     const [filing] = await db
       .insert(regulatoryFilings)
@@ -57,6 +72,43 @@ export class RegulatoryFilingService {
       referenceNumber?: string;
     },
   ) {
+    const submitter = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, submittedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!submitter)
+      throw new ApiError(
+        403,
+        "Invalid submitter membership",
+        "INVALID_MEMBERSHIP",
+      );
+    const filing = await db.query.regulatoryFilings.findFirst({
+      where: and(
+        eq(regulatoryFilings.id, filingId),
+        eq(regulatoryFilings.tenantId, tenantId),
+      ),
+    });
+    if (!filing)
+      throw new ApiError(404, "Filing not found", "FILING_NOT_FOUND");
+    const allowed: Record<string, string[]> = {
+      pending: ["submitted"],
+      submitted: ["accepted", "rejected"],
+      accepted: [],
+      rejected: ["submitted"],
+    };
+    if (
+      data.status !== filing.status &&
+      !allowed[filing.status]?.includes(data.status)
+    ) {
+      throw new ApiError(
+        400,
+        "Invalid filing status transition",
+        "INVALID_STATUS_TRANSITION",
+      );
+    }
+
     const [updated] = await db
       .update(regulatoryFilings)
       .set({
