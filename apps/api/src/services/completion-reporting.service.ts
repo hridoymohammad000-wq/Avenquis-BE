@@ -3,6 +3,7 @@ import {
   auditCompletionChecklists,
   auditReports,
   engagements,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
@@ -53,6 +54,20 @@ export class CompletionReportingService {
       comments?: string;
     },
   ) {
+    const completer = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, completedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!completer) {
+      throw new ApiError(
+        403,
+        "Invalid completer membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const [updated] = await db
       .update(auditCompletionChecklists)
       .set({
@@ -134,6 +149,13 @@ export class CompletionReportingService {
     });
 
     if (existing) {
+      if (existing.status !== "draft") {
+        throw new ApiError(
+          400,
+          "Signed report cannot be edited",
+          "REPORT_ALREADY_SIGNED",
+        );
+      }
       // Update
       const [updated] = await db
         .update(auditReports)
@@ -191,6 +213,20 @@ export class CompletionReportingService {
       );
     }
 
+    const signer = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, signedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!signer) {
+      throw new ApiError(
+        403,
+        "Invalid signer membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const pendingChecklist = await db
       .select()
       .from(auditCompletionChecklists)
@@ -228,6 +264,13 @@ export class CompletionReportingService {
       )
       .returning();
 
+    if (!updated) {
+      throw new ApiError(
+        409,
+        "Report was signed by another request",
+        "REPORT_SIGNING_CONFLICT",
+      );
+    }
     return updated;
   }
 

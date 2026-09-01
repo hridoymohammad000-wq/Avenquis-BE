@@ -3,6 +3,9 @@ import {
   auditExceptions,
   auditReviews,
   engagements,
+  memberships,
+  auditProcedures,
+  auditPrograms,
   eq,
   and,
   desc,
@@ -34,6 +37,43 @@ export class ExceptionReviewService {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
 
+    const raiser = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, raisedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!raiser) {
+      throw new ApiError(
+        403,
+        "Invalid raiser membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+    if (data.procedureId) {
+      const procedure = await db.query.auditProcedures.findFirst({
+        where: and(
+          eq(auditProcedures.id, data.procedureId),
+          eq(auditProcedures.tenantId, tenantId),
+        ),
+      });
+      const program = procedure
+        ? await db.query.auditPrograms.findFirst({
+            where: and(
+              eq(auditPrograms.id, procedure.programId),
+              eq(auditPrograms.tenantId, tenantId),
+            ),
+          })
+        : null;
+      if (!program || program.engagementId !== data.engagementId) {
+        throw new ApiError(
+          400,
+          "Procedure is not part of this engagement",
+          "INVALID_PROCEDURE",
+        );
+      }
+    }
+
     const [exception] = await db
       .insert(auditExceptions)
       .values({
@@ -61,6 +101,20 @@ export class ExceptionReviewService {
       financialImpact?: number;
     },
   ) {
+    const resolver = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, resolvedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!resolver) {
+      throw new ApiError(
+        403,
+        "Invalid resolver membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const [updated] = await db
       .update(auditExceptions)
       .set({
@@ -142,6 +196,20 @@ export class ExceptionReviewService {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
 
+    const reviewer = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, reviewerMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!reviewer) {
+      throw new ApiError(
+        403,
+        "Invalid reviewer membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const [review] = await db
       .insert(auditReviews)
       .values({
@@ -166,6 +234,27 @@ export class ExceptionReviewService {
       findings?: string;
     },
   ) {
+    const review = await db.query.auditReviews.findFirst({
+      where: and(
+        eq(auditReviews.id, reviewId),
+        eq(auditReviews.tenantId, tenantId),
+      ),
+    });
+    if (!review || review.reviewerMembershipId !== reviewerMembershipId) {
+      throw new ApiError(
+        404,
+        "Review not found or you are not authorized to sign off this review",
+        "REVIEW_NOT_FOUND",
+      );
+    }
+    if (!["in_progress", "requires_rework"].includes(review.status)) {
+      throw new ApiError(
+        400,
+        "Review is already completed",
+        "REVIEW_ALREADY_COMPLETED",
+      );
+    }
+
     const [updated] = await db
       .update(auditReviews)
       .set({
