@@ -11,6 +11,8 @@ export interface TokenPayload {
 }
 
 export class AuthService {
+  private static readonly revokedTokens = new Set<string>();
+
   static async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(12);
     return bcrypt.hash(password, salt);
@@ -34,6 +36,7 @@ export class AuthService {
   }
 
   static verifyAccessToken(token: string): TokenPayload {
+    if (this.revokedTokens.has(token)) throw new Error("Token revoked");
     return jwt.verify(token, env.JWT_SECRET) as TokenPayload;
   }
 
@@ -48,6 +51,38 @@ export class AuthService {
     const secret = authenticator.generateSecret();
     const otpauthUrl = authenticator.keyuri(email, "Avenquis OS", secret);
     return { secret, otpauthUrl };
+  }
+
+  static encryptMfaSecret(secret: string): string {
+    const iv = crypto.randomBytes(12);
+    const key = crypto.createHash("sha256").update(env.MFA_ENCRYPTION_KEY).digest();
+    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+    const ciphertext = Buffer.concat([cipher.update(secret, "utf8"), cipher.final()]);
+    return `v1:${iv.toString("base64url")}:${cipher.getAuthTag().toString("base64url")}:${ciphertext.toString("base64url")}`;
+  }
+
+  static decryptMfaSecret(value: string): string {
+    if (!value.startsWith("v1:")) throw new Error("Unencrypted MFA secret rejected");
+    const [, iv, tag, ciphertext] = value.split(":");
+    const key = crypto.createHash("sha256").update(env.MFA_ENCRYPTION_KEY).digest();
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(iv, "base64url"));
+    decipher.setAuthTag(Buffer.from(tag, "base64url"));
+    return Buffer.concat([
+      decipher.update(Buffer.from(ciphertext, "base64url")),
+      decipher.final(),
+    ]).toString("utf8");
+  }
+
+  static async hashBackupCode(code: string): Promise<string> {
+    return bcrypt.hash(code, 12);
+  }
+
+  static async verifyBackupCode(code: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(code, hash);
+  }
+
+  static revokeToken(token: string): void {
+    this.revokedTokens.add(token);
   }
 
   static verifyMfaToken(token: string, secret: string): boolean {

@@ -13,7 +13,7 @@ describe("Phase 14 Trial Balance Import & Multi-Standard Account Mapping API", (
   let clientId: string;
   let engagementId: string;
   let trialBalanceId: string;
-  let lineItemIds: { [code: string]: string } = {};
+  const lineItemIds: { [code: string]: string } = {};
 
   beforeAll(async () => {
     // 1. Create Admin User & Tenant A

@@ -61,15 +61,36 @@ hrFinanceRouter.get(
   "/payroll",
   authenticate,
   requireTenantContext,
-  requirePermission("audit:read"), // A member should be able to read their own, handled loosely here
+  requirePermission("audit:read"),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
-      const membershipId = req.query.membershipId as string | undefined;
+      const requestedMembershipId = req.query.membershipId as string | undefined;
+      const callerMembershipId = req.membership!.id;
+      const isAdmin =
+        req.permissions?.includes("admin:manage") ||
+        req.permissions?.includes("*");
+
+      let effectiveMembershipId = requestedMembershipId;
+
+      if (!isAdmin) {
+        // Non-admin staff can strictly only view their own payroll records
+        if (
+          requestedMembershipId &&
+          requestedMembershipId !== callerMembershipId
+        ) {
+          throw new ApiError(
+            403,
+            "Forbidden: You can only access your own payroll records",
+            "FORBIDDEN_PAYROLL_ACCESS",
+          );
+        }
+        effectiveMembershipId = callerMembershipId;
+      }
 
       const result = await HrFinanceService.getPayrollRecords(
         tenantId,
-        membershipId,
+        effectiveMembershipId,
       );
       res.json({ success: true, data: result });
     } catch (error) {

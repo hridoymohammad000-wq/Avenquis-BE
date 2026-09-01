@@ -176,6 +176,40 @@ export class CompletionReportingService {
     signedByMembershipId: string,
     reportId: string,
   ) {
+    const report = await db.query.auditReports.findFirst({
+      where: and(
+        eq(auditReports.tenantId, tenantId),
+        eq(auditReports.id, reportId),
+      ),
+    });
+
+    if (!report || report.status !== "draft") {
+      throw new ApiError(
+        404,
+        "Report not found or already signed",
+        "REPORT_NOT_FOUND_OR_SIGNED",
+      );
+    }
+
+    const pendingChecklist = await db
+      .select()
+      .from(auditCompletionChecklists)
+      .where(
+        and(
+          eq(auditCompletionChecklists.tenantId, tenantId),
+          eq(auditCompletionChecklists.engagementId, report.engagementId),
+          eq(auditCompletionChecklists.isCompleted, false),
+        ),
+      );
+
+    if (pendingChecklist.length > 0) {
+      throw new ApiError(
+        400,
+        "Cannot sign audit report while completion checklist items remain incomplete",
+        "UNCOMPLETED_CHECKLIST_ITEMS",
+      );
+    }
+
     const [updated] = await db
       .update(auditReports)
       .set({
@@ -189,18 +223,10 @@ export class CompletionReportingService {
         and(
           eq(auditReports.tenantId, tenantId),
           eq(auditReports.id, reportId),
-          eq(auditReports.status, "draft"), // Can only sign drafts
+          eq(auditReports.status, "draft"),
         ),
       )
       .returning();
-
-    if (!updated) {
-      throw new ApiError(
-        404,
-        "Report not found or already signed",
-        "REPORT_NOT_FOUND_OR_SIGNED",
-      );
-    }
 
     return updated;
   }

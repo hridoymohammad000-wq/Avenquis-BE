@@ -5,7 +5,6 @@ import {
   eq,
   and,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
 import crypto from "crypto";
 
 export class AutomationService {
@@ -47,9 +46,9 @@ export class AutomationService {
     data: {
       name: string;
       triggerEvent: string;
-      condition?: Record<string, any>;
+      condition?: Record<string, unknown>;
       actionType: string;
-      actionPayload?: Record<string, any>;
+      actionPayload?: Record<string, unknown>;
     },
   ) {
     const [rule] = await db

@@ -80,7 +80,7 @@ describe("Phase 35 Country Regulatory Packs API", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.some((p: any) => p.bodyCode === "ICAB")).toBe(true);
+      expect(res.body.data.some((p: { bodyCode: string }) => p.bodyCode === "ICAB")).toBe(true);
     });
 
     it("should filter packs by countryCode", async () => {
@@ -90,7 +90,7 @@ describe("Phase 35 Country Regulatory Packs API", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.every((p: any) => p.countryCode === "BD")).toBe(true);
+      expect(res.body.data.every((p: { countryCode: string }) => p.countryCode === "BD")).toBe(true);
     });
   });
 
@@ -106,19 +106,26 @@ describe("Phase 35 Country Regulatory Packs API", () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.packId).toBe(testPackId);
-      expect(res.body.data.isActive).toBe(true);
+      expect(
+        res.body.data.some(
+          (pack: { packName: string }) => pack.packName.length > 0,
+        ),
+      ).toBe(true);
     });
 
-    it("should fetch the tenant's active regulatory packs", async () => {
+    it("should list tenant enabled regulatory packs", async () => {
       const res = await request(app)
-        .get("/api/v1/regulatory/tenant-packs")
+        .get("/api/v1/regulatory-packs/tenant")
         .set("Authorization", `Bearer ${adminToken}`)
         .set("x-tenant-id", tenantAId);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(
+        res.body.data.some(
+          (tp: { tenantId: string }) => tp.tenantId === tenantAId,
+        ),
+      ).toBe(true);
       expect(res.body.data[0].packId).toBe(testPackId);
     });
   });

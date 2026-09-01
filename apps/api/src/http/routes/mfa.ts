@@ -6,11 +6,12 @@ import { AuthService } from "../../services/auth.service.js";
 import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";
 import { ApiError } from "../../errors/api-error.js";
+import { mfaRateLimit } from "../middlewares/rate-limit.js";
 
 export const mfaRouter = Router();
 
 // POST /setup - Generate TOTP secret and QR code
-mfaRouter.post("/setup", authenticate, async (req, res, next) => {
+mfaRouter.post("/setup", mfaRateLimit, authenticate, async (req, res, next) => {
   try {
     const user = await db.query.userProfiles.findFirst({
       where: eq(userProfiles.id, req.user!.id),
@@ -26,7 +27,11 @@ mfaRouter.post("/setup", authenticate, async (req, res, next) => {
     // Save secret pending verification
     await db
       .update(userProfiles)
-      .set({ mfaSecret: secret, updatedAt: new Date() })
+      .set({
+        mfaSecretEncrypted: AuthService.encryptMfaSecret(secret),
+        mfaSecret: null,
+        updatedAt: new Date(),
+      })
       .where(eq(userProfiles.id, user.id));
 
     res.json({
@@ -42,7 +47,7 @@ mfaRouter.post("/setup", authenticate, async (req, res, next) => {
 });
 
 // POST /verify - Confirm TOTP enrollment with first code and issue backup codes + AAL2 tokens
-mfaRouter.post("/verify", authenticate, async (req, res, next) => {
+mfaRouter.post("/verify", mfaRateLimit, authenticate, async (req, res, next) => {
   try {
     const verifySchema = z.object({
       token: z.string().min(6).max(6),
@@ -57,7 +62,9 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       where: eq(userProfiles.id, req.user!.id),
     });
 
-    if (!user || !user.mfaSecret) {
+    const encryptedSecret = user?.mfaSecretEncrypted;
+    const legacySecret = user?.mfaSecret;
+    if (!user || (!encryptedSecret && !legacySecret)) {
       throw new ApiError(
         400,
         "MFA setup has not been initiated",
@@ -65,10 +72,10 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
       );
     }
 
-    const isValid = AuthService.verifyMfaToken(
-      parseResult.data.token,
-      user.mfaSecret,
-    );
+    const secret = encryptedSecret
+      ? AuthService.decryptMfaSecret(encryptedSecret)
+      : legacySecret!;
+    const isValid = AuthService.verifyMfaToken(parseResult.data.token, secret);
     if (!isValid) {
       throw new ApiError(
         400,
@@ -78,12 +85,17 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
     }
 
     const backupCodes = AuthService.generateBackupCodes(8);
+    const backupCodeHashes = await Promise.all(
+      backupCodes.map((code) => AuthService.hashBackupCode(code)),
+    );
 
     await db
       .update(userProfiles)
       .set({
         mfaEnabled: true,
-        mfaBackupCodes: backupCodes,
+        mfaBackupCodes: backupCodeHashes,
+        mfaSecretEncrypted: AuthService.encryptMfaSecret(secret),
+        mfaSecret: null,
         updatedAt: new Date(),
       })
       .where(eq(userProfiles.id, user.id));
@@ -116,7 +128,7 @@ mfaRouter.post("/verify", authenticate, async (req, res, next) => {
 });
 
 // POST /challenge - Verify TOTP during login to upgrade from AAL1 to AAL2
-mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
+mfaRouter.post("/challenge", mfaRateLimit, authenticate, async (req, res, next) => {
   try {
     const challengeSchema = z.object({
       token: z.string().min(6),
@@ -131,7 +143,7 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
       where: eq(userProfiles.id, req.user!.id),
     });
 
-    if (!user || !user.mfaEnabled || !user.mfaSecret) {
+    if (!user || !user.mfaEnabled || (!user.mfaSecretEncrypted && !user.mfaSecret)) {
       throw new ApiError(
         400,
         "MFA is not enabled for this account",
@@ -139,23 +151,37 @@ mfaRouter.post("/challenge", authenticate, async (req, res, next) => {
       );
     }
 
-    let isValid = AuthService.verifyMfaToken(
-      parseResult.data.token,
-      user.mfaSecret,
-    );
+    const secret = user.mfaSecretEncrypted
+      ? AuthService.decryptMfaSecret(user.mfaSecretEncrypted)
+      : user.mfaSecret!;
+    let isValid = AuthService.verifyMfaToken(parseResult.data.token, secret);
 
     // Check backup codes if TOTP fails
     if (!isValid && Array.isArray(user.mfaBackupCodes)) {
-      const backupIndex = (user.mfaBackupCodes as string[]).indexOf(
-        parseResult.data.token.toUpperCase(),
-      );
+      const entered = parseResult.data.token.toUpperCase();
+      const codes = user.mfaBackupCodes as string[];
+      let backupIndex = -1;
+      for (let index = 0; index < codes.length; index += 1) {
+        const matches = codes[index].startsWith("$2")
+          ? await AuthService.verifyBackupCode(entered, codes[index])
+          : codes[index] === entered;
+        if (matches) {
+          backupIndex = index;
+          break;
+        }
+      }
       if (backupIndex !== -1) {
         isValid = true;
-        const updatedBackupCodes = [...(user.mfaBackupCodes as string[])];
+        const updatedBackupCodes = [...codes];
         updatedBackupCodes.splice(backupIndex, 1);
+        const migratedBackupCodes = codes[backupIndex].startsWith("$2")
+          ? updatedBackupCodes
+          : await Promise.all(
+              updatedBackupCodes.map((code) => AuthService.hashBackupCode(code)),
+            );
         await db
           .update(userProfiles)
-          .set({ mfaBackupCodes: updatedBackupCodes })
+          .set({ mfaBackupCodes: migratedBackupCodes })
           .where(eq(userProfiles.id, user.id));
       }
     }

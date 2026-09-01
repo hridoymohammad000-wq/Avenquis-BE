@@ -55,7 +55,12 @@ export class AiIntelligenceService {
       )
       .returning();
 
-    return updated;
+    return {
+      ...updated,
+      isMock: true,
+      provider: "OFFLINE_AI_STUB",
+      note: "Offline heuristic stub response. Production LLM API keys required for live inference.",
+    };
   }
 
   static async getDocumentAnalysis(tenantId: string, analysisId: string) {
@@ -68,7 +73,13 @@ export class AiIntelligenceService {
           eq(aiDocumentAnalyses.id, analysisId),
         ),
       );
-    return analysis;
+    return analysis
+      ? {
+          ...analysis,
+          isMock: true,
+          provider: "OFFLINE_AI_STUB",
+        }
+      : undefined;
   }
 
   // ──────────── ENGAGEMENT REVIEW ────────────
@@ -123,6 +134,11 @@ export class AiIntelligenceService {
       )
       .returning();
 
-    return updated;
+    return {
+      ...updated,
+      isMock: true,
+      provider: "OFFLINE_AI_STUB",
+      note: "Offline heuristic stub response. Production LLM API keys required for live inference.",
+    };
   }
 }

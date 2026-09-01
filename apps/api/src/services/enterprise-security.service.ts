@@ -5,7 +5,8 @@ import {
   eq,
   desc,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
+
+import { SecretService } from "./secret.service.js";
 
 export class EnterpriseSecurityService {
   // --- SSO Provider Management ---
@@ -20,6 +21,10 @@ export class EnterpriseSecurityService {
       isActive: boolean;
     }
   ) {
+    const encryptedCertificate = data.certificate
+      ? SecretService.encryptSecret(data.certificate)
+      : undefined;
+
     const [existing] = await db
       .select()
       .from(tenantSsoProviders)
@@ -30,11 +35,17 @@ export class EnterpriseSecurityService {
         .update(tenantSsoProviders)
         .set({
           ...data,
+          certificate: encryptedCertificate,
           updatedAt: new Date(),
         })
         .where(eq(tenantSsoProviders.id, existing.id))
         .returning();
-      return updated;
+      return {
+        ...updated,
+        ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
+        isLiveIdentityProvider: false,
+        note: "SSO metadata saved. Live SAML/OIDC identity assertion binding requires active IdP connection endpoint.",
+      };
     }
 
     const [inserted] = await db
@@ -42,10 +53,16 @@ export class EnterpriseSecurityService {
       .values({
         tenantId,
         ...data,
+        certificate: encryptedCertificate,
       })
       .returning();
 
-    return inserted;
+    return {
+      ...inserted,
+      ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
+      isLiveIdentityProvider: false,
+      note: "SSO metadata saved. Live SAML/OIDC identity assertion binding requires active IdP connection endpoint.",
+    };
   }
 
   static async getSsoProvider(tenantId: string) {
@@ -54,7 +71,13 @@ export class EnterpriseSecurityService {
       .from(tenantSsoProviders)
       .where(eq(tenantSsoProviders.tenantId, tenantId));
     
-    return provider || null;
+    return provider
+      ? {
+          ...provider,
+          ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
+          isLiveIdentityProvider: false,
+        }
+      : null;
   }
 
   // --- Enterprise Audit Logs ---
@@ -65,7 +88,7 @@ export class EnterpriseSecurityService {
       action: string;
       resourceType?: string;
       resourceId?: string;
-      metadata?: any;
+      metadata?: unknown;
       ipAddress?: string;
       userAgent?: string;
     }

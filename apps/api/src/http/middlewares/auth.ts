@@ -15,6 +15,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 
   try {
     const payload = AuthService.verifyAccessToken(token);
+    req.authToken = token;
     req.user = {
       id: payload.userId,
       email: payload.email,

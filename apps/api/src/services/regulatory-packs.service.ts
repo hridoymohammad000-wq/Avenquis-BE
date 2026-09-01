@@ -10,7 +10,12 @@ import { ApiError } from "../errors/api-error.js";
 
 export class RegulatoryPacksService {
   static async getAvailablePacks(countryCode?: string) {
-    let query = db
+    const filters = [eq(regulatoryRulePacks.isActive, true)];
+    if (countryCode) {
+      filters.push(eq(globalRegulatoryBodies.countryCode, countryCode));
+    }
+
+    return db
       .select({
         packId: regulatoryRulePacks.id,
         packName: regulatoryRulePacks.name,
@@ -25,9 +30,7 @@ export class RegulatoryPacksService {
         globalRegulatoryBodies,
         eq(regulatoryRulePacks.bodyId, globalRegulatoryBodies.id)
       )
-      .where(eq(regulatoryRulePacks.isActive, true));
-
-    return await query;
+      .where(and(...filters));
   }
 
   static async getTenantPacks(tenantId: string) {

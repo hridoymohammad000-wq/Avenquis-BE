@@ -5,7 +5,6 @@ import {
   eq,
   and,
 } from "@avenquis/database";
-import { ApiError } from "../errors/api-error.js";
 
 export class AdvancedAnalyticsService {
   // ──────────── WORKLOAD & RESOURCE PLANNING ────────────
@@ -62,10 +61,10 @@ export class AdvancedAnalyticsService {
     // Calculate profit margin: (Revenue - Cost) / Revenue * 100
     let margin = 0;
     if (data.estimatedRevenue > 0) {
-      margin = Math.round(
+      const rawMargin =
         ((data.estimatedRevenue - data.actualCost) / data.estimatedRevenue) *
-          100,
-      );
+        100;
+      margin = Math.round(rawMargin * 100) / 100;
     }
 
     const [snapshot] = await db

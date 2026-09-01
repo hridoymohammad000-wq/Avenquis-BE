@@ -121,6 +121,7 @@ describe("Phase 17 Sampling & Evidence API", () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       sampleId = res.body.data.id;
+      expect(sampleId).toBeDefined();
       expect(res.body.data.sampleSize).toBe(57);
       expect(res.body.data.selectionMethod).toBe("random");
     });

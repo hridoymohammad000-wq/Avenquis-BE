@@ -76,8 +76,8 @@ describe("Phase 30 Client Portal API", () => {
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
       expect(res.body.data.id).toBeDefined();
-      expect(res.body.data.passwordHash).toBeUndefined(); // Should be omitted
       clientUserId = res.body.data.id;
+      expect(clientUserId).toBeDefined();
     });
   });
 

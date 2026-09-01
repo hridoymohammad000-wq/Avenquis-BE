@@ -87,7 +87,11 @@ describe("Phase 38 International SaaS Readiness", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.some((s: any) => s.moduleName === "V5_CORE_SECURITY")).toBe(true);
+      expect(
+        res.body.data.some(
+          (so: { moduleName: string }) => so.moduleName === "V5_CORE_PLATFORM",
+        ),
+      ).toBe(true);
     });
   });
 });

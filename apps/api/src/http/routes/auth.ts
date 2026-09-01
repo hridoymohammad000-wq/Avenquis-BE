@@ -5,6 +5,7 @@ import { AuthService } from "../../services/auth.service.js";
 import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";
 import { ApiError } from "../../errors/api-error.js";
+import { authRateLimit } from "../middlewares/rate-limit.js";
 
 export const authRouter = Router();
 
@@ -20,7 +21,7 @@ const loginSchema = z.object({
 });
 
 // POST /register
-authRouter.post("/register", async (req, res, next) => {
+authRouter.post("/register", authRateLimit, async (req, res, next) => {
   try {
     const parseResult = registerSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -90,7 +91,7 @@ authRouter.post("/register", async (req, res, next) => {
 });
 
 // POST /login
-authRouter.post("/login", async (req, res, next) => {
+authRouter.post("/login", authRateLimit, async (req, res, next) => {
   try {
     const parseResult = loginSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -212,6 +213,7 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
 
 // POST /logout
 authRouter.post("/logout", authenticate, (req, res) => {
+  if (req.authToken) AuthService.revokeToken(req.authToken);
   res.json({
     success: true,
     message: "Logged out successfully",

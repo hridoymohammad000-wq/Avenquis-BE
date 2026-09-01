@@ -57,7 +57,11 @@ describe("Phase 37 Advanced Integrations (Global ERP APIs)", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data.some((i: any) => i.slug === "xero")).toBe(true);
+      expect(
+        res.body.data.some(
+          (i: { slug: string }) => i.slug === "sap-erp",
+        ),
+      ).toBe(true);
     });
   });
 

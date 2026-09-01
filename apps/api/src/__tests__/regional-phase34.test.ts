@@ -49,7 +49,11 @@ describe("Phase 34 Multi-country & Regional API", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(3);
-      expect(res.body.data.some((c: any) => c.code === "BD")).toBe(true);
+      expect(
+        res.body.data.some(
+          (reg: { code: string }) => reg.code === "SG",
+        ),
+      ).toBe(true);
     });
   });
 

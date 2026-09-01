@@ -2,12 +2,10 @@ import {
   db,
   auditExceptions,
   auditReviews,
-  auditProcedures,
   engagements,
   eq,
   and,
   desc,
-  sql,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
@@ -104,13 +102,16 @@ export class ExceptionReviewService {
         ),
       );
 
-    const totalUnadjustedImpact = exceptions
+    const rawUnadjusted = exceptions
       .filter((e) => e.resolutionStatus === "unadjusted")
-      .reduce((sum, e) => sum + e.financialImpact, 0);
+      .reduce((sum, e) => sum + (e.financialImpact ?? 0), 0);
 
-    const totalOpenImpact = exceptions
+    const rawOpen = exceptions
       .filter((e) => e.resolutionStatus === "open")
-      .reduce((sum, e) => sum + e.financialImpact, 0);
+      .reduce((sum, e) => sum + (e.financialImpact ?? 0), 0);
+
+    const totalUnadjustedImpact = Math.round(rawUnadjusted * 100) / 100;
+    const totalOpenImpact = Math.round(rawOpen * 100) / 100;
 
     return {
       totalUnadjustedImpact,

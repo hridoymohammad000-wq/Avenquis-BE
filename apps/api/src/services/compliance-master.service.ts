@@ -14,7 +14,7 @@ export class ComplianceMasterService {
     data: {
       name: string;
       category: string;
-      checklistData: any;
+      checklistData: unknown;
     },
   ) {
     const [template] = await db

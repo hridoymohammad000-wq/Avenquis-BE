@@ -18,12 +18,11 @@ export class SamplingEvidenceService {
     confidenceLevelPct: number, // e.g. 9500 = 95%
     tolerableErrorPct: number, // e.g. 500 = 5%
   ): number {
-    // Basic AI-friendly heuristic statistical sampling formula for audit:
-    // Sample Size = (Population Size * Confidence Factor) / Tolerable Error
-    // This is a simplified approximation of ISA 530 formulas.
+    if (populationSize <= 0) return 0;
+    if (populationSize === 1) return 1;
 
-    // Map confidence level to Reliability Factor (R-Factor)
-    let rFactor = 1.0;
+    // Map confidence level to Reliability Factor (R-Factor) per ISA 530
+    let rFactor: number;
     if (confidenceLevelPct >= 9900) rFactor = 4.61;
     else if (confidenceLevelPct >= 9500) rFactor = 3.0;
     else if (confidenceLevelPct >= 9000) rFactor = 2.31;
@@ -36,7 +35,6 @@ export class SamplingEvidenceService {
     if (teDecimal <= 0) return populationSize; // avoid division by zero
 
     // Simplified sample size: R-Factor / Tolerable Error Rate
-    // Note: monetary unit sampling often uses R-factor / TE decimal, but for items we use a simpler distribution
     const rawSampleSize = rFactor / teDecimal;
 
     // Apply finite population correction
