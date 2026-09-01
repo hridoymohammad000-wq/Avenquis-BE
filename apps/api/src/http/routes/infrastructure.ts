@@ -25,7 +25,7 @@ infrastructureRouter.get(
   "/tenant-config",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
@@ -42,7 +42,7 @@ infrastructureRouter.post(
   "/tenant-config",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
@@ -74,7 +74,7 @@ infrastructureRouter.get(
   "/signoffs",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const result = await InfrastructureService.getReadinessSignoffs();
@@ -90,7 +90,7 @@ infrastructureRouter.post(
   "/signoffs",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const parseResult = signoffSchema.safeParse(req.body);

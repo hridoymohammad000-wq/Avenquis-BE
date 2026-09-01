@@ -10,7 +10,7 @@ The first target market is Bangladesh, but the platform is being designed from t
 
 ## Project Status
 
-**Current Stage:** Backend audit in progress (Phases 3–35 audited; fixes submitted through PR #12)
+**Current Stage:** Backend audit complete (Phases 3–38 audited; fixes submitted through PR #13)
 **Test Suite Status:** TypeScript and targeted lint checks pass for the audited batches; full Supabase-backed integration verification is still pending.
 **Public Launch:** After V5 only  
 **Development Model:** Build → Private Test → Improve → Next Version → Final QA → Launch
@@ -54,9 +54,9 @@ This checklist records work that has actually been audited and verified in this 
 - [x] **Phase 33:** Internationalization and multi-language — tenant locale lookup and normalization hardened
 - [x] **Phase 34:** Multi-country and regional data — inactive country and code normalization validation hardened
 - [x] **Phase 35:** Country regulatory packs — inactive regulatory body activation blocked
-- [ ] **Phase 36:** Enterprise security and identity — audit pending
-- [ ] **Phase 37:** Advanced integrations — audit pending
-- [ ] **Phase 38:** International SaaS readiness and final QA — audit pending
+- [x] **Phase 36:** Enterprise security and identity — secret redaction and MFA elevation hardened
+- [x] **Phase 37:** Advanced integrations — tenant-owned sync validation and credential redaction hardened
+- [x] **Phase 38:** International SaaS readiness and final QA — dedicated config redaction and uniqueness constraints hardened
 
 #### Audit PRs
 
@@ -71,10 +71,11 @@ This checklist records work that has actually been audited and verified in this 
 - [x] [PR #10 — Phases 27–29 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/10)
 - [x] [PR #11 — Phases 30–32 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/11)
 - [x] [PR #12 — Phases 33–35 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/12)
+- [x] [PR #13 — Phases 36–38 hardening](https://github.com/hridoymohammad000-wq/Avenquis-BE/pull/13)
 
 #### Known Verification Limitations
 
-- [ ] Full 38-phase audit completed
+- [x] Full 38-phase audit completed in repository; production readiness gates remain open
 - [ ] Full Supabase/PostgreSQL integration suite executed after migrations
 - [ ] RLS session context verified on every API request path
 - [ ] Production secrets rotated after the previously exposed database credential
@@ -1355,7 +1356,7 @@ Not complexity for its own sake.
 
 # Current Next Action
 
-Continue the backend audit with Phases 36–38. Do not describe the backend as fully production-ready until the remaining unchecked items and the Supabase-backed integration verification are complete.
+Backend phase audit is complete through Phase 38. Do not describe the backend as fully production-ready until the remaining platform gates—RLS revalidation, Supabase-backed integration verification, production secret rotation, and final QA—are complete.
 
 ---
 

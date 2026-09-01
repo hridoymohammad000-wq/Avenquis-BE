@@ -11,6 +11,14 @@ import { ApiError } from "../errors/api-error.js";
 import { SecretService } from "./secret.service.js";
 
 export class IntegrationsService {
+  private static redactCredentials<T extends { credentials?: string | null }>(
+    connection: T,
+  ) {
+    const safeConnection = { ...connection };
+    delete safeConnection.credentials;
+    return safeConnection;
+  }
+
   static async getGlobalIntegrations(category?: string) {
     const filters = [eq(globalIntegrations.isActive, true)];
     if (category) {
@@ -38,7 +46,7 @@ export class IntegrationsService {
       .from(tenantIntegrations)
       .innerJoin(
         globalIntegrations,
-        eq(tenantIntegrations.integrationId, globalIntegrations.id)
+        eq(tenantIntegrations.integrationId, globalIntegrations.id),
       )
       .where(eq(tenantIntegrations.tenantId, tenantId));
   }
@@ -47,7 +55,7 @@ export class IntegrationsService {
     tenantId: string,
     integrationId: string,
     credentials: string,
-    settings: unknown
+    settings: unknown,
   ) {
     const [integration] = await db
       .select()
@@ -55,7 +63,11 @@ export class IntegrationsService {
       .where(eq(globalIntegrations.id, integrationId));
 
     if (!integration || !integration.isActive) {
-      throw new ApiError(400, "Integration not found or inactive", "INTEGRATION_NOT_FOUND");
+      throw new ApiError(
+        400,
+        "Integration not found or inactive",
+        "INTEGRATION_NOT_FOUND",
+      );
     }
 
     const encryptedCredentials = SecretService.encryptSecret(credentials);
@@ -64,8 +76,10 @@ export class IntegrationsService {
       .select()
       .from(tenantIntegrations)
       .where(eq(tenantIntegrations.tenantId, tenantId));
-    
-    const existingConnection = existingList.find(e => e.integrationId === integrationId);
+
+    const existingConnection = existingList.find(
+      (e) => e.integrationId === integrationId,
+    );
 
     if (existingConnection) {
       const [updated] = await db
@@ -78,7 +92,7 @@ export class IntegrationsService {
         })
         .where(eq(tenantIntegrations.id, existingConnection.id))
         .returning();
-      return updated;
+      return this.redactCredentials(updated);
     }
 
     const [connected] = await db
@@ -92,16 +106,35 @@ export class IntegrationsService {
       })
       .returning();
 
-    return connected;
+    return this.redactCredentials(connected);
   }
 
   static async logSyncEvent(
+    tenantId: string,
     tenantIntegrationId: string,
     syncType: string,
     status: string,
     recordsProcessed: number,
-    errorDetails?: string
+    errorDetails?: string,
   ) {
+    const [connection] = await db
+      .select({ id: tenantIntegrations.id })
+      .from(tenantIntegrations)
+      .where(
+        and(
+          eq(tenantIntegrations.id, tenantIntegrationId),
+          eq(tenantIntegrations.tenantId, tenantId),
+        ),
+      );
+
+    if (!connection) {
+      throw new ApiError(
+        404,
+        "Tenant integration not found",
+        "TENANT_INTEGRATION_NOT_FOUND",
+      );
+    }
+
     const [log] = await db
       .insert(integrationSyncLogs)
       .values({
@@ -110,7 +143,7 @@ export class IntegrationsService {
         status,
         recordsProcessed,
         errorDetails,
-        completedAt: status === 'IN_PROGRESS' ? null : new Date(),
+        completedAt: status === "IN_PROGRESS" ? null : new Date(),
       })
       .returning();
     return log;

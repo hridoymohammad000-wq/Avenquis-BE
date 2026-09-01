@@ -7,12 +7,20 @@ import {
 import { SecretService } from "./secret.service.js";
 
 export class InfrastructureService {
+  private static redactConfig<T extends { databaseUrlSecret?: string | null }>(
+    config: T,
+  ) {
+    const safeConfig = { ...config };
+    delete safeConfig.databaseUrlSecret;
+    return safeConfig;
+  }
+
   static async getTenantConfig(tenantId: string) {
     const [config] = await db
       .select()
       .from(dedicatedTenantConfigs)
       .where(eq(dedicatedTenantConfigs.tenantId, tenantId));
-    return config || null;
+    return config ? this.redactConfig(config) : null;
   }
 
   static async configureDedicatedTenant(
@@ -21,9 +29,11 @@ export class InfrastructureService {
       databaseUrlSecret: string;
       storageBucketName: string;
       kmsKeyId?: string;
-    }
+    },
   ) {
-    const encryptedDatabaseUrl = SecretService.encryptSecret(data.databaseUrlSecret);
+    const encryptedDatabaseUrl = SecretService.encryptSecret(
+      data.databaseUrlSecret,
+    );
 
     const [existing] = await db
       .select()
@@ -41,7 +51,7 @@ export class InfrastructureService {
         })
         .where(eq(dedicatedTenantConfigs.id, existing.id))
         .returning();
-      return updated;
+      return this.redactConfig(updated);
     }
 
     const [inserted] = await db
@@ -55,7 +65,7 @@ export class InfrastructureService {
       })
       .returning();
 
-    return inserted;
+    return this.redactConfig(inserted);
   }
 
   // PLATFORM LEVEL: Final QA Sign-offs
@@ -67,7 +77,7 @@ export class InfrastructureService {
     moduleName: string,
     status: string,
     userId: string,
-    notes?: string
+    notes?: string,
   ) {
     const [signoff] = await db
       .insert(saasReadinessSignoffs)
@@ -76,7 +86,7 @@ export class InfrastructureService {
         status,
         approvedBy: userId,
         notes,
-        approvedAt: status === 'APPROVED' ? new Date() : null,
+        approvedAt: status === "APPROVED" ? new Date() : null,
       })
       .returning();
     return signoff;

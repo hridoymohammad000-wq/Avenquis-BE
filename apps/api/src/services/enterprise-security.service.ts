@@ -9,6 +9,14 @@ import {
 import { SecretService } from "./secret.service.js";
 
 export class EnterpriseSecurityService {
+  private static redactProvider<T extends { certificate?: string | null }>(
+    provider: T,
+  ) {
+    const safeProvider = { ...provider };
+    delete safeProvider.certificate;
+    return safeProvider;
+  }
+
   // --- SSO Provider Management ---
   static async configureSsoProvider(
     tenantId: string,
@@ -19,7 +27,7 @@ export class EnterpriseSecurityService {
       certificate?: string;
       clientId?: string;
       isActive: boolean;
-    }
+    },
   ) {
     const encryptedCertificate = data.certificate
       ? SecretService.encryptSecret(data.certificate)
@@ -41,7 +49,7 @@ export class EnterpriseSecurityService {
         .where(eq(tenantSsoProviders.id, existing.id))
         .returning();
       return {
-        ...updated,
+        ...this.redactProvider(updated),
         ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
         isLiveIdentityProvider: false,
         note: "SSO metadata saved. Live SAML/OIDC identity assertion binding requires active IdP connection endpoint.",
@@ -58,7 +66,7 @@ export class EnterpriseSecurityService {
       .returning();
 
     return {
-      ...inserted,
+      ...this.redactProvider(inserted),
       ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
       isLiveIdentityProvider: false,
       note: "SSO metadata saved. Live SAML/OIDC identity assertion binding requires active IdP connection endpoint.",
@@ -70,10 +78,10 @@ export class EnterpriseSecurityService {
       .select()
       .from(tenantSsoProviders)
       .where(eq(tenantSsoProviders.tenantId, tenantId));
-    
+
     return provider
       ? {
-          ...provider,
+          ...this.redactProvider(provider),
           ssoFlowStatus: "CONFIGURATION_ONLY_NOT_CONNECTED",
           isLiveIdentityProvider: false,
         }
@@ -91,7 +99,7 @@ export class EnterpriseSecurityService {
       metadata?: unknown;
       ipAddress?: string;
       userAgent?: string;
-    }
+    },
   ) {
     const [log] = await db
       .insert(enterpriseAuditLogs)
