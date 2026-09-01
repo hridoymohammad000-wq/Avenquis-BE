@@ -3,6 +3,8 @@ import {
   auditSamples,
   auditEvidence,
   auditProcedures,
+  auditPrograms,
+  memberships,
   engagements,
   eq,
   and,
@@ -18,6 +20,12 @@ export class SamplingEvidenceService {
     confidenceLevelPct: number, // e.g. 9500 = 95%
     tolerableErrorPct: number, // e.g. 500 = 5%
   ): number {
+    if (
+      !Number.isFinite(populationSize) ||
+      !Number.isFinite(confidenceLevelPct) ||
+      !Number.isFinite(tolerableErrorPct)
+    )
+      return 0;
     if (populationSize <= 0) return 0;
     if (populationSize === 1) return 1;
 
@@ -67,6 +75,36 @@ export class SamplingEvidenceService {
       throw new ApiError(404, "Procedure not found", "PROCEDURE_NOT_FOUND");
     }
 
+    if (procedure.programId) {
+      const program = await db.query.auditPrograms.findFirst({
+        where: and(
+          eq(auditPrograms.id, procedure.programId),
+          eq(auditPrograms.tenantId, tenantId),
+        ),
+      });
+      if (!program || program.engagementId !== data.engagementId) {
+        throw new ApiError(
+          400,
+          "Procedure is not part of this engagement",
+          "INVALID_PROCEDURE",
+        );
+      }
+    }
+
+    const creator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, createdByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!creator) {
+      throw new ApiError(
+        403,
+        "Invalid creator membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const conf = data.confidenceLevelPct ?? 9500;
     const te = data.tolerableErrorPct ?? 500;
 
@@ -114,6 +152,49 @@ export class SamplingEvidenceService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    if (data.procedureId) {
+      const procedure = await db.query.auditProcedures.findFirst({
+        where: and(
+          eq(auditProcedures.id, data.procedureId),
+          eq(auditProcedures.tenantId, tenantId),
+        ),
+      });
+      if (!procedure) {
+        throw new ApiError(
+          400,
+          "Procedure not found in this tenant",
+          "INVALID_PROCEDURE",
+        );
+      }
+      const program = await db.query.auditPrograms.findFirst({
+        where: and(
+          eq(auditPrograms.id, procedure.programId),
+          eq(auditPrograms.tenantId, tenantId),
+        ),
+      });
+      if (!program || program.engagementId !== data.engagementId) {
+        throw new ApiError(
+          400,
+          "Procedure is not part of this engagement",
+          "INVALID_PROCEDURE",
+        );
+      }
+    }
+
+    const uploader = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, uploadedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!uploader) {
+      throw new ApiError(
+        403,
+        "Invalid uploader membership",
+        "INVALID_MEMBERSHIP",
+      );
     }
 
     const [evidence] = await db

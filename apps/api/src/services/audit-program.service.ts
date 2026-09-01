@@ -3,6 +3,8 @@ import {
   auditPrograms,
   auditProcedures,
   engagements,
+  memberships,
+  riskAssessments,
   eq,
   and,
   desc,
@@ -30,6 +32,20 @@ export class AuditProgramService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    const preparer = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, preparedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!preparer) {
+      throw new ApiError(
+        403,
+        "Invalid preparer membership",
+        "INVALID_MEMBERSHIP",
+      );
     }
 
     const [program] = await db
@@ -113,6 +129,39 @@ export class AuditProgramService {
 
     if (!program) {
       throw new ApiError(404, "Audit program not found", "PROGRAM_NOT_FOUND");
+    }
+
+    if (data.riskAssessmentId) {
+      const risk = await db.query.riskAssessments.findFirst({
+        where: and(
+          eq(riskAssessments.id, data.riskAssessmentId),
+          eq(riskAssessments.tenantId, tenantId),
+          eq(riskAssessments.engagementId, program.engagementId),
+        ),
+      });
+      if (!risk) {
+        throw new ApiError(
+          400,
+          "Risk assessment is not part of this engagement",
+          "INVALID_RISK_ASSESSMENT",
+        );
+      }
+    }
+
+    if (data.assignedToMembershipId) {
+      const assignee = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.assignedToMembershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!assignee) {
+        throw new ApiError(
+          400,
+          "Assigned member is not part of this tenant",
+          "INVALID_ASSIGNEE",
+        );
+      }
     }
 
     const [procedure] = await db

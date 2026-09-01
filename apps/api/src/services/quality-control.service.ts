@@ -2,6 +2,7 @@ import {
   db,
   auditQualityControls,
   engagements,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
@@ -49,6 +50,20 @@ export class QualityControlService {
       comments?: string;
     },
   ) {
+    const evaluator = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, evaluatedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!evaluator) {
+      throw new ApiError(
+        403,
+        "Invalid evaluator membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     const [updated] = await db
       .update(auditQualityControls)
       .set({
