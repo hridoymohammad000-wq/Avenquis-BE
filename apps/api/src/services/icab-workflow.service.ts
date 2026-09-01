@@ -3,6 +3,7 @@ import {
   icabForms,
   icabExamRegistrations,
   studentProfiles,
+  memberships,
   eq,
   and,
 } from "@avenquis/database";
@@ -47,6 +48,31 @@ export class IcabWorkflowService {
     principalMembershipId: string,
     formId: string,
   ) {
+    const principal = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, principalMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!principal) {
+      throw new ApiError(
+        403,
+        "Invalid principal membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
+    const form = await db.query.icabForms.findFirst({
+      where: and(eq(icabForms.id, formId), eq(icabForms.tenantId, tenantId)),
+    });
+    if (!form) throw new ApiError(404, "Form not found", "FORM_NOT_FOUND");
+    if (form.status !== "draft") {
+      throw new ApiError(
+        400,
+        "Form has already been signed",
+        "FORM_ALREADY_SIGNED",
+      );
+    }
     const [updated] = await db
       .update(icabForms)
       .set({
@@ -121,6 +147,41 @@ export class IcabWorkflowService {
       comments?: string;
     },
   ) {
+    const approver = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, approvedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!approver) {
+      throw new ApiError(
+        403,
+        "Invalid approver membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
+    const registration = await db.query.icabExamRegistrations.findFirst({
+      where: and(
+        eq(icabExamRegistrations.id, registrationId),
+        eq(icabExamRegistrations.tenantId, tenantId),
+      ),
+    });
+    if (!registration) {
+      throw new ApiError(
+        404,
+        "Exam registration not found",
+        "EXAM_REG_NOT_FOUND",
+      );
+    }
+    if (registration.status !== "applied") {
+      throw new ApiError(
+        400,
+        "Exam registration has already been processed",
+        "EXAM_REG_ALREADY_PROCESSED",
+      );
+    }
+
     const [updated] = await db
       .update(icabExamRegistrations)
       .set({
