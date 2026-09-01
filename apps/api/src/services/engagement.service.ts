@@ -15,6 +15,26 @@ import {
 import { ApiError } from "../errors/api-error.js";
 
 export class EngagementService {
+  private static async assertMembershipInTenant(
+    tenantId: string,
+    membershipId: string,
+    label = "Membership",
+  ) {
+    const membership = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, membershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!membership) {
+      throw new ApiError(
+        400,
+        `${label} does not belong to this tenant`,
+        "MEMBERSHIP_TENANT_MISMATCH",
+      );
+    }
+  }
+
   static async listEngagements(
     tenantId: string,
     options?: {
@@ -121,6 +141,19 @@ export class EngagementService {
         `Engagement code '${data.engagementCode}' already exists in this tenant`,
         "ENGAGEMENT_CODE_EXISTS",
       );
+    }
+
+    for (const [membershipId, label] of [
+      [data.engagementPartnerMembershipId, "Engagement partner membership"],
+      [data.engagementManagerMembershipId, "Engagement manager membership"],
+      [
+        data.auditQualityReviewerMembershipId,
+        "Audit quality reviewer membership",
+      ],
+    ] as const) {
+      if (membershipId) {
+        await this.assertMembershipInTenant(tenantId, membershipId, label);
+      }
     }
 
     // 3. Create engagement
@@ -287,6 +320,12 @@ export class EngagementService {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
 
+    await this.assertMembershipInTenant(
+      tenantId,
+      data.membershipId,
+      "Team member membership",
+    );
+
     // Upsert team member
     const existing = await db.query.engagementTeamMembers.findFirst({
       where: and(
@@ -375,6 +414,12 @@ export class EngagementService {
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
     }
+
+    await this.assertMembershipInTenant(
+      tenantId,
+      membershipId,
+      "Independence declarant membership",
+    );
 
     const hasConflict =
       data.hasFinancialInterest || data.hasPersonalRelationship;

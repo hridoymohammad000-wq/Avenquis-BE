@@ -14,6 +14,25 @@ import {
 import { ApiError } from "../errors/api-error.js";
 
 export class ClientService {
+  private static async assertMembershipInTenant(
+    tenantId: string,
+    membershipId: string,
+  ) {
+    const membership = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, membershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!membership) {
+      throw new ApiError(
+        400,
+        "Lead partner membership does not belong to this tenant",
+        "MEMBERSHIP_TENANT_MISMATCH",
+      );
+    }
+  }
+
   static async listClients(
     tenantId: string,
     options?: {
@@ -94,6 +113,13 @@ export class ClientService {
         409,
         `Client code '${data.clientCode}' already exists in this tenant`,
         "CLIENT_CODE_EXISTS",
+      );
+    }
+
+    if (data.leadPartnerMembershipId) {
+      await this.assertMembershipInTenant(
+        tenantId,
+        data.leadPartnerMembershipId,
       );
     }
 
@@ -198,6 +224,13 @@ export class ClientService {
 
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
+    }
+
+    if (data.leadPartnerMembershipId) {
+      await this.assertMembershipInTenant(
+        tenantId,
+        data.leadPartnerMembershipId,
+      );
     }
 
     const [updated] = await db
