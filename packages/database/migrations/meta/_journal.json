@@ -512,6 +512,13 @@
       "when": 1788300000000,
       "tag": "0072_mfa_secret_encryption",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1788300000001,
+      "tag": "0073_phase36_38_integrity",
+      "breakpoints": true
     }
   ]
 }

@@ -45,7 +45,7 @@ integrationsRouter.post(
   "/tenant",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
@@ -79,17 +79,18 @@ integrationsRouter.post(
   "/tenant/:tenantIntegrationId/sync",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const { tenantIntegrationId } = req.params;
-      
+
       // MOCK SYNC PROCESS
       const log = await IntegrationsService.logSyncEvent(
+        req.tenantId!,
         tenantIntegrationId,
         "TRIAL_BALANCE_IMPORT",
         "SUCCESS",
-        150 // Mock records count
+        150, // Mock records count
       );
 
       res.status(200).json({ success: true, data: log });

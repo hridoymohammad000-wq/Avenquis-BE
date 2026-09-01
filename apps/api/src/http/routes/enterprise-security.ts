@@ -22,7 +22,7 @@ enterpriseSecurityRouter.post(
   "/sso",
   authenticate,
   requireTenantContext,
-  requirePermission("admin:manage"),
+  requirePermission("admin:manage", { requireAal2: true }),
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
