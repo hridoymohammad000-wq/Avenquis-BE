@@ -1,4 +1,10 @@
-import { db, supportedLocales, tenantLocales, eq } from "@avenquis/database";
+import {
+  db,
+  supportedLocales,
+  tenantLocales,
+  eq,
+  and,
+} from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
 export class I18nService {
@@ -55,9 +61,14 @@ export class I18nService {
     const match = await db
       .select()
       .from(tenantLocales)
-      .where(eq(tenantLocales.localeCode, localeCode));
+      .where(
+        and(
+          eq(tenantLocales.tenantId, tenantId),
+          eq(tenantLocales.localeCode, localeCode),
+        ),
+      );
 
-    const exactMatch = match.find((m) => m.tenantId === tenantId);
+    const exactMatch = match[0];
 
     if (exactMatch) {
       const [updated] = await db

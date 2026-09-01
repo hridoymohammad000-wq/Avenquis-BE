@@ -9,7 +9,7 @@ import { ApiError } from "../../errors/api-error.js";
 export const i18nRouter = Router();
 
 const setLocaleSchema = z.object({
-  localeCode: z.string().min(2).max(10),
+  localeCode: z.string().trim().min(2).max(10),
   isDefault: z.boolean().optional().default(false),
 });
 

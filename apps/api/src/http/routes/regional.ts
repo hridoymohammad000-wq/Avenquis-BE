@@ -9,8 +9,8 @@ import { ApiError } from "../../errors/api-error.js";
 export const regionalRouter = Router();
 
 const settingsSchema = z.object({
-  countryCode: z.string().length(2),
-  currencyCode: z.string().length(3),
+  countryCode: z.string().trim().toUpperCase().length(2),
+  currencyCode: z.string().trim().toUpperCase().length(3),
   timezone: z.string().optional(),
   dateFormat: z.string().optional(),
   financialYearStartMonth: z.number().min(1).max(12).optional(),

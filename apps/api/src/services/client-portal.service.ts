@@ -4,8 +4,12 @@ import {
   secureDocumentExchanges,
   eq,
   and,
+  clients,
+  engagements,
+  memberships,
 } from "@avenquis/database";
 import { AuthService } from "./auth.service.js";
+import { ApiError } from "../errors/api-error.js";
 
 export class ClientPortalService {
   // ──────────── CLIENT USER MANAGEMENT ────────────
@@ -18,6 +22,12 @@ export class ClientPortalService {
       passwordRaw: string;
     },
   ) {
+    const client = await db.query.clients.findFirst({
+      where: and(eq(clients.id, data.clientId), eq(clients.tenantId, tenantId)),
+    });
+    if (!client)
+      throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
+
     const passwordHash = await AuthService.hashPassword(data.passwordRaw);
 
     const [user] = await db
@@ -51,6 +61,41 @@ export class ClientPortalService {
       uploadedByMembershipId?: string;
     },
   ) {
+    const client = await db.query.clients.findFirst({
+      where: and(eq(clients.id, data.clientId), eq(clients.tenantId, tenantId)),
+    });
+    if (!client)
+      throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
+    if (data.uploadedByMembershipId) {
+      const member = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.uploadedByMembershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!member)
+        throw new ApiError(
+          403,
+          "Invalid uploader membership",
+          "INVALID_MEMBERSHIP",
+        );
+    }
+    if (data.engagementId) {
+      const engagement = await db.query.engagements.findFirst({
+        where: and(
+          eq(engagements.id, data.engagementId),
+          eq(engagements.tenantId, tenantId),
+        ),
+      });
+      if (!engagement)
+        throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+      if (engagement.clientId !== data.clientId)
+        throw new ApiError(
+          400,
+          "Engagement does not belong to this client",
+          "INVALID_ENGAGEMENT_CLIENT",
+        );
+    }
     const [doc] = await db
       .insert(secureDocumentExchanges)
       .values({

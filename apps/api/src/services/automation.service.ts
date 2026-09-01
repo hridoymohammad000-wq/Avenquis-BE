@@ -6,6 +6,7 @@ import {
   and,
 } from "@avenquis/database";
 import crypto from "crypto";
+import { SecretService } from "./secret.service.js";
 
 export class AutomationService {
   // ──────────── WEBHOOKS ────────────
@@ -24,7 +25,7 @@ export class AutomationService {
       .values({
         tenantId,
         url: data.url,
-        secret,
+        secret: SecretService.encryptSecret(secret),
         eventTypes: data.eventTypes,
         status: "active",
       })
@@ -34,10 +35,11 @@ export class AutomationService {
   }
 
   static async getWebhooks(tenantId: string) {
-    return db
+    const webhooks = await db
       .select()
       .from(webhookEndpoints)
       .where(eq(webhookEndpoints.tenantId, tenantId));
+    return webhooks.map(({ secret: _secret, ...webhook }) => webhook);
   }
 
   // ──────────── WORKFLOW AUTOMATION ────────────
