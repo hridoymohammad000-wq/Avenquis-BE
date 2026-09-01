@@ -212,7 +212,7 @@ export class StudentService {
       (r) => r.resultStatus === "passed",
     ).length;
     const examsFailed = student.examRecords.filter(
-      (r) => r.resultStatus === "jailed",
+      (r) => r.resultStatus === "failed",
     ).length;
 
     return {
@@ -270,6 +270,36 @@ export class StudentService {
         `Student registration number '${data.registrationNumber}' already exists in this tenant`,
         "REGISTRATION_NUMBER_EXISTS",
       );
+    }
+
+    const membership = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, data.membershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!membership) {
+      throw new ApiError(
+        400,
+        "Membership does not belong to this tenant",
+        "MEMBERSHIP_TENANT_MISMATCH",
+      );
+    }
+
+    if (data.principalMembershipId) {
+      const principal = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.principalMembershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!principal) {
+        throw new ApiError(
+          400,
+          "Principal membership does not belong to this tenant",
+          "PRINCIPAL_MEMBERSHIP_TENANT_MISMATCH",
+        );
+      }
     }
 
     const [newStudent] = await db
@@ -489,7 +519,12 @@ export class StudentService {
       await db
         .update(studentProfiles)
         .set({ courseLevel: "application", updatedAt: new Date() })
-        .where(eq(studentProfiles.id, studentId));
+        .where(
+          and(
+            eq(studentProfiles.id, studentId),
+            eq(studentProfiles.tenantId, tenantId),
+          ),
+        );
     }
 
     return exam;
