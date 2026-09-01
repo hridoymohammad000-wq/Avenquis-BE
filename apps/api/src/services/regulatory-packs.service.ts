@@ -28,7 +28,7 @@ export class RegulatoryPacksService {
       .from(regulatoryRulePacks)
       .innerJoin(
         globalRegulatoryBodies,
-        eq(regulatoryRulePacks.bodyId, globalRegulatoryBodies.id)
+        eq(regulatoryRulePacks.bodyId, globalRegulatoryBodies.id),
       )
       .where(and(...filters));
   }
@@ -48,11 +48,11 @@ export class RegulatoryPacksService {
       .from(tenantRegulatoryPacks)
       .innerJoin(
         regulatoryRulePacks,
-        eq(tenantRegulatoryPacks.packId, regulatoryRulePacks.id)
+        eq(tenantRegulatoryPacks.packId, regulatoryRulePacks.id),
       )
       .innerJoin(
         globalRegulatoryBodies,
-        eq(regulatoryRulePacks.bodyId, globalRegulatoryBodies.id)
+        eq(regulatoryRulePacks.bodyId, globalRegulatoryBodies.id),
       )
       .where(eq(tenantRegulatoryPacks.tenantId, tenantId));
   }
@@ -65,7 +65,22 @@ export class RegulatoryPacksService {
       .where(eq(regulatoryRulePacks.id, packId));
 
     if (!pack || !pack.isActive) {
-      throw new ApiError(400, "Regulatory pack not found or inactive", "PACK_NOT_FOUND");
+      throw new ApiError(
+        400,
+        "Regulatory pack not found or inactive",
+        "PACK_NOT_FOUND",
+      );
+    }
+    const [body] = await db
+      .select()
+      .from(globalRegulatoryBodies)
+      .where(eq(globalRegulatoryBodies.id, pack.bodyId));
+    if (!body || !body.isActive) {
+      throw new ApiError(
+        400,
+        "Regulatory body is inactive",
+        "REGULATORY_BODY_INACTIVE",
+      );
     }
 
     // Check if already activated
@@ -75,8 +90,8 @@ export class RegulatoryPacksService {
       .where(
         and(
           eq(tenantRegulatoryPacks.tenantId, tenantId),
-          eq(tenantRegulatoryPacks.packId, packId)
-        )
+          eq(tenantRegulatoryPacks.packId, packId),
+        ),
       );
 
     if (existing) {
