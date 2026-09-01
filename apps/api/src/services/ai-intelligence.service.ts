@@ -4,7 +4,10 @@ import {
   aiEngagementReviews,
   eq,
   and,
+  engagements,
+  memberships,
 } from "@avenquis/database";
+import { ApiError } from "../errors/api-error.js";
 
 export class AiIntelligenceService {
   // ──────────── DOCUMENT ANALYSIS ────────────
@@ -17,6 +20,29 @@ export class AiIntelligenceService {
       documentType: string;
     },
   ) {
+    const requester = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, requestedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!requester)
+      throw new ApiError(
+        403,
+        "Invalid requester membership",
+        "INVALID_MEMBERSHIP",
+      );
+    if (data.engagementId) {
+      const engagement = await db.query.engagements.findFirst({
+        where: and(
+          eq(engagements.id, data.engagementId),
+          eq(engagements.tenantId, tenantId),
+        ),
+      });
+      if (!engagement)
+        throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
     const [analysis] = await db
       .insert(aiDocumentAnalyses)
       .values({
@@ -91,6 +117,27 @@ export class AiIntelligenceService {
       aiModel: string;
     },
   ) {
+    const requester = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, requestedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!requester)
+      throw new ApiError(
+        403,
+        "Invalid requester membership",
+        "INVALID_MEMBERSHIP",
+      );
+    const engagement = await db.query.engagements.findFirst({
+      where: and(
+        eq(engagements.id, data.engagementId),
+        eq(engagements.tenantId, tenantId),
+      ),
+    });
+    if (!engagement)
+      throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+
     const [review] = await db
       .insert(aiEngagementReviews)
       .values({
