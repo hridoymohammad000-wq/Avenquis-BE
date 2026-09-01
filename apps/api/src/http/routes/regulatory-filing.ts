@@ -28,6 +28,7 @@ regulatoryFilingRouter.post(
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
+      const membershipId = req.membership!.id;
       const parseResult = createFilingSchema.safeParse(req.body);
 
       if (!parseResult.success) {
@@ -41,6 +42,7 @@ regulatoryFilingRouter.post(
 
       const result = await RegulatoryFilingService.createFiling(
         tenantId,
+        membershipId,
         parseResult.data,
       );
 

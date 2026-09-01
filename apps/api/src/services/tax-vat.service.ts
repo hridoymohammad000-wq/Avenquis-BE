@@ -1,4 +1,11 @@
-import { db, taxVatWorkflows, clients, eq, and } from "@avenquis/database";
+import {
+  db,
+  taxVatWorkflows,
+  clients,
+  memberships,
+  eq,
+  and,
+} from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
 export class TaxVatService {
@@ -18,6 +25,21 @@ export class TaxVatService {
 
     if (!client) {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
+    }
+
+    if (data.assignedToMembershipId) {
+      const assignee = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.assignedToMembershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!assignee)
+        throw new ApiError(
+          400,
+          "Assigned member is not part of this tenant",
+          "INVALID_ASSIGNEE",
+        );
     }
 
     const [workflow] = await db
@@ -44,6 +66,33 @@ export class TaxVatService {
       notes?: string;
     },
   ) {
+    const workflow = await db.query.taxVatWorkflows.findFirst({
+      where: and(
+        eq(taxVatWorkflows.id, workflowId),
+        eq(taxVatWorkflows.tenantId, tenantId),
+      ),
+    });
+    if (!workflow)
+      throw new ApiError(
+        404,
+        "Tax/VAT workflow not found",
+        "WORKFLOW_NOT_FOUND",
+      );
+    const order = [
+      "data_collection",
+      "computation",
+      "review",
+      "filed",
+      "completed",
+    ];
+    if (order.indexOf(data.status) < order.indexOf(workflow.status)) {
+      throw new ApiError(
+        400,
+        "Tax/VAT workflow cannot move backwards",
+        "INVALID_STATUS_TRANSITION",
+      );
+    }
+
     const [updated] = await db
       .update(taxVatWorkflows)
       .set({
