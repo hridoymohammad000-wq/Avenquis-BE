@@ -2,6 +2,7 @@ import {
   db,
   tasks,
   engagements,
+  memberships,
   eq,
   and,
   desc,
@@ -98,6 +99,22 @@ export class TaskService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    if (data.assigneeMembershipId) {
+      const assignee = await db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.assigneeMembershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!assignee) {
+        throw new ApiError(
+          400,
+          "Assignee does not belong to this tenant",
+          "MEMBERSHIP_TENANT_MISMATCH",
+        );
+      }
     }
 
     const [task] = await db
