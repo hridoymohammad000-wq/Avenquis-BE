@@ -4,7 +4,10 @@ import {
   financeExpenses,
   eq,
   and,
+  memberships,
+  engagements,
 } from "@avenquis/database";
+import { ApiError } from "../errors/api-error.js";
 
 export class HrFinanceService {
   // ──────────── HR PAYROLL ────────────
@@ -18,6 +21,18 @@ export class HrFinanceService {
       deductions?: number;
     },
   ) {
+    const member = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, data.membershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!member)
+      throw new ApiError(
+        400,
+        "Payroll member is not part of this tenant",
+        "INVALID_MEMBERSHIP",
+      );
     const allowances = data.allowances || 0;
     const deductions = data.deductions || 0;
     const netPay = data.basicSalary + allowances - deductions;
@@ -64,6 +79,28 @@ export class HrFinanceService {
       receiptUrl?: string;
     },
   ) {
+    const member = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, incurredByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!member)
+      throw new ApiError(
+        403,
+        "Invalid expense membership",
+        "INVALID_MEMBERSHIP",
+      );
+    if (data.engagementId) {
+      const engagement = await db.query.engagements.findFirst({
+        where: and(
+          eq(engagements.id, data.engagementId),
+          eq(engagements.tenantId, tenantId),
+        ),
+      });
+      if (!engagement)
+        throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
     const [expense] = await db
       .insert(financeExpenses)
       .values({

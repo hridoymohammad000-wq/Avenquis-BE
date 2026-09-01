@@ -2,9 +2,12 @@ import {
   db,
   resourceAllocations,
   engagementProfitabilityMetrics,
+  memberships,
+  engagements,
   eq,
   and,
 } from "@avenquis/database";
+import { ApiError } from "../errors/api-error.js";
 
 export class AdvancedAnalyticsService {
   // ──────────── WORKLOAD & RESOURCE PLANNING ────────────
@@ -19,6 +22,35 @@ export class AdvancedAnalyticsService {
       notes?: string;
     },
   ) {
+    const [member, engagement] = await Promise.all([
+      db.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.membershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      }),
+      db.query.engagements.findFirst({
+        where: and(
+          eq(engagements.id, data.engagementId),
+          eq(engagements.tenantId, tenantId),
+        ),
+      }),
+    ]);
+    if (!member)
+      throw new ApiError(
+        400,
+        "Member is not part of this tenant",
+        "INVALID_MEMBERSHIP",
+      );
+    if (!engagement)
+      throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    if (new Date(data.endDate) < new Date(data.startDate))
+      throw new ApiError(
+        400,
+        "End date must be after start date",
+        "INVALID_DATE_RANGE",
+      );
+
     const [allocation] = await db
       .insert(resourceAllocations)
       .values({
@@ -58,6 +90,15 @@ export class AdvancedAnalyticsService {
       actualCost: number;
     },
   ) {
+    const engagement = await db.query.engagements.findFirst({
+      where: and(
+        eq(engagements.id, data.engagementId),
+        eq(engagements.tenantId, tenantId),
+      ),
+    });
+    if (!engagement)
+      throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+
     // Calculate profit margin: (Revenue - Cost) / Revenue * 100
     let margin = 0;
     if (data.estimatedRevenue > 0) {
