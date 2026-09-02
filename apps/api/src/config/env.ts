@@ -17,6 +17,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_EXPIRES_IN: z.string().default("7d"),
   MFA_ENCRYPTION_KEY: z.string().min(32),
   ARTIFACT_ALLOWED_HOSTS: z.string().default(""),
+  CORS_ORIGIN: z.string().url().default("http://localhost:3000"),
   DATABASE_URL: z
     .string()
     .url()
@@ -70,9 +71,11 @@ export function parseEnv(source: NodeJS.ProcessEnv): ApiEnv {
   if (
     !result.success ||
     (nodeEnv === "production" &&
-      [values.JWT_SECRET, values.REFRESH_TOKEN_SECRET, values.MFA_ENCRYPTION_KEY].some(
-        (value) => !value || isPlaceholder(value),
-      ))
+      [
+        values.JWT_SECRET,
+        values.REFRESH_TOKEN_SECRET,
+        values.MFA_ENCRYPTION_KEY,
+      ].some((value) => !value || isPlaceholder(value)))
   ) {
     throw new Error(
       "Invalid production configuration: JWT_SECRET, REFRESH_TOKEN_SECRET, MFA_ENCRYPTION_KEY, and DATABASE_URL are required and must be valid",

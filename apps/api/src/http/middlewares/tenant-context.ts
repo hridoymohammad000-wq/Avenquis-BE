@@ -3,6 +3,7 @@ import { TenantService } from "../../services/tenant.service.js";
 import { PermissionService } from "../../services/permission.service.js";
 import { AuditService } from "../../services/audit.service.js";
 import { ApiError } from "../../errors/api-error.js";
+import { withTenantContext } from "@avenquis/database";
 
 export async function requireTenantContext(
   req: Request,
@@ -43,7 +44,25 @@ export async function requireTenantContext(
       membership.id,
     );
 
-    return next();
+    // Keep the transaction alive for the complete Express request. The
+    // database proxy routes downstream service queries through this same
+    // connection, so transaction-local RLS settings cannot leak or disappear.
+    return withTenantContext(
+      { tenantId: tenant.id, membershipId: membership.id },
+      async () => {
+        const responseComplete = new Promise<void>((resolve) => {
+          if (res.writableEnded) {
+            resolve();
+            return;
+          }
+          const complete = () => resolve();
+          res.once("finish", complete);
+          res.once("close", complete);
+        });
+        next();
+        await responseComplete;
+      },
+    ).catch(next);
   } catch (err) {
     // Log security event for suspicious/failed tenant access
     AuditService.logSecurityEvent({

@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { env } from "./config/env.js";
 
 // Global connection cache for development (e.g. HMR or testing)
@@ -30,23 +31,48 @@ if (env.NODE_ENV !== "production") {
 
 import * as schema from "./schema.js";
 
-export const db = drizzle(conn, { schema });
+const baseDb = drizzle(conn, { schema });
+
+type TenantTransaction = { tx: typeof baseDb };
+const tenantTransactionStorage = new AsyncLocalStorage<TenantTransaction>();
+
+/** Route service queries through the active request transaction when present. */
+export const db = new Proxy(baseDb, {
+  get(target, property, receiver) {
+    const scopedDb = tenantTransactionStorage.getStore()?.tx;
+    return Reflect.get(scopedDb ?? target, property, receiver);
+  },
+}) as typeof baseDb;
 
 export type TenantContext = { tenantId: string; membershipId?: string };
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /** Execute tenant-owned work with transaction-local PostgreSQL RLS context. */
 export async function withTenantContext<T>(
   context: TenantContext,
   callback: (tx: typeof db) => Promise<T>,
 ): Promise<T> {
-  return db.transaction(async (tx) => {
-    await tx.execute(
-      sql`select set_config('app.current_tenant_id', ${context.tenantId}, true)`,
+  if (!UUID_PATTERN.test(context.tenantId)) {
+    throw new Error("Invalid tenant context");
+  }
+  if (context.membershipId && !UUID_PATTERN.test(context.membershipId)) {
+    throw new Error("Invalid membership context");
+  }
+  return baseDb.transaction(async (tx) => {
+    return tenantTransactionStorage.run(
+      { tx: tx as typeof baseDb },
+      async () => {
+        await tx.execute(
+          sql`select set_config('app.current_tenant_id', ${context.tenantId}, true)`,
+        );
+        await tx.execute(
+          sql`select set_config('app.current_membership_id', ${context.membershipId ?? ""}, true)`,
+        );
+        return callback(tx as typeof db);
+      },
     );
-    await tx.execute(
-      sql`select set_config('app.current_membership_id', ${context.membershipId ?? ""}, true)`,
-    );
-    return callback(tx as typeof db);
   });
 }
 

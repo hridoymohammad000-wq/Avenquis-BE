@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from "vitest";
 import { db, closeDatabaseConnection, withTenantContext } from "../client.js";
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { tenants, tenantSettings } from "../schema.js";
 
 describe("Database Client & Multi-Tenant RLS Integration", () => {
@@ -54,5 +54,107 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
       sql`SELECT current_setting('app.current_tenant_id', true) AS tenant_id`,
     );
     expect(contextAfterTransaction[0].tenant_id).toBeNull();
+  });
+
+  it("should fail closed for invalid tenant context values", async () => {
+    await expect(
+      withTenantContext({ tenantId: "not-a-uuid" }, async () => undefined),
+    ).rejects.toThrow("Invalid tenant context");
+  });
+
+  it("should reject cross-tenant reads and writes under RLS", async () => {
+    const [tenantA] = await db
+      .insert(tenants)
+      .values({ name: "Tenant A", slug: `tenant-a-write-${Date.now()}` })
+      .returning();
+    const [tenantB] = await db
+      .insert(tenants)
+      .values({ name: "Tenant B", slug: `tenant-b-write-${Date.now()}` })
+      .returning();
+
+    await db.insert(tenantSettings).values({
+      tenantId: tenantB.id,
+      key: "isolated",
+      value: { owner: "b" },
+    });
+
+    await withTenantContext({ tenantId: tenantA.id }, async () => {
+      const visible = await db.select().from(tenantSettings);
+      expect(visible).toHaveLength(0);
+      await expect(
+        db.insert(tenantSettings).values({
+          tenantId: tenantB.id,
+          key: "tampered",
+          value: { owner: "a" },
+        }),
+      ).rejects.toBeDefined();
+    });
+
+    await db.delete(tenants).where(eq(tenants.id, tenantA.id));
+    await db.delete(tenants).where(eq(tenants.id, tenantB.id));
+  });
+
+  it("preserves isolated context across concurrent requests", async () => {
+    const [tenantA] = await db
+      .insert(tenants)
+      .values({ name: "Tenant A", slug: `tenant-a-concurrent-${Date.now()}` })
+      .returning();
+    const [tenantB] = await db
+      .insert(tenants)
+      .values({ name: "Tenant B", slug: `tenant-b-concurrent-${Date.now()}` })
+      .returning();
+
+    const [a, b] = await Promise.all([
+      withTenantContext({ tenantId: tenantA.id }, async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        const result = await db.execute(
+          sql`select app.current_tenant_id() as tenant_id`,
+        );
+        return result[0].tenant_id;
+      }),
+      withTenantContext({ tenantId: tenantB.id }, async () => {
+        const result = await db.execute(
+          sql`select app.current_tenant_id() as tenant_id`,
+        );
+        return result[0].tenant_id;
+      }),
+    ]);
+
+    expect(a).toBe(tenantA.id);
+    expect(b).toBe(tenantB.id);
+    const after = await db.execute(
+      sql`select current_setting('app.current_tenant_id', true) as tenant_id`,
+    );
+    expect(after[0].tenant_id).toBeNull();
+
+    await db.delete(tenants).where(eq(tenants.id, tenantA.id));
+    await db.delete(tenants).where(eq(tenants.id, tenantB.id));
+  });
+
+  it("rolls back tenant work and cleans context after callback failure", async () => {
+    const [tenant] = await db
+      .insert(tenants)
+      .values({
+        name: "Rollback Tenant",
+        slug: `tenant-rollback-${Date.now()}`,
+      })
+      .returning();
+
+    await expect(
+      withTenantContext({ tenantId: tenant.id }, async () => {
+        await db.insert(tenantSettings).values({
+          tenantId: tenant.id,
+          key: "rolled-back",
+          value: { shouldExist: false },
+        });
+        throw new Error("force rollback");
+      }),
+    ).rejects.toThrow("force rollback");
+
+    const after = await db.execute(
+      sql`select current_setting('app.current_tenant_id', true) as tenant_id`,
+    );
+    expect(after[0].tenant_id).toBeNull();
+    await db.delete(tenants).where(eq(tenants.id, tenant.id));
   });
 });

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticator } from "otplib";
 import crypto from "crypto";
+import { and, db, revokedAuthTokens, eq, gt } from "@avenquis/database";
 import { env } from "../config/env.js";
 
 export interface TokenPayload {
@@ -11,7 +12,9 @@ export interface TokenPayload {
 }
 
 export class AuthService {
-  private static readonly revokedTokens = new Set<string>();
+  private static tokenHash(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
 
   static async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(12);
@@ -35,9 +38,13 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  static verifyAccessToken(token: string): TokenPayload {
-    if (this.revokedTokens.has(token)) throw new Error("Token revoked");
-    return jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+  static async verifyAccessToken(token: string): Promise<TokenPayload> {
+    const payload = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+    const revoked = await db.query.revokedAuthTokens.findFirst({
+      where: and(eq(revokedAuthTokens.tokenHash, this.tokenHash(token)), gt(revokedAuthTokens.expiresAt, new Date())),
+    });
+    if (revoked) throw new Error("Token revoked");
+    return payload;
   }
 
   static verifyRefreshToken(token: string): TokenPayload {
@@ -81,8 +88,13 @@ export class AuthService {
     return bcrypt.compare(code, hash);
   }
 
-  static revokeToken(token: string): void {
-    this.revokedTokens.add(token);
+  static async revokeToken(token: string): Promise<void> {
+    const decoded = jwt.decode(token) as { exp?: number } | null;
+    if (!decoded?.exp) return;
+    await db.insert(revokedAuthTokens).values({
+      tokenHash: this.tokenHash(token),
+      expiresAt: new Date(decoded.exp * 1000),
+    }).onConflictDoNothing();
   }
 
   static verifyMfaToken(token: string, secret: string): boolean {

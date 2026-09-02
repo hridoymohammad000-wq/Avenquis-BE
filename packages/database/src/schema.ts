@@ -141,6 +141,26 @@ export const membershipSessions = pgTable("membership_sessions", {
     .defaultNow(),
 });
 
+export const revokedAuthTokens = pgTable("revoked_auth_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const authRateLimitBuckets = pgTable("auth_rate_limit_buckets", {
+  key: text("key").primaryKey(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true })
+    .notNull(),
+  count: integer("count").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ============================================================================
 // PERMISSIONS & ROLES (RBAC)
 // ============================================================================

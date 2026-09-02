@@ -7,8 +7,8 @@ import {
 } from "../http/middlewares/rate-limit.js";
 
 describe("V1 security regressions", () => {
-  beforeEach(() => {
-    clearRateLimitBucketsForTests();
+  beforeEach(async () => {
+    await clearRateLimitBucketsForTests();
   });
 
   it("encrypts MFA secrets and rejects plaintext values", () => {
@@ -25,22 +25,22 @@ describe("V1 security regressions", () => {
     await expect(AuthService.verifyBackupCode("WRONG999", hash)).resolves.toBe(false);
   });
 
-  it("revokes an access token after logout", () => {
+  it("revokes an access token after logout", async () => {
     const token = AuthService.generateTokens({
       userId: "00000000-0000-0000-0000-000000000001",
       email: "user@example.com",
       aal: "aal1",
     }).accessToken;
-    expect(AuthService.verifyAccessToken(token).email).toBe("user@example.com");
-    AuthService.revokeToken(token);
-    expect(() => AuthService.verifyAccessToken(token)).toThrow();
+    await expect(AuthService.verifyAccessToken(token)).resolves.toMatchObject({ email: "user@example.com" });
+    await AuthService.revokeToken(token);
+    await expect(AuthService.verifyAccessToken(token)).rejects.toThrow();
   });
 
-  it("limits repeated authentication attempts per IP and account", () => {
+  it("limits repeated authentication attempts per IP and account", async () => {
     const next = vi.fn();
     const req = { ip: "203.0.113.10", body: { email: "user@example.com" } } as never;
-    for (let index = 0; index < 10; index += 1) authRateLimit(req, {} as never, next);
-    authRateLimit(req, {} as never, next);
+    for (let index = 0; index < 10; index += 1) await authRateLimit(req, {} as never, next);
+    await authRateLimit(req, {} as never, next);
     expect(next).toHaveBeenLastCalledWith(expect.objectContaining({ code: "RATE_LIMITED" }));
   });
 
