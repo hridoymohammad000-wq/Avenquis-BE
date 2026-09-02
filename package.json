@@ -2,10 +2,15 @@
   "name": "avenquis-monorepo",
   "version": "0.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "packageManager": "pnpm@9.11.0",
   "scripts": {
     "dev": "pnpm --filter api dev",
     "build": "pnpm -r build",
+    "build:render": "tsc --project packages/database/tsconfig.json && tsc --project apps/api/tsconfig.json",
     "start": "node apps/api/dist/index.js",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
