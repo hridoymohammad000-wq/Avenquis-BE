@@ -22,7 +22,7 @@
     "postgres": "^3.4.4",
     "qrcode": "^1.5.4",
     "zod": "^4.5.4",
-    "@avenquis/database": "workspace:*"
+    "@avenquis/database": "*"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
