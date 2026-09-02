@@ -5,8 +5,7 @@
   "packageManager": "pnpm@9.11.0",
   "scripts": {
     "dev": "pnpm --filter api dev",
-    "build": "pnpm -r build && pnpm run build:backend",
-    "build:backend": "esbuild apps/api/src/index.ts --bundle --platform=node --target=node20 --outfile=apps/api/dist/index.js --external:express --external:postgres --external:bcryptjs --external:jsonwebtoken --external:otplib --external:qrcode --external:helmet --external:pino --external:pino-http --external:cookie-parser",
+    "build": "pnpm -r build",
     "start": "node apps/api/dist/index.js",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
