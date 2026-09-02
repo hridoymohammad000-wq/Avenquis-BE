@@ -14,7 +14,7 @@ import { ApiError } from "../errors/api-error.js";
 const money = (value: number) => value.toFixed(2);
 const asNumber = (value: string | number | null | undefined) =>
   Number(value ?? 0);
-const dbMoney = (value: number) => money(value) as unknown as number;
+const dbMoney = (value: number) => money(value);
 
 export class TrialBalanceService {
   static async importTrialBalance(
