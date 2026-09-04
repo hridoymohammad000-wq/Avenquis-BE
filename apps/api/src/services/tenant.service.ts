@@ -10,12 +10,14 @@ import {
   or,
   isNull,
   gt,
+  withUserBootstrapContext,
+  sql,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
 export class TenantService {
   static async getUserMemberships(userId: string) {
-    return db
+    return withUserBootstrapContext({ userId }, async () => db
       .select({
         membershipId: memberships.id,
         tenantId: memberships.tenantId,
@@ -38,10 +40,11 @@ export class TenantService {
             gt(memberships.expiresAt, new Date()),
           ),
         ),
-      );
+      ));
   }
 
   static async validateTenantMembership(userId: string, tenantId: string) {
+    return withUserBootstrapContext({ userId }, async () => {
     const membership = await db.query.memberships.findFirst({
       where: and(
         eq(memberships.userId, userId),
@@ -95,6 +98,7 @@ export class TenantService {
     }
 
     return { membership, tenant };
+    });
   }
 
   static async createTenant(params: {
@@ -102,7 +106,7 @@ export class TenantService {
     slug: string;
     ownerUserId: string;
   }) {
-    return db.transaction(async (tx) => {
+    return withUserBootstrapContext({ userId: params.ownerUserId }, async () => db.transaction(async (tx) => {
       const [newTenant] = await tx
         .insert(tenants)
         .values({
@@ -111,6 +115,10 @@ export class TenantService {
           status: "active",
         })
         .returning();
+
+      await tx.execute(
+        sql`select set_config('app.current_tenant_id', ${newTenant.id}, true)`,
+      );
 
       const [membership] = await tx
         .insert(memberships)
@@ -145,6 +153,6 @@ export class TenantService {
       });
 
       return { tenant: newTenant, membership };
-    });
+    }));
   }
 }

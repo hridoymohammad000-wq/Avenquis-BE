@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticator } from "otplib";
 import crypto from "crypto";
-import { and, db, revokedAuthTokens, eq, gt } from "@avenquis/database";
+import { and, db, refreshSessions, revokedAuthTokens, eq, gt, isNull } from "@avenquis/database";
 import { env } from "../config/env.js";
 
 export interface TokenPayload {
@@ -49,6 +49,55 @@ export class AuthService {
 
   static verifyRefreshToken(token: string): TokenPayload {
     return jwt.verify(token, env.REFRESH_TOKEN_SECRET) as TokenPayload;
+  }
+
+  static async createRefreshSession(payload: TokenPayload) {
+    const tokens = this.generateTokens(payload);
+    const decoded = jwt.decode(tokens.refreshToken) as { exp?: number } | null;
+    if (!decoded?.exp) throw new Error("Refresh token expiry missing");
+    await db.insert(refreshSessions).values({
+      userId: payload.userId,
+      tokenHash: this.tokenHash(tokens.refreshToken),
+      expiresAt: new Date(decoded.exp * 1000),
+    });
+    return tokens;
+  }
+
+  static async rotateRefreshToken(token: string) {
+    const payload = this.verifyRefreshToken(token);
+    return db.transaction(async (tx) => {
+      const current = await tx.query.refreshSessions.findFirst({
+        where: and(
+          eq(refreshSessions.tokenHash, this.tokenHash(token)),
+          gt(refreshSessions.expiresAt, new Date()),
+          isNull(refreshSessions.revokedAt),
+        ),
+      });
+      if (!current || current.userId !== payload.userId) {
+        throw new Error("Refresh token revoked or not recognized");
+      }
+      const next = this.generateTokens(payload);
+      const decoded = jwt.decode(next.refreshToken) as { exp?: number } | null;
+      if (!decoded?.exp) throw new Error("Refresh token expiry missing");
+      const nextHash = this.tokenHash(next.refreshToken);
+      const revoked = await tx.update(refreshSessions)
+        .set({ revokedAt: new Date(), replacedByHash: nextHash })
+        .where(and(eq(refreshSessions.id, current.id), isNull(refreshSessions.revokedAt)))
+        .returning({ id: refreshSessions.id });
+      if (revoked.length !== 1) throw new Error("Refresh token already rotated");
+      await tx.insert(refreshSessions).values({
+        userId: payload.userId,
+        tokenHash: nextHash,
+        expiresAt: new Date(decoded.exp * 1000),
+      });
+      return { payload, tokens: next };
+    });
+  }
+
+  static async revokeRefreshToken(token: string): Promise<void> {
+    await db.update(refreshSessions)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshSessions.tokenHash, this.tokenHash(token)));
   }
 
   static generateMfaSecret(email: string): {

@@ -150,6 +150,20 @@ export const revokedAuthTokens = pgTable("revoked_auth_tokens", {
     .defaultNow(),
 });
 
+export const refreshSessions = pgTable("refresh_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => userProfiles.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  replacedByHash: text("replaced_by_hash"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const authRateLimitBuckets = pgTable("auth_rate_limit_buckets", {
   key: text("key").primaryKey(),
   windowStartedAt: timestamp("window_started_at", { withTimezone: true })

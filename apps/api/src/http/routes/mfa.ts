@@ -10,12 +10,21 @@ import { mfaRateLimit } from "../middlewares/rate-limit.js";
 
 export const mfaRouter = Router();
 
-function setAccessCookie(res: import("express").Response, accessToken: string) {
-  res.cookie("accessToken", accessToken, {
+function setAuthCookies(
+  res: import("express").Response,
+  tokens: ReturnType<typeof AuthService.generateTokens>,
+) {
+  res.cookie("accessToken", tokens.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
+  });
+  res.cookie("refreshToken", tokens.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    path: "/api/v1/auth",
   });
 }
 
@@ -117,12 +126,12 @@ mfaRouter.post(
         .where(eq(userProfiles.id, user.id));
 
       // Issue upgraded AAL2 token
-      const tokens = AuthService.generateTokens({
+      const tokens = await AuthService.createRefreshSession({
         userId: user.id,
         email: user.email,
         aal: "aal2",
       });
-      setAccessCookie(res, tokens.accessToken);
+      setAuthCookies(res, tokens);
 
       await AuditService.logSecurityEvent({
         eventType: "MFA_ENROLLED",
@@ -136,7 +145,6 @@ mfaRouter.post(
         data: {
           message: "MFA successfully enabled",
           backupCodes,
-          tokens,
         },
       });
     } catch (err) {
@@ -228,12 +236,15 @@ mfaRouter.post(
         );
       }
 
-      const tokens = AuthService.generateTokens({
+      const tokens = await AuthService.createRefreshSession({
         userId: user.id,
         email: user.email,
         aal: "aal2",
       });
-      setAccessCookie(res, tokens.accessToken);
+      setAuthCookies(res, tokens);
+      if (req.cookies?.refreshToken) {
+        await AuthService.revokeRefreshToken(req.cookies.refreshToken);
+      }
 
       await AuditService.logSecurityEvent({
         eventType: "SUCCESSFUL_MFA_CHALLENGE",
@@ -246,7 +257,6 @@ mfaRouter.post(
         success: true,
         data: {
           message: "MFA challenge verified successfully",
-          tokens,
         },
       });
     } catch (err) {

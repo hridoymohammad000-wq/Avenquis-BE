@@ -45,6 +45,7 @@ export const db = new Proxy(baseDb, {
 }) as typeof baseDb;
 
 export type TenantContext = { tenantId: string; membershipId?: string };
+export type UserBootstrapContext = { userId: string };
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -69,6 +70,27 @@ export async function withTenantContext<T>(
         );
         await tx.execute(
           sql`select set_config('app.current_membership_id', ${context.membershipId ?? ""}, true)`,
+        );
+        return callback(tx as typeof db);
+      },
+    );
+  });
+}
+
+/** Execute pre-tenant authentication work with a transaction-local user context. */
+export async function withUserBootstrapContext<T>(
+  context: UserBootstrapContext,
+  callback: (tx: typeof db) => Promise<T>,
+): Promise<T> {
+  if (!UUID_PATTERN.test(context.userId)) {
+    throw new Error("Invalid user bootstrap context");
+  }
+  return baseDb.transaction(async (tx) => {
+    return tenantTransactionStorage.run(
+      { tx: tx as typeof baseDb },
+      async () => {
+        await tx.execute(
+          sql`select set_config('app.current_user_id', ${context.userId}, true)`,
         );
         return callback(tx as typeof db);
       },

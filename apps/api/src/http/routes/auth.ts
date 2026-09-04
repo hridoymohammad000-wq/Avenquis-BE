@@ -77,7 +77,7 @@ authRouter.post("/register", authRateLimit, async (req, res, next) => {
       })
       .returning();
 
-    const tokens = AuthService.generateTokens({
+    const tokens = await AuthService.createRefreshSession({
       userId: newUser.id,
       email: newUser.email,
       aal: "aal1",
@@ -101,7 +101,6 @@ authRouter.post("/register", authRateLimit, async (req, res, next) => {
           status: newUser.status,
           mfaEnabled: newUser.mfaEnabled,
         },
-        tokens,
       },
     });
   } catch (err) {
@@ -163,7 +162,7 @@ authRouter.post("/login", authRateLimit, async (req, res, next) => {
     }
 
     const aal = "aal1" as const;
-    const tokens = AuthService.generateTokens({
+    const tokens = await AuthService.createRefreshSession({
       userId: user.id,
       email: user.email,
       aal,
@@ -193,11 +192,30 @@ authRouter.post("/login", authRateLimit, async (req, res, next) => {
           mfaEnabled: user.mfaEnabled,
         },
         requireMfa: user.mfaEnabled,
-        tokens,
       },
     });
   } catch (err) {
     next(err);
+  }
+});
+
+// POST /refresh - rotate the HttpOnly refresh token and issue a new access token
+authRouter.post("/refresh", authRateLimit, async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      throw new ApiError(401, "Refresh token required", "REFRESH_TOKEN_REQUIRED");
+    }
+    const { payload, tokens } = await AuthService.rotateRefreshToken(refreshToken);
+    setAuthCookies(res, tokens);
+    res.json({
+      success: true,
+      data: { userId: payload.userId },
+    });
+  } catch {
+    res.clearCookie("accessToken", { path: "/" });
+    res.clearCookie("refreshToken", { path: "/api/v1/auth" });
+    next(new ApiError(401, "Invalid or expired refresh token", "INVALID_REFRESH_TOKEN"));
   }
 });
 
@@ -232,9 +250,14 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
 });
 
 // POST /logout
-authRouter.post("/logout", authenticate, async (req, res, next) => {
+authRouter.post("/logout", async (req, res, next) => {
   try {
-    if (req.authToken) await AuthService.revokeToken(req.authToken);
+    const accessToken = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.substring(7)
+      : req.cookies?.accessToken;
+    const refreshToken = req.cookies?.refreshToken;
+    if (accessToken) await AuthService.revokeToken(accessToken);
+    if (refreshToken) await AuthService.revokeRefreshToken(refreshToken);
     res.clearCookie("accessToken", { path: "/" });
     res.clearCookie("refreshToken", { path: "/api/v1/auth" });
     res.json({

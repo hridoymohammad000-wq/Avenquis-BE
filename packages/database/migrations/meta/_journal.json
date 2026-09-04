@@ -526,6 +526,13 @@
       "when": 1788300000002,
       "tag": "0074_durable_auth_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1788300000003,
+      "tag": "0075_auth_bootstrap_and_refresh_sessions",
+      "breakpoints": true
     }
   ]
 }
