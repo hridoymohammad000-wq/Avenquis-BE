@@ -29,11 +29,15 @@ export class AuthService {
   }
 
   static generateTokens(payload: TokenPayload) {
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
     const accessToken = jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+      jwtid: accessJti,
     });
     const refreshToken = jwt.sign(payload, env.REFRESH_TOKEN_SECRET, {
       expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+      jwtid: refreshJti,
     });
     return { accessToken, refreshToken };
   }
@@ -65,6 +69,11 @@ export class AuthService {
 
   static async rotateRefreshToken(token: string) {
     const payload = this.verifyRefreshToken(token);
+    const sessionPayload: TokenPayload = {
+      userId: payload.userId,
+      email: payload.email,
+      aal: payload.aal,
+    };
     return db.transaction(async (tx) => {
       const current = await tx.query.refreshSessions.findFirst({
         where: and(
@@ -73,10 +82,10 @@ export class AuthService {
           isNull(refreshSessions.revokedAt),
         ),
       });
-      if (!current || current.userId !== payload.userId) {
+      if (!current || current.userId !== sessionPayload.userId) {
         throw new Error("Refresh token revoked or not recognized");
       }
-      const next = this.generateTokens(payload);
+      const next = this.generateTokens(sessionPayload);
       const decoded = jwt.decode(next.refreshToken) as { exp?: number } | null;
       if (!decoded?.exp) throw new Error("Refresh token expiry missing");
       const nextHash = this.tokenHash(next.refreshToken);
@@ -86,11 +95,11 @@ export class AuthService {
         .returning({ id: refreshSessions.id });
       if (revoked.length !== 1) throw new Error("Refresh token already rotated");
       await tx.insert(refreshSessions).values({
-        userId: payload.userId,
+        userId: sessionPayload.userId,
         tokenHash: nextHash,
         expiresAt: new Date(decoded.exp * 1000),
       });
-      return { payload, tokens: next };
+      return { payload: sessionPayload, tokens: next };
     });
   }
 
