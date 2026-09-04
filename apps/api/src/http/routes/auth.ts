@@ -51,6 +51,22 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// GET /csrf-token
+authRouter.get("/csrf-token", (req, res) => {
+  const csrfToken = crypto.randomBytes(32).toString("base64url");
+  const csrfOptions = {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+      | "none"
+      | "lax",
+    path: "/",
+  };
+  res.cookie("csrfToken", csrfToken, csrfOptions);
+  res.setHeader("X-CSRF-Token", csrfToken);
+  res.status(200).json({ success: true, message: "CSRF token generated" });
+});
+
 // POST /register
 authRouter.post("/register", authRateLimit, async (req, res, next) => {
   try {
