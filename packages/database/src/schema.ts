@@ -2523,7 +2523,8 @@ export const clientPortalUsers = pgTable(
     email: varchar("email", { length: 255 }).notNull(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
     fullName: varchar("full_name", { length: 255 }).notNull(),
-    status: varchar("status", { length: 50 }).notNull().default("active"), // active, suspended
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, suspended, disabled
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2537,6 +2538,42 @@ export const clientPortalUsers = pgTable(
       table.clientId,
     ),
     emailUnique: uniqueIndex("portal_user_email_unique").on(table.email),
+  }),
+);
+
+export const clientInvitations = pgTable(
+  "client_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 255 }).notNull(),
+    tokenHash: varchar("token_hash", { length: 255 }).notNull().unique(),
+    status: varchar("status", { length: 50 }).notNull().default("INVITED"), // INVITED, ACTIVE, EXPIRED, REVOKED
+    invitedByMembershipId: uuid("invited_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("client_invite_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    emailIdx: index("client_invite_email_idx").on(table.email),
   }),
 );
 
@@ -2558,6 +2595,15 @@ export const secureDocumentExchanges = pgTable(
     accessLevel: varchar("access_level", { length: 50 })
       .notNull()
       .default("client_visible"), // internal_only, client_visible
+    storageProvider: varchar("storage_provider", { length: 50 })
+      .notNull()
+      .default("s3"),
+    fileSize: integer("file_size"),
+    mimeType: varchar("mime_type", { length: 100 }),
+    extension: varchar("extension", { length: 20 }),
+    scanStatus: varchar("scan_status", { length: 50 })
+      .notNull()
+      .default("CLEAN"), // PENDING, PASSED, FAILED, CLEAN, QUARANTINED
     uploadedByClientUserId: uuid("uploaded_by_client_user_id").references(
       () => clientPortalUsers.id,
       { onDelete: "set null" },
@@ -2585,6 +2631,43 @@ export const secureDocumentExchanges = pgTable(
   }),
 );
 
+export const portalAccessLogs = pgTable(
+  "portal_access_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").references(() => clients.id, {
+      onDelete: "cascade",
+    }),
+    clientUserId: uuid("client_user_id").references(() => clientPortalUsers.id, {
+      onDelete: "set null",
+    }),
+    membershipId: uuid("membership_id").references(() => memberships.id, {
+      onDelete: "set null",
+    }),
+    documentId: uuid("document_id").references(
+      () => secureDocumentExchanges.id,
+      { onDelete: "set null" },
+    ),
+    action: varchar("action", { length: 50 }).notNull(), // UPLOAD, DOWNLOAD, VIEW, DELETE, LOGIN, AUTH_FAILURE
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantClientIdx: index("portal_log_tenant_client_idx").on(
+      table.tenantId,
+      table.clientId,
+    ),
+    actionIdx: index("portal_log_action_idx").on(table.action),
+  }),
+);
+
 // ============================================================================
 // V4 INTELLIGENCE & SCALE: PHASE 31 - AUTOMATION & APIS
 // ============================================================================
@@ -2600,6 +2683,9 @@ export const webhookEndpoints = pgTable(
     secret: varchar("secret", { length: 255 }), // used to sign payloads
     eventTypes: jsonb("event_types").notNull().default([]), // array of strings e.g. ["engagement.created", "document.uploaded"]
     status: varchar("status", { length: 50 }).notNull().default("active"), // active, disabled
+    failureCount: integer("failure_count").notNull().default(0),
+    lastFailureAt: timestamp("last_failure_at", { withTimezone: true }),
+    disabledAt: timestamp("disabled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2609,6 +2695,38 @@ export const webhookEndpoints = pgTable(
   },
   (table) => ({
     tenantIdx: index("webhook_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    webhookEndpointId: uuid("webhook_endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    payload: jsonb("payload").notNull(),
+    signature: varchar("signature", { length: 255 }),
+    responseStatusCode: integer("response_status_code"),
+    responseBody: text("response_body"),
+    durationMs: integer("duration_ms"),
+    attemptCount: integer("attempt_count").notNull().default(1),
+    status: varchar("status", { length: 50 }).notNull().default("DELIVERED"), // DELIVERED, FAILED, DEAD_LETTER
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+    errorDetails: text("error_details"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantEndpointIdx: index("webhook_deliv_tenant_endpoint_idx").on(
+      table.tenantId,
+      table.webhookEndpointId,
+    ),
   }),
 );
 
@@ -2625,6 +2743,8 @@ export const workflowAutomationRules = pgTable(
     actionType: varchar("action_type", { length: 100 }).notNull(), // e.g., "notify_partner", "create_next_task"
     actionPayload: jsonb("action_payload"), // Data needed for the action
     isActive: boolean("is_active").notNull().default(true),
+    executionCount: integer("execution_count").notNull().default(0),
+    lastTriggeredAt: timestamp("last_triggered_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2637,6 +2757,67 @@ export const workflowAutomationRules = pgTable(
       table.tenantId,
       table.triggerEvent,
     ),
+  }),
+);
+
+export const automationExecutions = pgTable(
+  "automation_executions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    ruleId: uuid("rule_id").references(() => workflowAutomationRules.id, {
+      onDelete: "cascade",
+    }),
+    triggerEvent: varchar("trigger_event", { length: 100 }).notNull(),
+    eventPayload: jsonb("event_payload"),
+    conditionMatched: boolean("condition_matched").notNull().default(true),
+    actionStatus: varchar("action_status", { length: 50 })
+      .notNull()
+      .default("SUCCESS"), // SUCCESS, FAILED, SKIPPED
+    resultPayload: jsonb("result_payload"),
+    errorDetails: text("error_details"),
+    executedAt: timestamp("executed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantRuleIdx: index("auto_exec_tenant_rule_idx").on(
+      table.tenantId,
+      table.ruleId,
+    ),
+  }),
+);
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    keyHash: varchar("key_hash", { length: 255 }).notNull().unique(),
+    keyPrefix: varchar("key_prefix", { length: 20 }).notNull(), // e.g. "avq_live_12345678"
+    scopes: jsonb("scopes").notNull().default([]),
+    status: varchar("status", { length: 50 }).notNull().default("active"), // active, revoked, expired
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdByMembershipId: uuid("created_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantIdx: index("api_key_tenant_idx").on(table.tenantId),
+    keyHashIdx: index("api_key_hash_idx").on(table.keyHash),
   }),
 );
 

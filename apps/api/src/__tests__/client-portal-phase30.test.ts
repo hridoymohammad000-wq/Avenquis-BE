@@ -11,6 +11,7 @@ describe("Phase 30 Client Portal API", () => {
   let clientId: string;
   let engagementId: string;
   let clientUserId: string;
+  let rawInviteToken: string;
 
   beforeAll(async () => {
     // 1. Admin User & Tenant A
@@ -60,8 +61,8 @@ describe("Phase 30 Client Portal API", () => {
     await closeDatabaseConnection();
   });
 
-  describe("1. Client Portal Users", () => {
-    it("should provision a new client portal user", async () => {
+  describe("1. Client Portal Users & Invitations", () => {
+    it("should provision a new client portal user directly", async () => {
       const res = await request(app)
         .post("/api/v1/client-portal/users")
         .set("Authorization", `Bearer ${adminToken}`)
@@ -79,9 +80,41 @@ describe("Phase 30 Client Portal API", () => {
       clientUserId = res.body.data.id;
       expect(clientUserId).toBeDefined();
     });
+
+    it("should invite an external client user with token hash at rest", async () => {
+      const res = await request(app)
+        .post("/api/v1/client-portal/invitations")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantAId)
+        .send({
+          clientId,
+          email: `cfo_${Date.now()}@portalcorp.test`,
+          expiresInDays: 7,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.invitation.status).toBe("INVITED");
+      expect(res.body.data.rawToken).toBeDefined();
+      rawInviteToken = res.body.data.rawToken;
+    });
+
+    it("should activate invitation using raw token", async () => {
+      const res = await request(app)
+        .post("/api/v1/client-portal/invitations/activate")
+        .send({
+          token: rawInviteToken,
+          fullName: "PortalCorp CFO",
+          password: "CFOPassword123!",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.email).toContain("cfo_");
+    });
   });
 
-  describe("2. Secure Document Exchange", () => {
+  describe("2. Secure Document Exchange & Audit Logs", () => {
     it("should upload a secure document for the client", async () => {
       const res = await request(app)
         .post("/api/v1/client-portal/documents")
@@ -93,11 +126,31 @@ describe("Phase 30 Client Portal API", () => {
           documentUrl: "s3://secure-bucket/portalcorp-audit-plan.pdf",
           fileName: "Audit Plan 2026.pdf",
           accessLevel: "client_visible",
+          storageProvider: "s3",
+          fileSize: 1024500,
+          mimeType: "application/pdf",
         });
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.status).toBeDefined();
+      expect(res.body.data.fileName).toBe("Audit Plan 2026.pdf");
+    });
+
+    it("should reject uploading prohibited executable files", async () => {
+      const res = await request(app)
+        .post("/api/v1/client-portal/documents")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantAId)
+        .send({
+          clientId,
+          engagementId,
+          documentUrl: "s3://secure-bucket/malware.exe",
+          fileName: "malware.exe",
+          accessLevel: "client_visible",
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("PROHIBITED_FILE_TYPE");
     });
 
     it("should fetch client documents for the internal team", async () => {
@@ -109,7 +162,17 @@ describe("Phase 30 Client Portal API", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.length).toBeGreaterThanOrEqual(1);
-      expect(res.body.data[0].fileName).toBe("Audit Plan 2026.pdf");
+    });
+
+    it("should retrieve portal access audit logs", async () => {
+      const res = await request(app)
+        .get(`/api/v1/client-portal/access-logs?clientId=${clientId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantAId);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
