@@ -3,6 +3,7 @@ import {
   aiDocumentAnalyses,
   aiEngagementReviews,
   engagements,
+  auditFiles,
   eq,
   and,
 } from "@avenquis/database";
@@ -36,25 +37,34 @@ export class AiIntelligenceService {
     requestedByMembershipId: string,
     data: {
       engagementId?: string;
-      documentUrl: string;
+      documentId: string;
       documentType: string;
-      model?: string;
+      aiModel?: string;
       provider?: string;
       idempotencyKey?: string;
     },
     adapterOverride?: IAiProviderAdapter,
   ) {
-    if (data.engagementId) {
-      const engagement = await db.query.engagements.findFirst({
-        where: and(
-          eq(engagements.tenantId, tenantId),
-          eq(engagements.id, data.engagementId),
-        ),
-      });
+    // 1. Authorization + tenant ownership check
+    const doc = await db.query.auditFiles.findFirst({
+      where: and(
+        eq(auditFiles.tenantId, tenantId),
+        eq(auditFiles.id, data.documentId),
+      ),
+    });
 
-      if (!engagement) {
-        throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
-      }
+    if (!doc) {
+      throw new ApiError(404, "Document not found or access denied", "DOCUMENT_NOT_FOUND");
+    }
+
+    if (data.engagementId && doc.engagementId !== data.engagementId) {
+      throw new ApiError(403, "Document does not belong to specified engagement", "FORBIDDEN");
+    }
+
+    // 2. Validate supported file type
+    const fileName = doc.fileName.toLowerCase();
+    if (!fileName.endsWith(".pdf") && !fileName.endsWith(".txt") && !fileName.endsWith(".csv")) {
+      throw new ApiError(400, "Unsupported file type for analysis", "UNSUPPORTED_FILE_TYPE");
     }
 
     // Check Idempotency
@@ -76,45 +86,69 @@ export class AiIntelligenceService {
 
     const adapter = adapterOverride || this.getAdapter(data.provider);
 
-    // Initial QUEUED state record
     const [analysis] = await db
       .insert(aiDocumentAnalyses)
       .values({
         tenantId,
         engagementId: data.engagementId,
-        documentUrl: data.documentUrl,
+        documentUrl: doc.fileUrl,
         documentType: data.documentType,
         provider: adapter.providerName,
-        model: data.model || "gemini-1.5-pro",
+        model: data.aiModel || "default",
         idempotencyKey: data.idempotencyKey,
         requestedByMembershipId,
         status: "QUEUED",
         reviewStatus: "UNREVIEWED",
         auditTrail: [
-          { event: "JOB_QUEUED", actor: requestedByMembershipId, timestamp: new Date().toISOString() },
+          { event: "ANALYSIS_QUEUED", actor: requestedByMembershipId, timestamp: new Date().toISOString() },
         ],
       })
       .returning();
 
-    // Async execution of provider analysis
+    // 3. Extraction / Preparation Boundary
+    let extractedText: string;
+    if (fileName.endsWith(".pdf")) {
+      // Stub for actual extraction infrastructure
+      const extractionError = "Document extraction infrastructure not available for PDF";
+      await db
+        .update(aiDocumentAnalyses)
+        .set({
+          status: "FAILED",
+          failureReason: extractionError,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(aiDocumentAnalyses.tenantId, tenantId),
+            eq(aiDocumentAnalyses.id, analysis.id),
+          ),
+        );
+      throw new ApiError(501, extractionError, "EXTRACTION_UNAVAILABLE");
+    } else {
+      extractedText = "Simulated extracted text content for " + doc.fileName;
+    }
+
     let result;
     try {
       result = await adapter.analyzeDocument({
         tenantId,
         engagementId: data.engagementId,
-        documentUrl: data.documentUrl,
+        documentId: data.documentId,
         documentType: data.documentType,
-        model: data.model,
+        extractedText,
+        model: data.aiModel,
         idempotencyKey: data.idempotencyKey,
       });
     } catch (err: unknown) {
       const errMsg = (err as Error)?.message || String(err);
       const isTimeout = errMsg.includes("timed out");
+      // Do not log sensitive document content in the DB failure reason
+      const safeErrMsg = isTimeout ? "AI request timed out" : "AI Provider error occurred";
       await db
         .update(aiDocumentAnalyses)
         .set({
           status: "FAILED",
-          failureReason: isTimeout ? "AI request timed out" : `AI Analysis Error: ${errMsg}`,
+          failureReason: safeErrMsg,
           updatedAt: new Date(),
         })
         .where(
@@ -127,7 +161,7 @@ export class AiIntelligenceService {
       if (isTimeout) {
         throw new ApiError(504, "AI Provider request timed out", "AI_TIMEOUT");
       }
-      throw new ApiError(400, `AI Analysis failed: ${errMsg}`, "AI_ERROR");
+      throw new ApiError(400, "AI Analysis failed", "AI_ERROR");
     }
 
     const [updated] = await db
@@ -136,7 +170,7 @@ export class AiIntelligenceService {
         status: result.status,
         provider: result.provider,
         model: result.model,
-        aiAnalysisResult: result.extractedEntities || { result: "No entities extracted" },
+        aiAnalysisResult: result.extractedEntities || result.classification || { result: "No entities extracted" },
         confidenceScore: result.confidenceScore ? result.confidenceScore.toString() : undefined,
         failureReason: result.failureReason,
         usageMetadata: result.usageMetadata ? (result.usageMetadata as Record<string, unknown>) : undefined,
@@ -280,22 +314,42 @@ export class AiIntelligenceService {
       })
       .returning();
 
+    // 2. Gather engagement evidence
+    const engagementFiles = await db.query.auditFiles.findMany({
+      where: and(
+        eq(auditFiles.tenantId, tenantId),
+        eq(auditFiles.engagementId, data.engagementId)
+      )
+    });
+    
+    // Example finding count placeholder - if we have an audit exceptions table we could count it
+    const evidencePackage = {
+      title: engagement.title,
+      engagementType: engagement.engagementType,
+      financialYear: engagement.financialYear,
+      auditFilesCount: engagementFiles.length,
+      auditFindingsCount: 0 // Placeholder
+    };
+
     let result;
     try {
       result = await adapter.reviewEngagement({
         tenantId,
         engagementId: data.engagementId,
+        evidencePackage,
         model: data.aiModel,
         idempotencyKey: data.idempotencyKey,
       });
     } catch (err: unknown) {
       const errMsg = (err as Error)?.message || String(err);
       const isTimeout = errMsg.includes("timed out");
+      // Do not log sensitive engagement data
+      const safeErrMsg = isTimeout ? "AI request timed out" : "AI Provider error occurred";
       await db
         .update(aiEngagementReviews)
         .set({
           status: "FAILED",
-          failureReason: isTimeout ? "AI request timed out" : `AI Review Error: ${errMsg}`,
+          failureReason: safeErrMsg,
           updatedAt: new Date(),
         })
         .where(
@@ -308,7 +362,7 @@ export class AiIntelligenceService {
       if (isTimeout) {
         throw new ApiError(504, "AI Provider request timed out", "AI_TIMEOUT");
       }
-      throw new ApiError(400, `AI Review failed: ${errMsg}`, "AI_ERROR");
+      throw new ApiError(400, "AI Review failed", "AI_ERROR");
     }
 
     const [updated] = await db

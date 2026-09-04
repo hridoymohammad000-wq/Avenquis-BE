@@ -11,7 +11,8 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
 
       const result = await adapter.analyzeDocument({
         tenantId: "t-1",
-        documentUrl: "https://storage.local/invoice.pdf",
+        documentId: "d-1",
+        extractedText: "sample text",
         documentType: "invoice",
       });
 
@@ -29,7 +30,8 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
 
       const result = await adapter.analyzeDocument({
         tenantId: "t-1",
-        documentUrl: "https://storage.local/invoice.pdf",
+        documentId: "d-1",
+        extractedText: "sample text",
         documentType: "invoice",
       });
 
@@ -48,7 +50,8 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
       await expect(
         adapter.analyzeDocument({
           tenantId: "t-1",
-          documentUrl: "https://storage.local/invoice.pdf",
+          documentId: "d-1",
+          extractedText: "sample text",
           documentType: "invoice",
         }),
       ).rejects.toThrow("timed out");
@@ -63,7 +66,8 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
       await expect(
         adapter.analyzeDocument({
           tenantId: "t-1",
-          documentUrl: "https://storage.local/invoice.pdf",
+          documentId: "d-1",
+          extractedText: "sample text",
           documentType: "invoice",
         }),
       ).rejects.toThrow("HTTP_503_RETRYABLE");
@@ -77,12 +81,13 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
 
       const resPerm = await adapterPerm.analyzeDocument({
         tenantId: "t-1",
-        documentUrl: "https://storage.local/invoice.pdf",
+        documentId: "d-1",
+        extractedText: "sample text",
         documentType: "invoice",
       });
 
       expect(resPerm.status).toBe("FAILED");
-      expect(resPerm.failureReason).toContain("PDF structure");
+      expect(resPerm.failureReason).toContain("extraction");
 
       const adapterMalformed = new GeminiAiAdapter({
         apiKey: "test-key",
@@ -91,7 +96,8 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
 
       const resMalformed = await adapterMalformed.analyzeDocument({
         tenantId: "t-1",
-        documentUrl: "https://storage.local/invoice.pdf",
+        documentId: "d-1",
+        extractedText: "sample text",
         documentType: "invoice",
       });
 
@@ -108,6 +114,13 @@ describe("Phase 27 - AI & Document Intelligence Provider Unit Tests", () => {
       const result = await adapter.reviewEngagement({
         tenantId: "t-1",
         engagementId: "eng-1",
+        evidencePackage: {
+          title: "Test",
+          engagementType: "audit",
+          financialYear: "2026",
+          auditFilesCount: 2,
+          auditFindingsCount: 0
+        },
         model: "gpt-4o",
       });
 

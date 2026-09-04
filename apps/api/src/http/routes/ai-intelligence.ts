@@ -10,7 +10,7 @@ export const aiIntelligenceRouter = Router();
 
 const docAnalysisSchema = z.object({
   engagementId: z.string().uuid().optional(),
-  documentUrl: z.string().url(),
+  documentId: z.string().uuid(),
   documentType: z.string().min(1).max(100),
   model: z.string().optional(),
   provider: z.string().optional(),

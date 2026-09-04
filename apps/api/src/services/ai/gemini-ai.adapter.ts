@@ -98,11 +98,11 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
           model,
           status: "FAILED",
           providerStatus,
-          failureReason: "Document payload unparseable or corrupted PDF structure",
+          failureReason: "Document extraction or analysis failed permanently",
           isTestProvider: true,
         };
       case "FAIL_RETRYABLE":
-        throw new Error("HTTP_503_RETRYABLE: Gemini service overloaded");
+        throw new Error("HTTP_503_RETRYABLE: Gemini service temporarily unavailable");
       case "TIMEOUT":
         throw new Error("AI provider request timed out after " + this.config.timeoutMs + "ms");
       case "MALFORMED":
@@ -111,7 +111,7 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
           model,
           status: "FAILED",
           providerStatus,
-          failureReason: "Malformed model response: missing required JSON schema fields",
+          failureReason: "Malformed provider response: Cannot parse structured entities",
           isTestProvider: true,
         };
       case "SUCCESS":
@@ -125,7 +125,7 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
           classification: req.documentType,
           extractedEntities: {
             documentType: req.documentType,
-            documentUrl: req.documentUrl,
+            documentId: req.documentId,
             extractedFields: ["entity_name", "date", "amount"],
           },
           usageMetadata: {
@@ -167,7 +167,7 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
           model,
           status: "FAILED",
           providerStatus,
-          failureReason: "Malformed model response: Invalid findings JSON structure",
+          failureReason: "Malformed provider response: Invalid findings JSON structure",
           isTestProvider: true,
         };
       case "SUCCESS":
@@ -217,7 +217,7 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
               {
                 parts: [
                   {
-                    text: `Analyze document type "${req.documentType}" from URL: ${req.documentUrl}. Extract key structured entities and output valid JSON.`,
+                    text: `Analyze document type "${req.documentType}". Document content:\n${req.extractedText.substring(0, 10000)}\nExtract key structured entities and output valid JSON.`,
                   },
                 ],
               },
@@ -294,7 +294,7 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
               {
                 parts: [
                   {
-                    text: `Review engagement "${req.engagementId}" compliance data. Output structured findings array in JSON.`,
+                    text: `Review engagement "${req.evidencePackage.title}" (${req.evidencePackage.engagementType}, ${req.evidencePackage.financialYear}). Evidence summary: ${req.evidencePackage.auditFilesCount} files, ${req.evidencePackage.auditFindingsCount} findings. Output structured findings array in JSON.`,
                   },
                 ],
               },

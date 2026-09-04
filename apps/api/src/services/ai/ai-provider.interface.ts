@@ -29,8 +29,9 @@ export interface UsageMetadata {
 export interface AiAnalysisRequest {
   tenantId: string;
   engagementId?: string;
-  documentUrl: string;
+  documentId: string;
   documentType: string;
+  extractedText: string;
   model?: string;
   idempotencyKey?: string;
 }
@@ -52,6 +53,13 @@ export interface AiAnalysisResult {
 export interface AiReviewRequest {
   tenantId: string;
   engagementId: string;
+  evidencePackage: {
+    title: string;
+    engagementType: string;
+    financialYear: string;
+    auditFilesCount: number;
+    auditFindingsCount: number;
+  };
   model: string;
   idempotencyKey?: string;
 }

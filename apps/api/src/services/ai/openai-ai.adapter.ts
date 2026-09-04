@@ -51,7 +51,7 @@ export class OpenAiAdapter implements IAiProviderAdapter {
       providerStatus,
       confidenceScore: 91.0,
       classification: req.documentType,
-      extractedEntities: { documentType: req.documentType, documentUrl: req.documentUrl },
+      extractedEntities: { documentType: req.documentType, documentId: req.documentId },
       usageMetadata: { promptTokens: 300, completionTokens: 100, totalTokens: 400 },
     };
   }
