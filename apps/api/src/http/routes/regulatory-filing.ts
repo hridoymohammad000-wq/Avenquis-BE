@@ -13,11 +13,20 @@ const createFilingSchema = z.object({
   regulator: z.enum(["FRC", "BSEC", "NBR", "BB", "ICAB"]),
   filingType: z.string().min(1).max(100),
   documentUrl: z.string().url().optional(),
+  idempotencyKey: z.string().optional(),
+  status: z.string().optional(),
 });
 
 const updateFilingSchema = z.object({
-  status: z.enum(["pending", "submitted", "accepted", "rejected"]),
+  status: z.string().min(1),
   referenceNumber: z.string().optional(),
+  rejectionReason: z.string().optional(),
+});
+
+const manualReceiptSchema = z.object({
+  referenceNumber: z.string().min(1),
+  status: z.enum(["SUBMITTED", "ACCEPTED"]).optional(),
+  receiptMetadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 regulatoryFilingRouter.post(
@@ -28,6 +37,7 @@ regulatoryFilingRouter.post(
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
+      const membershipId = req.membership!.id;
       const parseResult = createFilingSchema.safeParse(req.body);
 
       if (!parseResult.success) {
@@ -39,12 +49,78 @@ regulatoryFilingRouter.post(
         );
       }
 
+      const idempotencyKey =
+        (req.headers["x-idempotency-key"] as string) || parseResult.data.idempotencyKey;
+
       const result = await RegulatoryFilingService.createFiling(
         tenantId,
-        parseResult.data,
+        membershipId,
+        {
+          ...parseResult.data,
+          idempotencyKey,
+        },
       );
 
       res.status(201).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+regulatoryFilingRouter.post(
+  "/:id/submit",
+  authenticate,
+  requireTenantContext,
+  requirePermission("audit:write"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId!;
+      const membershipId = req.membership!.id;
+      const idempotencyKey = req.headers["x-idempotency-key"] as string;
+
+      const result = await RegulatoryFilingService.submitFiling(
+        tenantId,
+        req.params.id,
+        membershipId,
+        { idempotencyKey },
+      );
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+regulatoryFilingRouter.post(
+  "/:id/manual-receipt",
+  authenticate,
+  requireTenantContext,
+  requirePermission("audit:write"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId!;
+      const membershipId = req.membership!.id;
+      const parseResult = manualReceiptSchema.safeParse(req.body);
+
+      if (!parseResult.success) {
+        throw new ApiError(
+          400,
+          "Invalid manual receipt payload",
+          "INVALID_PAYLOAD",
+          parseResult.error.flatten(),
+        );
+      }
+
+      const result = await RegulatoryFilingService.recordManualReceipt(
+        tenantId,
+        req.params.id,
+        membershipId,
+        parseResult.data,
+      );
+
+      res.json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

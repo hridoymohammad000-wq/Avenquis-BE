@@ -2050,7 +2050,18 @@ export const dvsRecords = pgTable(
       .references(() => engagements.id, { onDelete: "cascade" }),
     dvsCode: varchar("dvs_code", { length: 50 }).notNull().unique(), // e.g., 210516-XYZ-1234
     documentType: varchar("document_type", { length: 100 }).notNull(), // Audit Report, Review Report, etc.
-    status: varchar("status", { length: 50 }).notNull().default("generated"), // generated, revoked
+    status: varchar("status", { length: 50 }).notNull().default("PENDING"), // PENDING, PROCESSING, VERIFIED, REJECTED, FAILED, PROVIDER_UNAVAILABLE
+    provider: varchar("provider", { length: 50 }).notNull().default("ICAB_DVS"),
+    isAuthoritative: boolean("is_authoritative").notNull().default(false),
+    verificationStatus: varchar("verification_status", { length: 50 }),
+    providerReference: varchar("provider_reference", { length: 255 }),
+    failureReason: varchar("failure_reason", { length: 500 }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    verifiedByMembershipId: uuid("verified_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    auditEvidence: jsonb("audit_evidence"),
     generatedByMembershipId: uuid("generated_by_membership_id").references(
       () => memberships.id,
       { onDelete: "set null" },
@@ -2089,7 +2100,18 @@ export const regulatoryFilings = pgTable(
       .references(() => engagements.id, { onDelete: "cascade" }),
     regulator: varchar("regulator", { length: 50 }).notNull(), // FRC, BSEC, NBR, BB
     filingType: varchar("filing_type", { length: 100 }).notNull(), // Annual Return, Audit Report, Special Audit
-    status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, submitted, accepted, rejected
+    status: varchar("status", { length: 50 }).notNull().default("DRAFT"), // DRAFT, READY_FOR_SUBMISSION, SUBMISSION_PENDING, SUBMITTED, ACCEPTED, REJECTED, FAILED, MANUAL_ACTION_REQUIRED
+    submissionChannel: varchar("submission_channel", { length: 50 }).notNull().default("MANUAL_SUBMISSION"), // API_INTEGRATED, MANUAL_SUBMISSION
+    providerStatus: varchar("provider_status", { length: 50 }).notNull().default("NOT_CONFIGURED"), // NOT_CONFIGURED, MANUAL_SUBMISSION, API_AVAILABLE, UNAVAILABLE
+    idempotencyKey: varchar("idempotency_key", { length: 100 }),
+    responseMetadata: jsonb("response_metadata"),
+    rejectionReason: varchar("rejection_reason", { length: 500 }),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    preparedByMembershipId: uuid("prepared_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
     filingDate: timestamp("filing_date", { withTimezone: true }),
     referenceNumber: varchar("reference_number", { length: 100 }), // e.g., acknowledgment receipt number
     documentUrl: varchar("document_url", { length: 1024 }),

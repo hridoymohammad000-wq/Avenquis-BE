@@ -54,7 +54,8 @@ dvsWorkflowRouter.get(
   async (req, res, next) => {
     try {
       const tenantId = req.tenantId!;
-      const result = await DvsService.verifyDvsCode(tenantId, req.params.code);
+      const membershipId = req.membership?.id;
+      const result = await DvsService.verifyDvsCode(tenantId, req.params.code, membershipId);
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
