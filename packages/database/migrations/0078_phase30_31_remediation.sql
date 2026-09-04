@@ -101,3 +101,5 @@ CREATE TABLE IF NOT EXISTS "api_keys" (
 
 CREATE INDEX IF NOT EXISTS "api_key_tenant_idx" ON "api_keys" ("tenant_id");
 CREATE INDEX IF NOT EXISTS "api_key_hash_idx" ON "api_keys" ("key_hash");
+ALTER TABLE "webhook_deliveries" ADD COLUMN IF NOT EXISTS "idempotency_key" varchar(100);
+ALTER TABLE "automation_executions" ADD COLUMN IF NOT EXISTS "idempotency_key" varchar(100);

@@ -25,6 +25,7 @@ const ruleSchema = z.object({
 const dispatchEventSchema = z.object({
   eventType: z.string().min(1),
   payload: z.record(z.string(), z.any()).default({}),
+  idempotencyKey: z.string().optional(),
 });
 
 const createApiKeySchema = z.object({
@@ -195,10 +196,13 @@ automationRouter.post(
         );
       }
 
+      const idempotencyKey = (req.headers["x-idempotency-key"] as string) || parseResult.data.idempotencyKey;
+
       const result = await AutomationService.dispatchEvent(
         tenantId,
         parseResult.data.eventType,
         parseResult.data.payload,
+        idempotencyKey
       );
 
       res.json({ success: true, data: result });

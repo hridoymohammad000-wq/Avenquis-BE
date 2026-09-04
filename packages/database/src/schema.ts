@@ -2710,6 +2710,7 @@ export const webhookDeliveries = pgTable(
       .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
     eventType: varchar("event_type", { length: 100 }).notNull(),
     payload: jsonb("payload").notNull(),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }),
     signature: varchar("signature", { length: 255 }),
     responseStatusCode: integer("response_status_code"),
     responseBody: text("response_body"),
@@ -2772,6 +2773,7 @@ export const automationExecutions = pgTable(
     }),
     triggerEvent: varchar("trigger_event", { length: 100 }).notNull(),
     eventPayload: jsonb("event_payload"),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }),
     conditionMatched: boolean("condition_matched").notNull().default(true),
     actionStatus: varchar("action_status", { length: 50 })
       .notNull()

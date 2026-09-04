@@ -134,12 +134,29 @@ export class AutomationService {
     tenantId: string,
     eventType: string,
     payload: Record<string, unknown>,
+    idempotencyKey?: string,
   ): Promise<{
     webhooksDispatched: number;
     rulesExecuted: number;
   }> {
     let webhooksDispatched = 0;
     let rulesExecuted = 0;
+
+    if (idempotencyKey) {
+      // Check if we already executed rules for this idempotency key
+      const [existingExecution] = await db
+        .select()
+        .from(automationExecutions)
+        .where(
+          and(
+            eq(automationExecutions.tenantId, tenantId),
+            eq(automationExecutions.idempotencyKey, idempotencyKey)
+          )
+        );
+      if (existingExecution) {
+        return { webhooksDispatched: 0, rulesExecuted: 0 };
+      }
+    }
 
     // 1. Dispatch Webhooks
     const endpoints = await db
@@ -164,6 +181,7 @@ export class AutomationService {
           secret: ep.secret,
           eventType,
           payload,
+          idempotencyKey,
         }).catch((err) =>
           console.error(`[WebhookDelivery] Dispatch failed for ${ep.id}:`, err),
         );
@@ -212,6 +230,7 @@ export class AutomationService {
           ruleId: rule.id,
           triggerEvent: eventType,
           eventPayload: payload,
+          idempotencyKey,
           conditionMatched: true,
           actionStatus: "SUCCESS",
           resultPayload: {
