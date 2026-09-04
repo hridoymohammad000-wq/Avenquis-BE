@@ -3,6 +3,7 @@ import {
   auditFiles,
   clients,
   engagements,
+  memberships,
   eq,
   and,
   desc,
@@ -31,6 +32,20 @@ export class AuditFilesService {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
 
+    const uploader = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, uploadedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!uploader) {
+      throw new ApiError(
+        403,
+        "Invalid uploader membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
     if (data.fileType === "CAF") {
       if (!data.engagementId) {
         throw new ApiError(
@@ -48,6 +63,19 @@ export class AuditFilesService {
       if (!engagement) {
         throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
       }
+      if (engagement.clientId !== data.clientId) {
+        throw new ApiError(
+          400,
+          "Engagement does not belong to this client",
+          "INVALID_ENGAGEMENT_CLIENT",
+        );
+      }
+    } else if (data.engagementId) {
+      throw new ApiError(
+        400,
+        "Permanent files cannot include an engagement",
+        "INVALID_ENGAGEMENT_ID",
+      );
     }
 
     const [file] = await db

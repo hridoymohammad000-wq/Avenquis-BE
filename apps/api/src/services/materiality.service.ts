@@ -3,6 +3,9 @@ import {
   materialityAssessments,
   riskAssessments,
   engagements,
+  memberships,
+  tbLineItems,
+  trialBalances,
   eq,
   and,
   desc,
@@ -49,6 +52,20 @@ export class MaterialityService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    const assessor = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, assessedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!assessor) {
+      throw new ApiError(
+        403,
+        "Invalid assessor membership",
+        "INVALID_MEMBERSHIP",
+      );
     }
 
     const rawOverall = (data.benchmarkAmount * data.percentageApplied) / 10000;
@@ -131,6 +148,45 @@ export class MaterialityService {
 
     if (!engagement) {
       throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    const assessor = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, assessedByMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+    if (!assessor) {
+      throw new ApiError(
+        403,
+        "Invalid assessor membership",
+        "INVALID_MEMBERSHIP",
+      );
+    }
+
+    if (data.lineItemId) {
+      const lineItem = await db.query.tbLineItems.findFirst({
+        where: and(
+          eq(tbLineItems.id, data.lineItemId),
+          eq(tbLineItems.tenantId, tenantId),
+        ),
+      });
+      const trialBalance = lineItem
+        ? await db.query.trialBalances.findFirst({
+            where: and(
+              eq(trialBalances.id, lineItem.trialBalanceId),
+              eq(trialBalances.tenantId, tenantId),
+              eq(trialBalances.engagementId, data.engagementId),
+            ),
+          })
+        : null;
+      if (!lineItem || !trialBalance) {
+        throw new ApiError(
+          400,
+          "Line item is not part of this engagement",
+          "INVALID_LINE_ITEM",
+        );
+      }
     }
 
     // Calculate combined risk using ISA risk matrix (case-insensitive)
