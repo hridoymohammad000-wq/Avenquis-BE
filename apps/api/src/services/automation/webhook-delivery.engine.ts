@@ -44,7 +44,7 @@ export class WebhookDeliveryEngine {
   }> {
     // 1. SSRF Validation
     try {
-      SsrfGuard.validateUrl(request.url);
+      await SsrfGuard.validateUrl(request.url);
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : "SSRF validation failed";
 
@@ -104,6 +104,7 @@ export class WebhookDeliveryEngine {
         headers,
         body: payloadString,
         signal: controller.signal,
+        redirect: "error", // Prevent automatic redirect to unvalidated SSRF targets
       });
 
       clearTimeout(timeoutId);
