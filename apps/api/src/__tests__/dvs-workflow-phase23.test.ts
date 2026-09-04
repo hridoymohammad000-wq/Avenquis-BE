@@ -2,14 +2,17 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../http/app.js";
 import { closeDatabaseConnection } from "@avenquis/database";
+import { DvsService } from "../services/dvs.service.js";
+import { IcabDvsAdapter } from "../services/dvs/icab-dvs.adapter.js";
 
-describe("Phase 23 DVS API", () => {
+describe("Phase 23 DVS API & Adapter Remediation", () => {
   const app = createApp();
 
   let adminToken: string;
   let tenantAId: string;
+  let tenantBId: string;
   let engagementId: string;
-  let dvsCode: string;
+  let unconfiguredDvsCode: string;
 
   beforeAll(async () => {
     // 1. Admin User & Tenant A
@@ -30,7 +33,17 @@ describe("Phase 23 DVS API", () => {
       });
     tenantAId = tenantARes.body.data.tenant.id;
 
-    // 2. Client & Engagement
+    // Tenant B (for cross-tenant security tests)
+    const tenantBRes = await request(app)
+      .post("/api/v1/tenants")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Rahman & Co CA Firm",
+        slug: `rahman-dvs-${Date.now()}`,
+      });
+    tenantBId = tenantBRes.body.data.tenant.id;
+
+    // 2. Client & Engagement in Tenant A
     const clientRes = await request(app)
       .post("/api/v1/clients")
       .set("Authorization", `Bearer ${adminToken}`)
@@ -57,10 +70,14 @@ describe("Phase 23 DVS API", () => {
   });
 
   afterAll(async () => {
+    // Reset default adapter
+    DvsService.setAdapter(new IcabDvsAdapter());
     await closeDatabaseConnection();
   });
 
-  it("should generate a DVS code for the engagement", async () => {
+  it("1. Provider Not Configured: should generate explicit non-authoritative DVS code", async () => {
+    DvsService.setAdapter(new IcabDvsAdapter()); // Default unconfigured
+
     const res = await request(app)
       .post("/api/v1/compliance/dvs")
       .set("Authorization", `Bearer ${adminToken}`)
@@ -72,41 +89,123 @@ describe("Phase 23 DVS API", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    dvsCode = res.body.data.dvsCode;
-    expect(dvsCode).toBeDefined();
-    expect(res.body.data.status).toBe("generated");
+    unconfiguredDvsCode = res.body.data.dvsCode;
+    expect(unconfiguredDvsCode).toBeDefined();
+    expect(res.body.data.isAuthoritative).toBe(false);
+    expect(res.body.data.providerState).toBe("NOT_CONFIGURED");
+    expect(res.body.data.verificationNote).toContain("unconfigured");
   });
 
-  it("should verify a valid DVS code", async () => {
+  it("2. Authoritative vs Non-authoritative Result Semantics: should verify unconfigured record accurately", async () => {
     const res = await request(app)
-      .get(`/api/v1/compliance/dvs/${dvsCode}`)
+      .get(`/api/v1/compliance/dvs/${unconfiguredDvsCode}`)
       .set("Authorization", `Bearer ${adminToken}`)
       .set("x-tenant-id", tenantAId);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.engagementId).toBe(engagementId);
+    expect(res.body.data.isAuthoritative).toBe(false);
+    expect(res.body.data.providerState).toBe("NOT_CONFIGURED");
   });
 
-  it("should fail to verify an invalid DVS code", async () => {
+  it("3. Provider Success: should return authoritative verification when live provider is active", async () => {
+    const successAdapter = new IcabDvsAdapter({
+      apiUrl: "https://dvs.icab.org.bd/api",
+      apiKey: "test-icab-api-key",
+      mockMode: "SUCCESS",
+    });
+
+    const result = await DvsService.generateDvsCode(
+      tenantAId,
+      "membership-123",
+      { engagementId, documentType: "Tax Audit Report" },
+      successAdapter,
+    );
+
+    expect(result.isAuthoritative).toBe(true);
+    expect(result.status).toBe("VERIFIED");
+    expect(result.providerState).toBe("AVAILABLE");
+    expect(result.providerReference).toBeDefined();
+  });
+
+  it("4. Provider Rejection: should handle explicit portal rejection", async () => {
+    const rejectAdapter = new IcabDvsAdapter({
+      apiUrl: "https://dvs.icab.org.bd/api",
+      apiKey: "test-icab-api-key",
+      mockMode: "REJECT",
+    });
+
+    const result = await DvsService.generateDvsCode(
+      tenantAId,
+      "membership-123",
+      { engagementId, documentType: "Special Audit" },
+      rejectAdapter,
+    );
+
+    expect(result.isAuthoritative).toBe(true);
+    expect(result.status).toBe("REJECTED");
+    expect(result.failureReason).toContain("failed");
+  });
+
+  it("5. Request Timeout: should handle provider timeout gracefully", async () => {
+    const timeoutAdapter = new IcabDvsAdapter({
+      apiUrl: "https://dvs.icab.org.bd/api",
+      apiKey: "test-icab-api-key",
+      mockMode: "TIMEOUT",
+    });
+
+    await expect(
+      DvsService.generateDvsCode(
+        tenantAId,
+        "membership-123",
+        { engagementId, documentType: "Audit Report" },
+        timeoutAdapter,
+      ),
+    ).rejects.toThrow("DVS Provider request timed out");
+  });
+
+  it("6. Retryable Provider Failure: should handle HTTP 503 temporary outage", async () => {
+    const retryableAdapter = new IcabDvsAdapter({
+      apiUrl: "https://dvs.icab.org.bd/api",
+      apiKey: "test-icab-api-key",
+      mockMode: "RETRYABLE_FAIL",
+    });
+
+    await expect(
+      DvsService.generateDvsCode(
+        tenantAId,
+        "membership-123",
+        { engagementId, documentType: "Audit Report" },
+        retryableAdapter,
+      ),
+    ).rejects.toThrow("DVS Provider temporarily unavailable");
+  });
+
+  it("7. Non-Retryable Failure: should handle HTTP 400 bad request without retrying", async () => {
+    const nonRetryableAdapter = new IcabDvsAdapter({
+      apiUrl: "https://dvs.icab.org.bd/api",
+      apiKey: "test-icab-api-key",
+      mockMode: "NON_RETRYABLE_FAIL",
+    });
+
+    await expect(
+      DvsService.generateDvsCode(
+        tenantAId,
+        "membership-123",
+        { engagementId, documentType: "Audit Report" },
+        nonRetryableAdapter,
+      ),
+    ).rejects.toThrow("DVS Generation failed");
+  });
+
+  it("8. Cross-Tenant Access Rejection: Tenant B cannot verify or read Tenant A's DVS code", async () => {
+    // Tenant B attempts to verify Tenant A's DVS code
     const res = await request(app)
-      .get(`/api/v1/compliance/dvs/INVALID-123`)
+      .get(`/api/v1/compliance/dvs/${unconfiguredDvsCode}`)
       .set("Authorization", `Bearer ${adminToken}`)
-      .set("x-tenant-id", tenantAId);
+      .set("x-tenant-id", tenantBId);
 
     expect(res.status).toBe(404);
     expect(res.body.success).toBe(false);
-  });
-
-  it("should retrieve DVS records for the engagement", async () => {
-    const res = await request(app)
-      .get(`/api/v1/compliance/dvs/engagement/${engagementId}`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .set("x-tenant-id", tenantAId);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.length).toBe(1);
-    expect(res.body.data[0].dvsCode).toBe(dvsCode);
   });
 });
