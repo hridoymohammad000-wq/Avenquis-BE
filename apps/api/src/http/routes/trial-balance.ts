@@ -23,8 +23,11 @@ const lineItemSchema = z.object({
 const importTrialBalanceSchema = z.object({
   engagementId: z.string().uuid(),
   name: z.string().min(2).max(255),
-  asOfDate: z.string().transform((val) => new Date(val)),
-  currency: z.string().optional(),
+  asOfDate: z
+    .string()
+    .transform((val) => new Date(val))
+    .refine((value) => !Number.isNaN(value.getTime()), "Invalid asOfDate"),
+  currency: z.string().trim().toUpperCase().min(3).max(10).optional(),
   lineItems: z.array(lineItemSchema).min(1),
 });
 

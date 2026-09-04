@@ -7,6 +7,7 @@ import {
   eq,
   and,
   desc,
+  sql,
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
@@ -87,6 +88,23 @@ export class BillingService {
       throw new ApiError(404, "Client not found", "CLIENT_NOT_FOUND");
     }
 
+    if (data.engagementId) {
+      const engagement = await db.query.engagements.findFirst({
+        where: and(
+          eq(engagements.id, data.engagementId),
+          eq(engagements.tenantId, tenantId),
+          eq(engagements.clientId, data.clientId),
+        ),
+      });
+      if (!engagement) {
+        throw new ApiError(
+          400,
+          "Engagement does not belong to this client and tenant",
+          "ENGAGEMENT_CLIENT_MISMATCH",
+        );
+      }
+    }
+
     const existing = await db.query.invoices.findFirst({
       where: and(
         eq(invoices.tenantId, tenantId),
@@ -139,46 +157,62 @@ export class BillingService {
       remarks?: string;
     },
   ) {
-    const invoice = await db.query.invoices.findFirst({
-      where: and(eq(invoices.tenantId, tenantId), eq(invoices.id, invoiceId)),
+    return db.transaction(async (tx) => {
+      const invoice = await tx.query.invoices.findFirst({
+        where: and(eq(invoices.tenantId, tenantId), eq(invoices.id, invoiceId)),
+      });
+
+      if (!invoice) {
+        throw new ApiError(404, "Invoice not found", "INVOICE_NOT_FOUND");
+      }
+      await tx.execute(
+        sql`select 1 from ${invoices} where ${invoices.id} = ${invoiceId} for update`,
+      );
+      if (invoice.status === "paid") {
+        throw new ApiError(
+          409,
+          "Invoice is already fully paid",
+          "INVOICE_ALREADY_PAID",
+        );
+      }
+      if (data.amount > invoice.totalAmount - invoice.paidAmount) {
+        throw new ApiError(
+          400,
+          "Payment exceeds the invoice outstanding balance",
+          "PAYMENT_EXCEEDS_BALANCE",
+        );
+      }
+
+      const [payment] = await tx
+        .insert(payments)
+        .values({
+          tenantId,
+          invoiceId,
+          receiptNumber: data.receiptNumber,
+          amount: data.amount,
+          paymentDate: data.paymentDate,
+          paymentMethod: data.paymentMethod,
+          referenceNumber: data.referenceNumber,
+          remarks: data.remarks,
+        })
+        .returning();
+
+      const newPaidAmount = invoice.paidAmount + data.amount;
+      const newStatus =
+        newPaidAmount >= invoice.totalAmount ? "paid" : "partially_paid";
+
+      await tx
+        .update(invoices)
+        .set({
+          paidAmount: newPaidAmount,
+          status: newStatus,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(eq(invoices.tenantId, tenantId), eq(invoices.id, invoiceId)),
+        );
+
+      return payment;
     });
-
-    if (!invoice) {
-      throw new ApiError(404, "Invoice not found", "INVOICE_NOT_FOUND");
-    }
-
-    const [payment] = await db
-      .insert(payments)
-      .values({
-        tenantId,
-        invoiceId,
-        receiptNumber: data.receiptNumber,
-        amount: data.amount,
-        paymentDate: data.paymentDate,
-        paymentMethod: data.paymentMethod,
-        referenceNumber: data.referenceNumber,
-        remarks: data.remarks,
-      })
-      .returning();
-
-    const newPaidAmount = invoice.paidAmount + data.amount;
-    let newStatus = invoice.status;
-
-    if (newPaidAmount >= invoice.totalAmount) {
-      newStatus = "paid";
-    } else if (newPaidAmount > 0) {
-      newStatus = "partially_paid";
-    }
-
-    await db
-      .update(invoices)
-      .set({
-        paidAmount: newPaidAmount,
-        status: newStatus,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(invoices.tenantId, tenantId), eq(invoices.id, invoiceId)));
-
-    return payment;
   }
 }

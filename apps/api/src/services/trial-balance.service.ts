@@ -11,6 +11,11 @@ import {
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 
+const money = (value: number) => value.toFixed(2);
+const asNumber = (value: string | number | null | undefined) =>
+  Number(value ?? 0);
+const dbMoney = (value: number) => money(value);
+
 export class TrialBalanceService {
   static async importTrialBalance(
     tenantId: string,
@@ -50,12 +55,47 @@ export class TrialBalanceService {
       );
     }
 
+    const uploaderMembership = await db.query.memberships.findFirst({
+      where: and(
+        eq(memberships.id, uploaderMembershipId),
+        eq(memberships.tenantId, tenantId),
+      ),
+    });
+
+    if (!uploaderMembership) {
+      throw new ApiError(
+        403,
+        "Uploader is not a member of this tenant",
+        "INVALID_UPLOADER_MEMBERSHIP",
+      );
+    }
+
+    const accountCodes = new Set<string>();
+    for (const item of data.lineItems) {
+      if (accountCodes.has(item.accountCode)) {
+        throw new ApiError(
+          400,
+          `Duplicate account code: ${item.accountCode}`,
+          "DUPLICATE_ACCOUNT_CODE",
+        );
+      }
+      accountCodes.add(item.accountCode);
+    }
+
     let totalDebitRaw = 0;
     let totalCreditRaw = 0;
 
     const formattedItems = data.lineItems.map((item) => {
       const debit = Number(item.debitAmount ?? 0);
       const credit = Number(item.creditAmount ?? 0);
+      const priorYearBalance = Number(item.priorYearBalance ?? 0);
+      if (![debit, credit, priorYearBalance].every(Number.isFinite)) {
+        throw new ApiError(
+          400,
+          "Trial balance amounts must be finite numbers",
+          "INVALID_AMOUNT",
+        );
+      }
       totalDebitRaw += debit;
       totalCreditRaw += credit;
       const netBalance = Math.round((debit - credit) * 100) / 100;
@@ -67,10 +107,10 @@ export class TrialBalanceService {
         tenantId,
         accountCode: item.accountCode,
         accountName: item.accountName,
-        debitAmount: debit,
-        creditAmount: credit,
-        netBalance,
-        priorYearBalance: item.priorYearBalance ?? 0,
+        debitAmount: dbMoney(debit),
+        creditAmount: dbMoney(credit),
+        netBalance: dbMoney(netBalance),
+        priorYearBalance: dbMoney(priorYearBalance),
         mappedFinancialStatementGroup: item.mappedFinancialStatementGroup,
         mappedLeadSchedule: item.mappedLeadSchedule,
         isMapped,
@@ -90,8 +130,8 @@ export class TrialBalanceService {
           name: data.name,
           asOfDate: data.asOfDate,
           currency: data.currency ?? "BDT",
-          totalDebit,
-          totalCredit,
+          totalDebit: dbMoney(totalDebit),
+          totalCredit: dbMoney(totalCredit),
           isBalanced,
           uploadedByMembershipId: uploaderMembershipId,
         })
@@ -110,7 +150,13 @@ export class TrialBalanceService {
       return {
         ...tb,
         lineItemsCount: insertedLineItems.length,
-        lineItems: insertedLineItems,
+        lineItems: insertedLineItems.map((item) => ({
+          ...item,
+          debitAmount: asNumber(item.debitAmount),
+          creditAmount: asNumber(item.creditAmount),
+          netBalance: asNumber(item.netBalance),
+          priorYearBalance: asNumber(item.priorYearBalance),
+        })),
       };
     });
   }
@@ -145,7 +191,11 @@ export class TrialBalanceService {
       )
       .orderBy(desc(trialBalances.createdAt));
 
-    return list;
+    return list.map((item) => ({
+      ...item,
+      totalDebit: asNumber(item.totalDebit),
+      totalCredit: asNumber(item.totalCredit),
+    }));
   }
 
   static async getTrialBalanceDetails(
@@ -183,10 +233,18 @@ export class TrialBalanceService {
 
     return {
       ...tb,
+      totalDebit: asNumber(tb.totalDebit),
+      totalCredit: asNumber(tb.totalCredit),
       totalItems: lineItems.length,
       mappedCount,
       unmappedCount,
-      lineItems,
+      lineItems: lineItems.map((item) => ({
+        ...item,
+        debitAmount: asNumber(item.debitAmount),
+        creditAmount: asNumber(item.creditAmount),
+        netBalance: asNumber(item.netBalance),
+        priorYearBalance: asNumber(item.priorYearBalance),
+      })),
     };
   }
 
@@ -216,7 +274,17 @@ export class TrialBalanceService {
 
     return await db.transaction(async (tx) => {
       const updatedItems = [];
+      const requestedIds = new Set<string>();
       for (const item of mappings) {
+        if (requestedIds.has(item.lineItemId)) {
+          throw new ApiError(
+            400,
+            `Duplicate line item mapping: ${item.lineItemId}`,
+            "DUPLICATE_LINE_ITEM_MAPPING",
+          );
+        }
+        requestedIds.add(item.lineItemId);
+
         const [updated] = await tx
           .update(tbLineItems)
           .set({
@@ -237,6 +305,14 @@ export class TrialBalanceService {
         if (updated) {
           updatedItems.push(updated);
         }
+      }
+
+      if (updatedItems.length !== mappings.length) {
+        throw new ApiError(
+          404,
+          "One or more trial balance line items were not found",
+          "LINE_ITEM_NOT_FOUND",
+        );
       }
       return updatedItems;
     });
@@ -296,9 +372,9 @@ export class TrialBalanceService {
         };
       }
       leadSchedules[key].itemCount += 1;
-      leadSchedules[key].totalDebit += item.debitAmount;
-      leadSchedules[key].totalCredit += item.creditAmount;
-      leadSchedules[key].totalNetBalance += item.netBalance;
+      leadSchedules[key].totalDebit += asNumber(item.debitAmount);
+      leadSchedules[key].totalCredit += asNumber(item.creditAmount);
+      leadSchedules[key].totalNetBalance += asNumber(item.netBalance);
     }
 
     return {

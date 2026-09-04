@@ -269,6 +269,52 @@ export class StaffService {
         );
       }
 
+      const membership = await tx.query.memberships.findFirst({
+        where: and(
+          eq(memberships.id, data.membershipId),
+          eq(memberships.tenantId, tenantId),
+        ),
+      });
+      if (!membership) {
+        throw new ApiError(
+          400,
+          "Membership does not belong to this tenant",
+          "MEMBERSHIP_TENANT_MISMATCH",
+        );
+      }
+
+      if (data.departmentId) {
+        const department = await tx.query.departments.findFirst({
+          where: and(
+            eq(departments.id, data.departmentId),
+            eq(departments.tenantId, tenantId),
+          ),
+        });
+        if (!department) {
+          throw new ApiError(
+            400,
+            "Department does not belong to this tenant",
+            "DEPARTMENT_TENANT_MISMATCH",
+          );
+        }
+      }
+
+      if (data.designationId) {
+        const designation = await tx.query.designations.findFirst({
+          where: and(
+            eq(designations.id, data.designationId),
+            eq(designations.tenantId, tenantId),
+          ),
+        });
+        if (!designation) {
+          throw new ApiError(
+            400,
+            "Designation does not belong to this tenant",
+            "DESIGNATION_TENANT_MISMATCH",
+          );
+        }
+      }
+
       const [newStaff] = await tx
         .insert(staffProfiles)
         .values({
@@ -400,9 +446,39 @@ export class StaffService {
         }
       }
       if (data.newDepartmentId !== undefined) {
+        if (data.newDepartmentId) {
+          const department = await tx.query.departments.findFirst({
+            where: and(
+              eq(departments.id, data.newDepartmentId),
+              eq(departments.tenantId, tenantId),
+            ),
+          });
+          if (!department) {
+            throw new ApiError(
+              400,
+              "Department does not belong to this tenant",
+              "DEPARTMENT_TENANT_MISMATCH",
+            );
+          }
+        }
         updates.departmentId = data.newDepartmentId;
       }
       if (data.newDesignationId !== undefined) {
+        if (data.newDesignationId) {
+          const designation = await tx.query.designations.findFirst({
+            where: and(
+              eq(designations.id, data.newDesignationId),
+              eq(designations.tenantId, tenantId),
+            ),
+          });
+          if (!designation) {
+            throw new ApiError(
+              400,
+              "Designation does not belong to this tenant",
+              "DESIGNATION_TENANT_MISMATCH",
+            );
+          }
+        }
         updates.designationId = data.newDesignationId;
       }
 
