@@ -152,6 +152,63 @@ export class DvsService {
     };
   }
 
+  static async recordManualDvs(
+    tenantId: string,
+    engagementId: string,
+    recordedByMembershipId: string,
+    data: {
+      documentType: string;
+      dvsCode: string;
+      provider?: string;
+      providerReference?: string;
+    }
+  ) {
+    const engagement = await db.query.engagements.findFirst({
+      where: and(
+        eq(engagements.tenantId, tenantId),
+        eq(engagements.id, engagementId),
+      ),
+    });
+
+    if (!engagement) {
+      throw new ApiError(404, "Engagement not found", "ENGAGEMENT_NOT_FOUND");
+    }
+
+    const [record] = await db
+      .insert(dvsRecords)
+      .values({
+        tenantId,
+        engagementId,
+        documentType: data.documentType,
+        dvsCode: data.dvsCode,
+        status: "VERIFIED",
+        provider: data.provider || "MANUAL_DVS",
+        isAuthoritative: false,
+        verificationStatus: "VERIFIED",
+        providerReference: data.providerReference,
+        generatedByMembershipId: recordedByMembershipId,
+        verifiedByMembershipId: recordedByMembershipId,
+        verifiedAt: new Date(),
+        auditEvidence: {
+          manual: true,
+          actorMembershipId: recordedByMembershipId,
+          tenantId,
+          generatedAt: new Date().toISOString(),
+          verifiedAt: new Date().toISOString(),
+        },
+      })
+      .returning();
+
+    return {
+      ...record,
+      status: "VERIFIED",
+      isAuthoritative: false,
+      provider: record.provider,
+      providerState: "MANUAL_REQUIRED",
+      verificationNote: "DVS code recorded manually by user",
+    };
+  }
+
   static async getEngagementDvsRecords(tenantId: string, engagementId: string) {
     const engagement = await db.query.engagements.findFirst({
       where: and(

@@ -39,19 +39,6 @@ describe("Phase 24 - Regulatory Adapters & State Machine Unit Tests", () => {
       expect(result.status).toBe("MANUAL_ACTION_REQUIRED");
       expect(result.submissionChannel).toBe("MANUAL_SUBMISSION");
     });
-
-    it("should handle SUCCESS mock mode", async () => {
-      const adapter = new NbrAdapter({ mockMode: "SUCCESS" });
-      const result = await adapter.submitFiling({
-        tenantId: "t-1",
-        filingId: "f-1",
-        regulator: "NBR",
-        filingType: "Tax Return",
-      });
-
-      expect(result.status).toBe("ACCEPTED");
-      expect(result.submissionChannel).toBe("API_INTEGRATED");
-    });
   });
 
   describe("FrcAdapter", () => {

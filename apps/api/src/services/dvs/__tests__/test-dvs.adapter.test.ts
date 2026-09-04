@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { IcabDvsAdapter } from "../icab-dvs.adapter.js";
+import { TestDvsAdapter } from "../test-dvs.adapter.js";
 
-describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
+describe("Phase 23 - TestDvsAdapter Unit Tests", () => {
   it("should return NOT_CONFIGURED when API credentials are not set", async () => {
-    const adapter = new IcabDvsAdapter({ apiUrl: undefined, apiKey: undefined });
+    const adapter = new TestDvsAdapter({ apiUrl: undefined, apiKey: undefined });
     const state = await adapter.getProviderState();
     expect(state).toBe("NOT_CONFIGURED");
 
@@ -20,7 +20,7 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
   });
 
   it("should return AVAILABLE and authoritative result when configured with SUCCESS mock", async () => {
-    const adapter = new IcabDvsAdapter({
+    const adapter = new TestDvsAdapter({
       apiUrl: "https://dvs.icab.org.bd/api",
       apiKey: "test-key",
       mockMode: "SUCCESS",
@@ -41,7 +41,7 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
   });
 
   it("should handle REJECT mock mode", async () => {
-    const adapter = new IcabDvsAdapter({
+    const adapter = new TestDvsAdapter({
       apiUrl: "https://dvs.icab.org.bd/api",
       apiKey: "test-key",
       mockMode: "REJECT",
@@ -59,7 +59,7 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
   });
 
   it("should throw timeout error on TIMEOUT mock mode", async () => {
-    const adapter = new IcabDvsAdapter({
+    const adapter = new TestDvsAdapter({
       apiUrl: "https://dvs.icab.org.bd/api",
       apiKey: "test-key",
       mockMode: "TIMEOUT",
@@ -75,7 +75,7 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
   });
 
   it("should throw retryable error on RETRYABLE_FAIL mock mode", async () => {
-    const adapter = new IcabDvsAdapter({
+    const adapter = new TestDvsAdapter({
       apiUrl: "https://dvs.icab.org.bd/api",
       apiKey: "test-key",
       mockMode: "RETRYABLE_FAIL",
@@ -91,7 +91,7 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
   });
 
   it("should throw non-retryable error on NON_RETRYABLE_FAIL mock mode", async () => {
-    const adapter = new IcabDvsAdapter({
+    const adapter = new TestDvsAdapter({
       apiUrl: "https://dvs.icab.org.bd/api",
       apiKey: "test-key",
       mockMode: "NON_RETRYABLE_FAIL",
@@ -106,3 +106,4 @@ describe("Phase 23 - IcabDvsAdapter Unit Tests", () => {
     ).rejects.toThrow("HTTP_400_BAD_REQUEST");
   });
 });
+

@@ -3,7 +3,8 @@ export type DvsProviderStatus =
   | "AVAILABLE"
   | "UNAVAILABLE"
   | "DEGRADED"
-  | "OFFLINE";
+  | "OFFLINE"
+  | "MANUAL_REQUIRED";
 
 export type DvsVerificationStatus =
   | "PENDING"
@@ -11,7 +12,8 @@ export type DvsVerificationStatus =
   | "VERIFIED"
   | "REJECTED"
   | "FAILED"
-  | "PROVIDER_UNAVAILABLE";
+  | "PROVIDER_UNAVAILABLE"
+  | "MANUAL_ACTION_REQUIRED";
 
 export interface DvsGenerateRequest {
   tenantId: string;

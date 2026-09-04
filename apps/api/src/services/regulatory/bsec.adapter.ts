@@ -26,11 +26,8 @@ export class BsecAdapter implements IRegulatorAdapter {
   }
 
   async submitFiling(req: RegulatorSubmissionRequest): Promise<RegulatorSubmissionResult> {
+    void req;
     const state = await this.getProviderState();
-
-    if (this.config.mockMode) {
-      return this.handleMock(req, state);
-    }
 
     if (state === "MANUAL_SUBMISSION") {
       return {
@@ -38,7 +35,7 @@ export class BsecAdapter implements IRegulatorAdapter {
         status: "MANUAL_ACTION_REQUIRED",
         providerState: "MANUAL_SUBMISSION",
         submissionChannel: "MANUAL_SUBMISSION",
-        note: "Bangladesh Securities and Exchange Commission (BSEC) automated API unconfigured. Filing data prepared for manual submission.",
+        note: "BSEC automated API unconfigured. Filing data prepared for manual submission.",
         receiptMetadata: {
           preparedAt: new Date().toISOString(),
           requiresManualUpload: true,
@@ -46,50 +43,6 @@ export class BsecAdapter implements IRegulatorAdapter {
       };
     }
 
-    return {
-      regulator: this.regulatorName,
-      status: "SUBMITTED",
-      providerState: "API_AVAILABLE",
-      submissionChannel: "API_INTEGRATED",
-      externalReference: `BSEC-${Date.now()}`,
-      submittedAt: new Date(),
-      note: "Submitted authoritatively to BSEC filing portal",
-      receiptMetadata: { timestamp: new Date().toISOString() },
-    };
-  }
-
-  private handleMock(
-    req: RegulatorSubmissionRequest,
-    providerState: RegulatoryProviderState,
-  ): RegulatorSubmissionResult {
-    switch (this.config.mockMode) {
-      case "REJECT":
-        return {
-          regulator: this.regulatorName,
-          status: "REJECTED",
-          providerState,
-          submissionChannel: "API_INTEGRATED",
-          rejectionReason: "BSEC issuer listing code mismatch",
-          note: "Filing rejected by BSEC portal validation rules",
-        };
-      case "TIMEOUT":
-        throw new Error("BSEC portal request timed out after 5000ms");
-      case "RETRYABLE_FAIL":
-        throw new Error("HTTP_503_SERVICE_UNAVAILABLE: BSEC server error");
-      case "NON_RETRYABLE_FAIL":
-        throw new Error("HTTP_400_BAD_REQUEST: Invalid corporate governance report attachment");
-      case "SUCCESS":
-      default:
-        return {
-          regulator: this.regulatorName,
-          status: "ACCEPTED",
-          providerState: "API_AVAILABLE",
-          submissionChannel: "API_INTEGRATED",
-          externalReference: `BSEC-ACK-${Date.now()}`,
-          submittedAt: new Date(),
-          note: "Filing authoritatively accepted by BSEC",
-          receiptMetadata: { ackNumber: `ACK-BSEC-${Date.now()}` },
-        };
-    }
+    throw new Error("Authoritative BSEC API contract is not yet verified. Automated submission failed closed.");
   }
 }

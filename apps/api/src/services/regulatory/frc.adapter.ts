@@ -26,11 +26,8 @@ export class FrcAdapter implements IRegulatorAdapter {
   }
 
   async submitFiling(req: RegulatorSubmissionRequest): Promise<RegulatorSubmissionResult> {
+    void req;
     const state = await this.getProviderState();
-
-    if (this.config.mockMode) {
-      return this.handleMock(req, state);
-    }
 
     if (state === "MANUAL_SUBMISSION") {
       return {
@@ -46,50 +43,6 @@ export class FrcAdapter implements IRegulatorAdapter {
       };
     }
 
-    return {
-      regulator: this.regulatorName,
-      status: "SUBMITTED",
-      providerState: "API_AVAILABLE",
-      submissionChannel: "API_INTEGRATED",
-      externalReference: `FRC-${Date.now()}`,
-      submittedAt: new Date(),
-      note: "Submitted authoritatively to FRC audit portal",
-      receiptMetadata: { timestamp: new Date().toISOString() },
-    };
-  }
-
-  private handleMock(
-    req: RegulatorSubmissionRequest,
-    providerState: RegulatoryProviderState,
-  ): RegulatorSubmissionResult {
-    switch (this.config.mockMode) {
-      case "REJECT":
-        return {
-          regulator: this.regulatorName,
-          status: "REJECTED",
-          providerState,
-          submissionChannel: "API_INTEGRATED",
-          rejectionReason: "FRC audit firm registration credentials unverified",
-          note: "Filing rejected by FRC verification gate",
-        };
-      case "TIMEOUT":
-        throw new Error("FRC portal request timed out after 5000ms");
-      case "RETRYABLE_FAIL":
-        throw new Error("HTTP_503_SERVICE_UNAVAILABLE: FRC portal down for maintenance");
-      case "NON_RETRYABLE_FAIL":
-        throw new Error("HTTP_400_BAD_REQUEST: Missing required auditor signoff hash");
-      case "SUCCESS":
-      default:
-        return {
-          regulator: this.regulatorName,
-          status: "ACCEPTED",
-          providerState: "API_AVAILABLE",
-          submissionChannel: "API_INTEGRATED",
-          externalReference: `FRC-ACK-${Date.now()}`,
-          submittedAt: new Date(),
-          note: "Filing authoritatively accepted by FRC",
-          receiptMetadata: { ackNumber: `ACK-FRC-${Date.now()}` },
-        };
-    }
+    throw new Error("Authoritative FRC API contract is not yet verified. Automated submission failed closed.");
   }
 }
