@@ -10,14 +10,20 @@ export const integrationsRouter = Router();
 
 const connectSchema = z.object({
   integrationId: z.string().uuid(),
-  credentials: z.string(), // E.g., Encrypted OAuth Token JSON
+  credentials: z.string().min(1),
   settings: z.record(z.string(), z.any()).optional().default({}),
+});
+
+const syncSchema = z.object({
+  cursor: z.string().optional(),
+  idempotencyKey: z.string().optional(),
 });
 
 // Get global available integrations
 integrationsRouter.get("/available", authenticate, async (req, res, next) => {
   try {
-    const result = await IntegrationsService.getGlobalIntegrations();
+    const category = req.query.category as string | undefined;
+    const result = await IntegrationsService.getGlobalIntegrations(category);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -40,7 +46,7 @@ integrationsRouter.get(
   },
 );
 
-// Connect / Update a Tenant Integration
+// Connect / Configure a Tenant Integration
 integrationsRouter.post(
   "/tenant",
   authenticate,
@@ -54,7 +60,7 @@ integrationsRouter.post(
       if (!parseResult.success) {
         throw new ApiError(
           400,
-          "Invalid payload",
+          "Invalid integration payload",
           "INVALID_PAYLOAD",
           parseResult.error.flatten(),
         );
@@ -74,7 +80,30 @@ integrationsRouter.post(
   },
 );
 
-// Mock sync endpoint to simulate syncing from ERP
+// Test Connection Endpoint
+integrationsRouter.post(
+  "/tenant/:tenantIntegrationId/test-connection",
+  authenticate,
+  requireTenantContext,
+  requirePermission("admin:manage"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId!;
+      const { tenantIntegrationId } = req.params;
+
+      const result = await IntegrationsService.testConnection(
+        tenantId,
+        tenantIntegrationId,
+      );
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// Incremental Sync Endpoint
 integrationsRouter.post(
   "/tenant/:tenantIntegrationId/sync",
   authenticate,
@@ -82,17 +111,40 @@ integrationsRouter.post(
   requirePermission("admin:manage"),
   async (req, res, next) => {
     try {
+      const tenantId = req.tenantId!;
       const { tenantIntegrationId } = req.params;
-      
-      // MOCK SYNC PROCESS
-      const log = await IntegrationsService.logSyncEvent(
+      const parseResult = syncSchema.safeParse(req.body);
+
+      const result = await IntegrationsService.runIncrementalSync(
+        tenantId,
         tenantIntegrationId,
-        "TRIAL_BALANCE_IMPORT",
-        "SUCCESS",
-        150 // Mock records count
+        parseResult.success ? parseResult.data : undefined,
       );
 
-      res.status(200).json({ success: true, data: log });
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// Get Sync Audit Logs
+integrationsRouter.get(
+  "/tenant/:tenantIntegrationId/logs",
+  authenticate,
+  requireTenantContext,
+  requirePermission("admin:manage"),
+  async (req, res, next) => {
+    try {
+      const tenantId = req.tenantId!;
+      const { tenantIntegrationId } = req.params;
+
+      const result = await IntegrationsService.getSyncLogs(
+        tenantId,
+        tenantIntegrationId,
+      );
+
+      res.json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
