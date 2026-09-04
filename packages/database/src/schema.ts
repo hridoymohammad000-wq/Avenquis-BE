@@ -3019,8 +3019,17 @@ export const tenantSsoProviders = pgTable(
     providerType: varchar("provider_type", { length: 50 }).notNull(), // 'saml', 'oidc'
     issuer: varchar("issuer", { length: 255 }).notNull(),
     ssoUrl: varchar("sso_url", { length: 500 }).notNull(),
-    certificate: text("certificate"), // For SAML X.509
+    certificate: text("certificate"), // Encrypted SAML X.509
     clientId: varchar("client_id", { length: 255 }), // For OIDC
+    clientSecretEncrypted: text("client_secret_encrypted"), // Encrypted OIDC Secret
+    oidcDiscoveryUrl: varchar("oidc_discovery_url", { length: 1024 }),
+    domain: varchar("domain", { length: 255 }), // Domain for tenant mapping e.g., "acmecorp.com"
+    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"), // NOT_CONFIGURED, CONFIGURED, CONNECTED, ERROR, DISABLED
+    jitEnabled: boolean("jit_enabled").notNull().default(false),
+    jitDefaultRole: varchar("jit_default_role", { length: 100 })
+      .notNull()
+      .default("audit:read"), // Non-privileged default JIT role
+    allowedDomains: jsonb("allowed_domains").default([]),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -3031,6 +3040,50 @@ export const tenantSsoProviders = pgTable(
   },
   (table) => ({
     tenantSsoIdx: index("tenant_sso_idx").on(table.tenantId),
+    domainIdx: index("tenant_sso_domain_idx").on(table.domain),
+  }),
+);
+
+export const ssoSecurityStates = pgTable(
+  "sso_security_states",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    state: varchar("state", { length: 255 }).notNull().unique(),
+    nonce: varchar("nonce", { length: 255 }),
+    codeVerifier: varchar("code_verifier", { length: 255 }),
+    providerType: varchar("provider_type", { length: 50 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantStateIdx: index("sso_state_tenant_idx").on(table.tenantId),
+    stateIdx: index("sso_state_idx").on(table.state),
+  }),
+);
+
+export const samlReplayAudit = pgTable(
+  "saml_replay_audit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    assertionId: varchar("assertion_id", { length: 255 }).notNull().unique(),
+    issuer: varchar("issuer", { length: 255 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantAssertionIdx: index("saml_replay_tenant_idx").on(table.tenantId),
+    assertionIdx: index("saml_replay_assertion_idx").on(table.assertionId),
   }),
 );
 
@@ -3083,10 +3136,14 @@ export const tenantIntegrations = pgTable(
     integrationId: uuid("integration_id")
       .notNull()
       .references(() => globalIntegrations.id, { onDelete: "cascade" }),
-    status: varchar("status", { length: 50 }).notNull().default("DISCONNECTED"), // 'CONNECTED', 'DISCONNECTED', 'ERROR'
+    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"), // NOT_CONFIGURED, CONFIGURED, CONNECTING, CONNECTED, DEGRADED, ERROR, DISABLED
     settings: jsonb("settings").default({}), // Configurations, Field Mappings
     credentials: text("credentials"), // Encrypted OAuth tokens or API keys
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastSyncStatus: varchar("last_sync_status", { length: 50 }),
+    lastSyncError: text("last_sync_error"),
+    syncCursor: text("sync_cursor"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -3103,12 +3160,18 @@ export const integrationSyncLogs = pgTable(
   "integration_sync_logs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id").references(() => tenants.id, {
+      onDelete: "cascade",
+    }),
     tenantIntegrationId: uuid("tenant_integration_id")
       .notNull()
       .references(() => tenantIntegrations.id, { onDelete: "cascade" }),
     syncType: varchar("sync_type", { length: 100 }).notNull(), // e.g. 'TRIAL_BALANCE_IMPORT'
-    status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS'
+    status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS', 'DEGRADED'
     recordsProcessed: integer("records_processed").notNull().default(0),
+    checkpoint: text("checkpoint"),
+    idempotencyKey: varchar("idempotency_key", { length: 255 }),
+    rateLimited: boolean("rate_limited").notNull().default(false),
     errorDetails: text("error_details"),
     startedAt: timestamp("started_at", { withTimezone: true })
       .notNull()
