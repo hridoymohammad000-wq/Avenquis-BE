@@ -2,12 +2,15 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { createApp } from "../http/app.js";
 import { closeDatabaseConnection } from "@avenquis/database";
+import { AiIntelligenceService } from "../services/ai-intelligence.service.js";
+import { GeminiAiAdapter } from "../services/ai/gemini-ai.adapter.js";
 
-describe("Phase 27 AI Intelligence API", () => {
+describe("Phase 27 AI Intelligence API & Provider Remediation", () => {
   const app = createApp();
 
   let adminToken: string;
   let tenantAId: string;
+  let tenantBId: string;
   let engagementId: string;
   let analysisId: string;
 
@@ -29,6 +32,16 @@ describe("Phase 27 AI Intelligence API", () => {
         slug: `karim-ai-${Date.now()}`,
       });
     tenantAId = tenantARes.body.data.tenant.id;
+
+    // Tenant B (cross-tenant security)
+    const tenantBRes = await request(app)
+      .post("/api/v1/tenants")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        name: "Rahman & Co CA Firm",
+        slug: `rahman-ai-${Date.now()}`,
+      });
+    tenantBId = tenantBRes.body.data.tenant.id;
 
     // 2. Client & Engagement
     const clientRes = await request(app)
@@ -56,11 +69,38 @@ describe("Phase 27 AI Intelligence API", () => {
   });
 
   afterAll(async () => {
+    // Reset default adapter
+    AiIntelligenceService.registerAdapter("GEMINI", new GeminiAiAdapter());
     await closeDatabaseConnection();
   });
 
-  describe("1. Document Intelligence", () => {
-    it("should request and complete document analysis", async () => {
+  describe("1. Document Intelligence & Provider Handling", () => {
+    it("should handle unconfigured provider gracefully without fake production results", async () => {
+      AiIntelligenceService.registerAdapter("GEMINI", new GeminiAiAdapter({ apiKey: undefined }));
+
+      const res = await request(app)
+        .post("/api/v1/intelligence/documents/analyze")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantAId)
+        .send({
+          engagementId,
+          documentUrl: "https://storage.avenquis.local/docs/inv-001.pdf",
+          documentType: "invoice",
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe("FAILED");
+      expect(res.body.data.providerStatus).toBe("NOT_CONFIGURED");
+      expect(res.body.data.failureReason).toContain("GEMINI_API_KEY");
+    });
+
+    it("should process document analysis when test provider adapter is active", async () => {
+      AiIntelligenceService.registerAdapter(
+        "GEMINI",
+        new GeminiAiAdapter({ apiKey: "test-key", mockMode: "SUCCESS" }),
+      );
+
       const res = await request(app)
         .post("/api/v1/intelligence/documents/analyze")
         .set("Authorization", `Bearer ${adminToken}`)
@@ -75,27 +115,52 @@ describe("Phase 27 AI Intelligence API", () => {
       expect(res.body.success).toBe(true);
       analysisId = res.body.data.id;
       expect(analysisId).toBeDefined();
-      expect(res.body.data.status).toBe("completed"); // Because of mock
-      expect(res.body.data.aiAnalysisResult).toBeDefined();
-      expect(res.body.data.aiAnalysisResult.extractedEntities.vendorName).toBe(
-        "Mock Vendor Inc.",
-      );
+      expect(res.body.data.status).toBe("REVIEW_REQUIRED");
+      expect(res.body.data.reviewStatus).toBe("UNREVIEWED");
+      expect(res.body.data.isTestProvider).toBe(true);
     });
 
-    it("should retrieve document analysis result", async () => {
-      const res = await request(app)
+    it("should retrieve document analysis result and enforce tenant isolation", async () => {
+      const resA = await request(app)
         .get(`/api/v1/intelligence/documents/analyze/${analysisId}`)
         .set("Authorization", `Bearer ${adminToken}`)
         .set("x-tenant-id", tenantAId);
 
+      expect(resA.status).toBe(200);
+      expect(resA.body.data.documentType).toBe("invoice");
+
+      // Tenant B cross-tenant access attempt
+      const resB = await request(app)
+        .get(`/api/v1/intelligence/documents/analyze/${analysisId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantBId);
+
+      expect(resB.status).toBe(404);
+    });
+
+    it("should allow human review & approval of AI analysis result", async () => {
+      const res = await request(app)
+        .post(`/api/v1/intelligence/documents/analyze/${analysisId}/review`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .set("x-tenant-id", tenantAId)
+        .send({
+          decision: "APPROVED",
+          reviewNotes: "Verified vendor details against invoice paper file",
+        });
+
       expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.data.documentType).toBe("invoice");
+      expect(res.body.data.reviewStatus).toBe("APPROVED");
+      expect(res.body.data.status).toBe("COMPLETED");
     });
   });
 
-  describe("2. AI Engagement Review", () => {
+  describe("2. AI Engagement Review & Idempotency", () => {
     it("should process an AI review of the engagement", async () => {
+      AiIntelligenceService.registerAdapter(
+        "GEMINI",
+        new GeminiAiAdapter({ apiKey: "test-key", mockMode: "SUCCESS" }),
+      );
+
       const res = await request(app)
         .post(`/api/v1/intelligence/engagements/${engagementId}/review`)
         .set("Authorization", `Bearer ${adminToken}`)
@@ -106,8 +171,7 @@ describe("Phase 27 AI Intelligence API", () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.status).toBe("completed"); // Because of mock
-      expect(res.body.data.findings.length).toBeGreaterThan(0);
+      expect(res.body.data.status).toBe("REVIEW_REQUIRED");
       expect(res.body.data.confidenceScore).toBe(88);
     });
   });

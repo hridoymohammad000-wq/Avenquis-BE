@@ -2271,7 +2271,23 @@ export const aiDocumentAnalyses = pgTable(
     documentUrl: varchar("document_url", { length: 1024 }).notNull(),
     documentType: varchar("document_type", { length: 100 }).notNull(), // invoice, bank_statement, contract
     aiAnalysisResult: jsonb("ai_analysis_result"),
-    status: varchar("status", { length: 50 }).notNull().default("processing"), // processing, completed, failed
+    status: varchar("status", { length: 50 }).notNull().default("QUEUED"), // QUEUED, PROCESSING, REVIEW_REQUIRED, COMPLETED, FAILED, CANCELLED
+    provider: varchar("provider", { length: 50 }).notNull().default("GEMINI"),
+    model: varchar("model", { length: 100 }),
+    operationType: varchar("operation_type", { length: 50 }).notNull().default("document_analysis"),
+    promptVersion: varchar("prompt_version", { length: 50 }).notNull().default("v1"),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }),
+    confidenceScore: numeric("confidence_score", { precision: 5, scale: 2 }),
+    failureReason: varchar("failure_reason", { length: 500 }),
+    reviewStatus: varchar("review_status", { length: 50 }).notNull().default("UNREVIEWED"), // UNREVIEWED, APPROVED, REJECTED, OVERRIDDEN
+    reviewedByMembershipId: uuid("reviewed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    humanCorrections: jsonb("human_corrections"),
+    usageMetadata: jsonb("usage_metadata"),
+    auditTrail: jsonb("audit_trail"),
     requestedByMembershipId: uuid("requested_by_membership_id").references(
       () => memberships.id,
       { onDelete: "set null" },
@@ -2306,7 +2322,20 @@ export const aiEngagementReviews = pgTable(
     }).notNull(), // gemini-1.5-pro, gpt-4
     findings: jsonb("findings"), // array of issues/suggestions
     confidenceScore: integer("confidence_score"), // 0-100
-    status: varchar("status", { length: 50 }).notNull().default("processing"), // processing, completed, failed
+    status: varchar("status", { length: 50 }).notNull().default("QUEUED"), // QUEUED, PROCESSING, REVIEW_REQUIRED, COMPLETED, FAILED, CANCELLED
+    provider: varchar("provider", { length: 50 }).notNull().default("GEMINI"),
+    promptVersion: varchar("prompt_version", { length: 50 }).notNull().default("v1"),
+    idempotencyKey: varchar("idempotency_key", { length: 100 }),
+    failureReason: varchar("failure_reason", { length: 500 }),
+    reviewStatus: varchar("review_status", { length: 50 }).notNull().default("UNREVIEWED"), // UNREVIEWED, APPROVED, REJECTED, OVERRIDDEN
+    reviewedByMembershipId: uuid("reviewed_by_membership_id").references(
+      () => memberships.id,
+      { onDelete: "set null" },
+    ),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    humanCorrections: jsonb("human_corrections"),
+    usageMetadata: jsonb("usage_metadata"),
+    auditTrail: jsonb("audit_trail"),
     requestedByMembershipId: uuid("requested_by_membership_id").references(
       () => memberships.id,
       { onDelete: "set null" },
