@@ -3198,11 +3198,107 @@ export const dedicatedTenantConfigs = pgTable("dedicated_tenant_configs", {
   storageBucketName: varchar("storage_bucket_name", { length: 255 }).notNull(),
   kmsKeyId: varchar("kms_key_id", { length: 255 }), // Bring Your Own Key (BYOK)
   isProvisioned: boolean("is_provisioned").notNull().default(false),
+  provisioningStatus: varchar("provisioning_status", { length: 50 })
+    .notNull()
+    .default("CONFIGURATION_STORED"), // PROVISIONING_REQUESTED, CONFIGURATION_STORED, PROVISIONING_IN_PROGRESS, PROVISIONED, VERIFICATION_FAILED, DEPROVISIONING, DEPROVISIONED, PROVISIONING_FAILED
+  isolationMode: varchar("isolation_mode", { length: 50 })
+    .notNull()
+    .default("SHARED_SCHEMA_RLS"), // SHARED_SCHEMA_RLS, DEDICATED_DATABASE, DEDICATED_DEPLOYMENT
+  isolationVerified: boolean("isolation_verified").notNull().default(false),
+  requestedRegion: varchar("requested_region", { length: 100 })
+    .notNull()
+    .default("ap-southeast-1"),
+  actualRegion: varchar("actual_region", { length: 100 }),
+  providerRegion: varchar("provider_region", { length: 100 }),
+  residencyPolicy: varchar("residency_policy", { length: 100 })
+    .notNull()
+    .default("DEFAULT_DATA_RESIDENCY"),
+  residencyVerified: boolean("residency_verified").notNull().default(false),
+  expectedSchemaVersion: varchar("expected_schema_version", { length: 50 }).default("0080"),
+  actualSchemaVersion: varchar("actual_schema_version", { length: 50 }),
+  migrationStatus: varchar("migration_status", { length: 50 })
+    .notNull()
+    .default("UNKNOWN"), // UNKNOWN, SCHEMA_UP_TO_DATE, MIGRATION_PENDING, MIGRATION_FAILED
+  backupPolicy: varchar("backup_policy", { length: 50 })
+    .notNull()
+    .default("DAILY_AUTOMATED"),
+  lastBackupEvidence: jsonb("last_backup_evidence").default({}),
+  restoreReadiness: varchar("restore_readiness", { length: 50 })
+    .notNull()
+    .default("UNTESTED"), // UNTESTED, VERIFIED, FAILED
+  drStatus: varchar("dr_status", { length: 50 })
+    .notNull()
+    .default("UNCONFIGURED"), // UNCONFIGURED, ACTIVE_SYNC, INACTIVE
+  targetRpoMinutes: integer("target_rpo_minutes").default(60),
+  targetRtoMinutes: integer("target_rto_minutes").default(240),
+  readinessStatus: varchar("readiness_status", { length: 50 })
+    .notNull()
+    .default("NOT_READY"), // NOT_READY, PENDING_VERIFICATION, READY, DEGRADED, UNKNOWN
+  readinessEvaluatedAt: timestamp("readiness_evaluated_at", { withTimezone: true }),
+  readinessFailureReasons: jsonb("readiness_failure_reasons").default([]),
+  providerType: varchar("provider_type", { length: 50 })
+    .notNull()
+    .default("TEST_STUB"), // TEST_STUB, RENDER_SUPABASE_API, AWS_RDS, MANUAL_PROVISIONER
+  idempotencyKey: varchar("idempotency_key", { length: 255 }),
   provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => ({
+  tenantConfigIdx: index("dedicated_tenant_config_idx").on(table.tenantId),
+}));
+
+export const infrastructureProvisioningLogs = pgTable(
+  "infrastructure_provisioning_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    configId: uuid("config_id").references(() => dedicatedTenantConfigs.id, {
+      onDelete: "set null",
+    }),
+    action: varchar("action", { length: 100 }).notNull(), // PROVISION_REQUESTED, VERIFY_ATTEMPT, MIGRATION_RUN, DEPROVISION
+    status: varchar("status", { length: 50 }).notNull(), // SUCCESS, FAILED, IN_PROGRESS
+    requestedBy: uuid("requested_by").references(() => userProfiles.id),
+    approvedBy: uuid("approved_by").references(() => userProfiles.id),
+    isolationMode: varchar("isolation_mode", { length: 50 }),
+    requestedRegion: varchar("requested_region", { length: 100 }),
+    details: jsonb("details").default({}),
+    failureReason: text("failure_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantLogIdx: index("infra_log_tenant_idx").on(table.tenantId),
+  }),
+);
+
+export const infrastructureAuditEvents = pgTable(
+  "infrastructure_audit_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => userProfiles.id),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    provider: varchar("provider", { length: 50 }),
+    fromStatus: varchar("from_status", { length: 50 }),
+    toStatus: varchar("to_status", { length: 50 }),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    tenantAuditIdx: index("infra_audit_tenant_idx").on(table.tenantId),
+  }),
+);
 
 export const saasReadinessSignoffs = pgTable("saas_readiness_signoffs", {
   id: uuid("id").primaryKey().defaultRandom(),
