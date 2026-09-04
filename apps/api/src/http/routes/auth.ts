@@ -6,8 +6,46 @@ import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";
 import { ApiError } from "../../errors/api-error.js";
 import { authRateLimit } from "../middlewares/rate-limit.js";
+import { randomBytes } from "crypto";
 
 export const authRouter = Router();
+
+// GET /csrf-token
+authRouter.get("/csrf-token", (req, res, next) => {
+  try {
+    const token = randomBytes(32).toString("hex");
+    res.cookie("csrfToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+      path: "/",
+    });
+    res.json({
+      success: true,
+      data: { csrfToken: token },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function setAuthCookies(
+  res: import("express").Response,
+  tokens: ReturnType<typeof AuthService.generateTokens>,
+) {
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+      "none" | "lax",
+    path: "/",
+  };
+  res.cookie("accessToken", tokens.accessToken, options);
+  res.cookie("refreshToken", tokens.refreshToken, {
+    ...options,
+    path: "/api/v1/auth",
+  });
+}
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -59,11 +97,12 @@ authRouter.post("/register", authRateLimit, async (req, res, next) => {
       })
       .returning();
 
-    const tokens = AuthService.generateTokens({
+    const tokens = await AuthService.createRefreshSession({
       userId: newUser.id,
       email: newUser.email,
       aal: "aal1",
     });
+    setAuthCookies(res, tokens);
 
     await AuditService.logSecurityEvent({
       eventType: "USER_REGISTERED",
@@ -82,7 +121,6 @@ authRouter.post("/register", authRateLimit, async (req, res, next) => {
           status: newUser.status,
           mfaEnabled: newUser.mfaEnabled,
         },
-        tokens,
       },
     });
   } catch (err) {
@@ -144,11 +182,12 @@ authRouter.post("/login", authRateLimit, async (req, res, next) => {
     }
 
     const aal = "aal1" as const;
-    const tokens = AuthService.generateTokens({
+    const tokens = await AuthService.createRefreshSession({
       userId: user.id,
       email: user.email,
       aal,
     });
+    setAuthCookies(res, tokens);
 
     await AuditService.logSecurityEvent({
       eventType: "SUCCESSFUL_LOGIN",
@@ -173,11 +212,30 @@ authRouter.post("/login", authRateLimit, async (req, res, next) => {
           mfaEnabled: user.mfaEnabled,
         },
         requireMfa: user.mfaEnabled,
-        tokens,
       },
     });
   } catch (err) {
     next(err);
+  }
+});
+
+// POST /refresh - rotate the HttpOnly refresh token and issue a new access token
+authRouter.post("/refresh", authRateLimit, async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      throw new ApiError(401, "Refresh token required", "REFRESH_TOKEN_REQUIRED");
+    }
+    const { payload, tokens } = await AuthService.rotateRefreshToken(refreshToken);
+    setAuthCookies(res, tokens);
+    res.json({
+      success: true,
+      data: { userId: payload.userId },
+    });
+  } catch {
+    res.clearCookie("accessToken", { path: "/" });
+    res.clearCookie("refreshToken", { path: "/api/v1/auth" });
+    next(new ApiError(401, "Invalid or expired refresh token", "INVALID_REFRESH_TOKEN"));
   }
 });
 
@@ -212,10 +270,22 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
 });
 
 // POST /logout
-authRouter.post("/logout", authenticate, (req, res) => {
-  if (req.authToken) AuthService.revokeToken(req.authToken);
-  res.json({
-    success: true,
-    message: "Logged out successfully",
-  });
+authRouter.post("/logout", async (req, res, next) => {
+  try {
+    const accessToken = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.substring(7)
+      : req.cookies?.accessToken;
+    const refreshToken = req.cookies?.refreshToken;
+    if (accessToken) await AuthService.revokeToken(accessToken);
+    if (refreshToken) await AuthService.revokeRefreshToken(refreshToken);
+    res.clearCookie("accessToken", { path: "/" });
+    res.clearCookie("refreshToken", { path: "/api/v1/auth" });
+    res.clearCookie("csrfToken", { path: "/" });
+    res.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (err) {
+    next(err);
+  }
 });

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../../services/auth.service.js";
 import { ApiError } from "../../errors/api-error.js";
 
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token =
     authHeader && authHeader.startsWith("Bearer ")
@@ -14,7 +14,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const payload = AuthService.verifyAccessToken(token);
+    const payload = await AuthService.verifyAccessToken(token);
     req.authToken = token;
     req.user = {
       id: payload.userId,

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticator } from "otplib";
 import crypto from "crypto";
+import { and, db, refreshSessions, revokedAuthTokens, eq, gt, isNull } from "@avenquis/database";
 import { env } from "../config/env.js";
 
 export interface TokenPayload {
@@ -11,7 +12,9 @@ export interface TokenPayload {
 }
 
 export class AuthService {
-  private static readonly revokedTokens = new Set<string>();
+  private static tokenHash(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
 
   static async hashPassword(password: string): Promise<string> {
     const salt = await bcrypt.genSalt(12);
@@ -26,22 +29,84 @@ export class AuthService {
   }
 
   static generateTokens(payload: TokenPayload) {
+    const accessJti = crypto.randomUUID();
+    const refreshJti = crypto.randomUUID();
     const accessToken = jwt.sign(payload, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+      jwtid: accessJti,
     });
     const refreshToken = jwt.sign(payload, env.REFRESH_TOKEN_SECRET, {
       expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+      jwtid: refreshJti,
     });
     return { accessToken, refreshToken };
   }
 
-  static verifyAccessToken(token: string): TokenPayload {
-    if (this.revokedTokens.has(token)) throw new Error("Token revoked");
-    return jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+  static async verifyAccessToken(token: string): Promise<TokenPayload> {
+    const payload = jwt.verify(token, env.JWT_SECRET) as TokenPayload;
+    const revoked = await db.query.revokedAuthTokens.findFirst({
+      where: and(eq(revokedAuthTokens.tokenHash, this.tokenHash(token)), gt(revokedAuthTokens.expiresAt, new Date())),
+    });
+    if (revoked) throw new Error("Token revoked");
+    return payload;
   }
 
   static verifyRefreshToken(token: string): TokenPayload {
     return jwt.verify(token, env.REFRESH_TOKEN_SECRET) as TokenPayload;
+  }
+
+  static async createRefreshSession(payload: TokenPayload) {
+    const tokens = this.generateTokens(payload);
+    const decoded = jwt.decode(tokens.refreshToken) as { exp?: number } | null;
+    if (!decoded?.exp) throw new Error("Refresh token expiry missing");
+    await db.insert(refreshSessions).values({
+      userId: payload.userId,
+      tokenHash: this.tokenHash(tokens.refreshToken),
+      expiresAt: new Date(decoded.exp * 1000),
+    });
+    return tokens;
+  }
+
+  static async rotateRefreshToken(token: string) {
+    const payload = this.verifyRefreshToken(token);
+    const sessionPayload: TokenPayload = {
+      userId: payload.userId,
+      email: payload.email,
+      aal: payload.aal,
+    };
+    return db.transaction(async (tx) => {
+      const current = await tx.query.refreshSessions.findFirst({
+        where: and(
+          eq(refreshSessions.tokenHash, this.tokenHash(token)),
+          gt(refreshSessions.expiresAt, new Date()),
+          isNull(refreshSessions.revokedAt),
+        ),
+      });
+      if (!current || current.userId !== sessionPayload.userId) {
+        throw new Error("Refresh token revoked or not recognized");
+      }
+      const next = this.generateTokens(sessionPayload);
+      const decoded = jwt.decode(next.refreshToken) as { exp?: number } | null;
+      if (!decoded?.exp) throw new Error("Refresh token expiry missing");
+      const nextHash = this.tokenHash(next.refreshToken);
+      const revoked = await tx.update(refreshSessions)
+        .set({ revokedAt: new Date(), replacedByHash: nextHash })
+        .where(and(eq(refreshSessions.id, current.id), isNull(refreshSessions.revokedAt)))
+        .returning({ id: refreshSessions.id });
+      if (revoked.length !== 1) throw new Error("Refresh token already rotated");
+      await tx.insert(refreshSessions).values({
+        userId: sessionPayload.userId,
+        tokenHash: nextHash,
+        expiresAt: new Date(decoded.exp * 1000),
+      });
+      return { payload: sessionPayload, tokens: next };
+    });
+  }
+
+  static async revokeRefreshToken(token: string): Promise<void> {
+    await db.update(refreshSessions)
+      .set({ revokedAt: new Date() })
+      .where(eq(refreshSessions.tokenHash, this.tokenHash(token)));
   }
 
   static generateMfaSecret(email: string): {
@@ -81,8 +146,13 @@ export class AuthService {
     return bcrypt.compare(code, hash);
   }
 
-  static revokeToken(token: string): void {
-    this.revokedTokens.add(token);
+  static async revokeToken(token: string): Promise<void> {
+    const decoded = jwt.decode(token) as { exp?: number } | null;
+    if (!decoded?.exp) return;
+    await db.insert(revokedAuthTokens).values({
+      tokenHash: this.tokenHash(token),
+      expiresAt: new Date(decoded.exp * 1000),
+    }).onConflictDoNothing();
   }
 
   static verifyMfaToken(token: string, secret: string): boolean {
