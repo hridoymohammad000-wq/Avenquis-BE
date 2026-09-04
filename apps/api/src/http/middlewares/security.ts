@@ -14,7 +14,7 @@ function corsMiddleware(
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Tenant-Id",
+      "Content-Type, Authorization, X-Tenant-Id, X-CSRF-Token",
     );
     res.setHeader(
       "Access-Control-Allow-Methods",
@@ -28,10 +28,13 @@ function corsMiddleware(
   return next();
 }
 
+import csrfMiddleware from "./csrf.js";
+
 export const securityMiddlewares = [
   corsMiddleware,
   helmet(), // Adds secure HTTP headers and disables X-Powered-By
   cookieParser(),
+  csrfMiddleware,
   express.json({ limit: "100kb" }), // Safe body parsing limit
   express.urlencoded({ extended: true, limit: "100kb" }),
 ];

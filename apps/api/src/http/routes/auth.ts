@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db, userProfiles, eq } from "@avenquis/database";
 import { AuthService } from "../../services/auth.service.js";
 import { AuditService } from "../../services/audit.service.js";
+import crypto from 'crypto';
 import { authenticate } from "../middlewares/auth.js";
 import { ApiError } from "../../errors/api-error.js";
 import { authRateLimit } from "../middlewares/rate-limit.js";
@@ -13,18 +14,30 @@ function setAuthCookies(
   res: import("express").Response,
   tokens: ReturnType<typeof AuthService.generateTokens>,
 ) {
+  // Generate a double-submit CSRF token (readable by client)
+  const csrfToken = crypto.randomBytes(32).toString('base64url');
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
-      "none" | "lax",
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
     path: "/",
   };
+  // Auth cookies (HttpOnly)
   res.cookie("accessToken", tokens.accessToken, options);
   res.cookie("refreshToken", tokens.refreshToken, {
     ...options,
     path: "/api/v1/auth",
   });
+  // CSRF token cookie (not HttpOnly so that the client can read it)
+  const csrfOptions = {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+    path: "/",
+  };
+  res.cookie("csrfToken", csrfToken, csrfOptions);
+  // Also expose token via header for convenience
+  res.setHeader("X-CSRF-Token", csrfToken);
 }
 
 const registerSchema = z.object({
