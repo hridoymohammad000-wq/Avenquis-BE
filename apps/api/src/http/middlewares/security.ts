@@ -2,6 +2,7 @@ import helmet from "helmet";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { env } from "../../config/env.js";
+import csrfMiddleware from "./csrf.js";
 
 function corsMiddleware(
   req: express.Request,
@@ -14,7 +15,7 @@ function corsMiddleware(
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Tenant-Id, X-CSRF-Token",
+      "Content-Type, Authorization, X-Tenant-Id, X-CSRF-Token, csrf-token",
     );
     res.setHeader(
       "Access-Control-Allow-Methods",
@@ -27,8 +28,6 @@ function corsMiddleware(
   }
   return next();
 }
-
-import csrfMiddleware from "./csrf.js";
 
 export const securityMiddlewares = [
   corsMiddleware,

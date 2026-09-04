@@ -20,7 +20,7 @@ describe('CSRF Middleware Integration', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.headers['set-cookie']).toBeDefined();
-    expect(res.headers['x-csrf-token']).toBeDefined();
+    expect(res.body.data.csrfToken).toBeDefined();
   });
 
   it('allows safe methods without CSRF token', async () => {
