@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@avenquis/database": "file:../../packages/database",
+    "@sentry/node": "^10.73.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.33.0",
@@ -21,8 +23,7 @@
     "pino-http": "^11.0.0",
     "postgres": "^3.4.4",
     "qrcode": "^1.5.4",
-    "zod": "^4.5.4",
-    "@avenquis/database": "file:../../packages/database"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
