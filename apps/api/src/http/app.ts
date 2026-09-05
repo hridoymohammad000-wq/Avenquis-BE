@@ -1,4 +1,5 @@
 import express from "express";
+import * as Sentry from "@sentry/node";
 import { requestIdMiddleware } from "./middlewares/request-id.js";
 import { loggingMiddleware } from "./middlewares/logging.js";
 import { securityMiddlewares } from "./middlewares/security.js";
@@ -49,6 +50,11 @@ import { regulatoryPacksRouter } from "./routes/regulatory-packs.js";
 import { enterpriseSecurityRouter } from "./routes/enterprise-security.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { infrastructureRouter } from "./routes/infrastructure.js";
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || "development",
+});
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -116,6 +122,7 @@ export function createApp(testRouter?: express.Router) {
   }
 
   // 5. Error Handling
+  Sentry.setupExpressErrorHandler(app);
   app.use(notFoundHandler);
   app.use(errorHandler);
 
