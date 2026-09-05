@@ -20,6 +20,13 @@ export class IntegrationsService {
     sap: new SapIntegrationAdapter(),
   };
 
+  /**
+   * Allows registering custom or test provider adapters explicitly.
+   */
+  static registerAdapter(slug: string, adapter: IIntegrationProviderAdapter) {
+    this.adapters[slug.toLowerCase()] = adapter;
+  }
+
   static async getGlobalIntegrations(category?: string) {
     const filters = [eq(globalIntegrations.isActive, true)];
     if (category) {

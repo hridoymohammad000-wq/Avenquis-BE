@@ -1,6 +1,7 @@
+process.env.NODE_ENV = "test";
+process.env.DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/avenquis_test";
 import { describe, it, expect } from "vitest";
 import crypto from "crypto";
-import { SamlSsoAdapter } from "../saml-sso.adapter.js";
 
 describe("Phase 36 Enterprise Security & Identity - Unit Tests", () => {
   describe("OIDC State, Nonce & PKCE Generation", () => {
@@ -21,7 +22,8 @@ describe("Phase 36 Enterprise Security & Identity - Unit Tests", () => {
   });
 
   describe("SAML SP Metadata XML Generation", () => {
-    it("should produce valid SAML 2.0 SP Metadata XML with entityID and ACS endpoint", () => {
+    it("should produce valid SAML 2.0 SP Metadata XML with entityID and ACS endpoint", async () => {
+      const { SamlSsoAdapter } = await import("../saml-sso.adapter.js");
       const tenantId = "tenant-123-abc";
       const baseUrl = "https://api.avenquis.com";
 

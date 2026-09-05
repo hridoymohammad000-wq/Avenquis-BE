@@ -4,13 +4,15 @@ import {
   IntegrationSyncResult,
 } from "./integration-provider.interface.js";
 
+/**
+ * Production SAP S/4HANA Integration Adapter.
+ * Does NOT fabricate fake documents or pretend to be CONNECTED without live API connection.
+ */
 export class SapIntegrationAdapter implements IIntegrationProviderAdapter {
   async testConnection(
-    tenantIntegrationId: string,
+    _tenantIntegrationId: string,
     credentials: string,
-    _settings?: Record<string, unknown>,
   ): Promise<IntegrationConnectionResult> {
-    void _settings;
     if (!credentials || credentials.trim() === "") {
       return {
         success: false,
@@ -19,46 +21,32 @@ export class SapIntegrationAdapter implements IIntegrationProviderAdapter {
       };
     }
 
-    if (credentials.includes("invalid") || credentials === "bad_key") {
-      return {
-        success: false,
-        status: "ERROR",
-        message: "SAP API returned 401 Unauthorized: Invalid API key or OData user.",
-      };
-    }
-
     return {
-      success: true,
-      status: "CONNECTED",
-      message: "Successfully connected to SAP S/4HANA OData service.",
+      success: false,
+      status: "CONFIGURED",
+      message: "Production SAP S/4HANA OData service key configured. Live verification requires active SAP OData gateway connection.",
     };
   }
 
   async fetchSyncData(
-    tenantId: string,
-    tenantIntegrationId: string,
+    _tenantId: string,
+    _tenantIntegrationId: string,
     credentials: string,
-    cursor?: string,
-    limit: number = 50,
   ): Promise<IntegrationSyncResult> {
-    const page = cursor ? parseInt(cursor, 10) : 1;
-
-    const records = Array.from({ length: Math.min(limit, 20) }, (_, i) => ({
-      sapDocumentId: `DOC-${page}-${1000 + i}`,
-      fiscalYear: "2026",
-      companyCode: "1000",
-      amountCents: (i + 1) * 5000,
-      postingDate: new Date().toISOString(),
-    }));
-
-    const hasMore = page < 2;
-    const nextCursor = hasMore ? (page + 1).toString() : undefined;
+    if (!credentials || credentials.trim() === "") {
+      return {
+        records: [],
+        hasMore: false,
+        status: "FAILED",
+        errorDetails: "SAP S/4HANA credentials not configured.",
+      };
+    }
 
     return {
-      records,
-      nextCursor,
-      hasMore,
-      status: "SUCCESS",
+      records: [],
+      hasMore: false,
+      status: "FAILED",
+      errorDetails: "Live SAP S/4HANA OData service gateway is not connected in this environment.",
     };
   }
 }

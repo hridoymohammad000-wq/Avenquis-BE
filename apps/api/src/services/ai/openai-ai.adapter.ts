@@ -157,7 +157,7 @@ export class OpenAiAdapter implements IAiProviderAdapter {
         throw new Error(`HTTP_${response.status}_NON_RETRYABLE`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
       const textResponse = data.choices?.[0]?.message?.content;
 
       if (!textResponse) {
@@ -229,7 +229,7 @@ export class OpenAiAdapter implements IAiProviderAdapter {
         throw new Error(`HTTP_${response.status}_NON_RETRYABLE`);
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }>; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
       const textResponse = data.choices?.[0]?.message?.content;
 
       return {
