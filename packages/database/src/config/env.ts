@@ -24,10 +24,12 @@ export function parseDatabaseEnv(source: NodeJS.ProcessEnv): DatabaseEnv {
   const databaseUrl =
     source.DATABASE_URL ??
     (nodeEnv === "production" ? undefined : DEV_DATABASE_URL);
+  const sslCa = source.DATABASE_SSL_CA && source.DATABASE_SSL_CA.trim() !== "" ? source.DATABASE_SSL_CA : undefined;
   const result = envSchema.safeParse({
     ...source,
     NODE_ENV: nodeEnv,
     DATABASE_URL: databaseUrl,
+    DATABASE_SSL_CA: sslCa,
   });
   if (
     !result.success ||
