@@ -3024,11 +3024,9 @@ export const tenantSsoProviders = pgTable(
     clientSecretEncrypted: text("client_secret_encrypted"), // Encrypted OIDC Secret
     oidcDiscoveryUrl: varchar("oidc_discovery_url", { length: 1024 }),
     domain: varchar("domain", { length: 255 }), // Domain for tenant mapping e.g., "acmecorp.com"
-    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"), // NOT_CONFIGURED, CONFIGURED, CONNECTED, ERROR, DISABLED
+    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"),
     jitEnabled: boolean("jit_enabled").notNull().default(false),
-    jitDefaultRole: varchar("jit_default_role", { length: 100 })
-      .notNull()
-      .default("audit:read"), // Non-privileged default JIT role
+    jitDefaultRole: varchar("jit_default_role", { length: 100 }).notNull().default("audit:read"),
     allowedDomains: jsonb("allowed_domains").default([]),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -3048,18 +3046,14 @@ export const ssoSecurityStates = pgTable(
   "sso_security_states",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: uuid("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
     state: varchar("state", { length: 255 }).notNull().unique(),
     nonce: varchar("nonce", { length: 255 }),
     codeVerifier: varchar("code_verifier", { length: 255 }),
     providerType: varchar("provider_type", { length: 50 }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     tenantStateIdx: index("sso_state_tenant_idx").on(table.tenantId),
@@ -3071,15 +3065,11 @@ export const samlReplayAudit = pgTable(
   "saml_replay_audit",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: uuid("tenant_id")
-      .notNull()
-      .references(() => tenants.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
     assertionId: varchar("assertion_id", { length: 255 }).notNull().unique(),
     issuer: varchar("issuer", { length: 255 }).notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     tenantAssertionIdx: index("saml_replay_tenant_idx").on(table.tenantId),
@@ -3136,7 +3126,7 @@ export const tenantIntegrations = pgTable(
     integrationId: uuid("integration_id")
       .notNull()
       .references(() => globalIntegrations.id, { onDelete: "cascade" }),
-    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"), // NOT_CONFIGURED, CONFIGURED, CONNECTING, CONNECTED, DEGRADED, ERROR, DISABLED
+    status: varchar("status", { length: 50 }).notNull().default("NOT_CONFIGURED"),
     settings: jsonb("settings").default({}), // Configurations, Field Mappings
     credentials: text("credentials"), // Encrypted OAuth tokens or API keys
     tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
@@ -3160,14 +3150,12 @@ export const integrationSyncLogs = pgTable(
   "integration_sync_logs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    tenantId: uuid("tenant_id").references(() => tenants.id, {
-      onDelete: "cascade",
-    }),
+    tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
     tenantIntegrationId: uuid("tenant_integration_id")
       .notNull()
       .references(() => tenantIntegrations.id, { onDelete: "cascade" }),
     syncType: varchar("sync_type", { length: 100 }).notNull(), // e.g. 'TRIAL_BALANCE_IMPORT'
-    status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS', 'DEGRADED'
+    status: varchar("status", { length: 50 }).notNull(), // 'SUCCESS', 'FAILED', 'IN_PROGRESS'
     recordsProcessed: integer("records_processed").notNull().default(0),
     checkpoint: text("checkpoint"),
     idempotencyKey: varchar("idempotency_key", { length: 255 }),

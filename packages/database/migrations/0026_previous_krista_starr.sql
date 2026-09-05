@@ -27,16 +27,16 @@ CREATE TABLE IF NOT EXISTS "audit_programs" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "digital_certificates" ADD COLUMN IF NOT EXISTS "artifact_hash" varchar(64);--> statement-breakpoint
-ALTER TABLE "digital_certificates" ADD COLUMN IF NOT EXISTS "signature" text;--> statement-breakpoint
-ALTER TABLE "digital_certificates" ADD COLUMN IF NOT EXISTS "signature_algorithm" varchar(50);--> statement-breakpoint
-ALTER TABLE "digital_certificates" ADD COLUMN IF NOT EXISTS "signing_key_id" varchar(100);--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "artifact_hash" varchar(64);--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "signature" text;--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "signature_algorithm" varchar(50);--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "signing_key_id" varchar(100);--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "previous_record_hash" varchar(64);--> statement-breakpoint
-ALTER TABLE "signoff_audit_logs" ADD COLUMN IF NOT EXISTS "record_hash" varchar(64);--> statement-breakpoint
+ALTER TABLE "digital_certificates" ADD COLUMN "artifact_hash" varchar(64);--> statement-breakpoint
+ALTER TABLE "digital_certificates" ADD COLUMN "signature" text;--> statement-breakpoint
+ALTER TABLE "digital_certificates" ADD COLUMN "signature_algorithm" varchar(50);--> statement-breakpoint
+ALTER TABLE "digital_certificates" ADD COLUMN "signing_key_id" varchar(100);--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "artifact_hash" varchar(64);--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "signature" text;--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "signature_algorithm" varchar(50);--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "signing_key_id" varchar(100);--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "previous_record_hash" varchar(64);--> statement-breakpoint
+ALTER TABLE "signoff_audit_logs" ADD COLUMN "record_hash" varchar(64);--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "audit_procedures" ADD CONSTRAINT "audit_procedures_tenant_id_tenants_id_fk" FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION

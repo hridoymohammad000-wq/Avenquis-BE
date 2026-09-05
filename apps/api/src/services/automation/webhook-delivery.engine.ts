@@ -3,7 +3,6 @@ import {
   webhookEndpoints,
   webhookDeliveries,
   eq,
-  and,
 } from "@avenquis/database";
 import crypto from "crypto";
 import { SsrfGuard } from "./ssrf-guard.js";
@@ -15,7 +14,6 @@ export interface WebhookDeliveryRequest {
   secret: string | null;
   eventType: string;
   payload: Record<string, unknown>;
-  idempotencyKey?: string;
 }
 
 export class WebhookDeliveryEngine {
@@ -44,27 +42,6 @@ export class WebhookDeliveryEngine {
     deliveryId: string;
     errorDetails?: string;
   }> {
-    if (request.idempotencyKey) {
-      const [existing] = await db
-        .select()
-        .from(webhookDeliveries)
-        .where(
-          and(
-            eq(webhookDeliveries.tenantId, request.tenantId),
-            eq(webhookDeliveries.webhookEndpointId, request.endpointId),
-            eq(webhookDeliveries.idempotencyKey, request.idempotencyKey)
-          )
-        );
-      if (existing) {
-        return {
-          success: existing.status === "DELIVERED",
-          statusCode: existing.responseStatusCode ?? undefined,
-          deliveryId: existing.id,
-          errorDetails: existing.errorDetails ?? undefined,
-        };
-      }
-    }
-
     // 1. SSRF Validation
     try {
       await SsrfGuard.validateUrl(request.url);
@@ -78,7 +55,6 @@ export class WebhookDeliveryEngine {
           webhookEndpointId: request.endpointId,
           eventType: request.eventType,
           payload: request.payload,
-          idempotencyKey: request.idempotencyKey,
           status: "FAILED",
           errorDetails: errorMsg,
         })
@@ -154,7 +130,6 @@ export class WebhookDeliveryEngine {
         webhookEndpointId: request.endpointId,
         eventType: request.eventType,
         payload: request.payload,
-        idempotencyKey: request.idempotencyKey,
         signature,
         responseStatusCode: responseStatus,
         responseBody: responseText.substring(0, 1000),

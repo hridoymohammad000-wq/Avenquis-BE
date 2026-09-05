@@ -2,7 +2,6 @@ import helmet from "helmet";
 import express from "express";
 import cookieParser from "cookie-parser";
 import { env } from "../../config/env.js";
-import csrfMiddleware from "./csrf.js";
 
 function corsMiddleware(
   req: express.Request,
@@ -15,7 +14,7 @@ function corsMiddleware(
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-Tenant-Id, X-CSRF-Token, csrf-token",
+      "Content-Type, Authorization, X-Tenant-Id",
     );
     res.setHeader(
       "Access-Control-Allow-Methods",
@@ -33,7 +32,6 @@ export const securityMiddlewares = [
   corsMiddleware,
   helmet(), // Adds secure HTTP headers and disables X-Powered-By
   cookieParser(),
-  csrfMiddleware,
   express.json({ limit: "100kb" }), // Safe body parsing limit
   express.urlencoded({ extended: true, limit: "100kb" }),
 ];

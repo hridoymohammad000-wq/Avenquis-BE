@@ -6,28 +6,8 @@ import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";
 import { ApiError } from "../../errors/api-error.js";
 import { authRateLimit } from "../middlewares/rate-limit.js";
-import { randomBytes } from "crypto";
 
 export const authRouter = Router();
-
-// GET /csrf-token
-authRouter.get("/csrf-token", (req, res, next) => {
-  try {
-    const token = randomBytes(32).toString("hex");
-    res.cookie("csrfToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
-      path: "/",
-    });
-    res.json({
-      success: true,
-      data: { csrfToken: token },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 function setAuthCookies(
   res: import("express").Response,
@@ -280,7 +260,6 @@ authRouter.post("/logout", async (req, res, next) => {
     if (refreshToken) await AuthService.revokeRefreshToken(refreshToken);
     res.clearCookie("accessToken", { path: "/" });
     res.clearCookie("refreshToken", { path: "/api/v1/auth" });
-    res.clearCookie("csrfToken", { path: "/" });
     res.json({
       success: true,
       message: "Logged out successfully",

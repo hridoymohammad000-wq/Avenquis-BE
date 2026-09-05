@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import { createApp } from '../http/app.js';
+import { app } from '../../app.js';
 import crypto from 'crypto';
-import { env } from '../config/env.js';
+import { env } from '../../config/env.js';
 
 describe('CSRF Middleware Integration', () => {
-  const app = createApp();
   const origin = env.CORS_ORIGIN;
   let testCsrfToken: string;
   let csrfCookie: string;
@@ -20,7 +19,7 @@ describe('CSRF Middleware Integration', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.headers['set-cookie']).toBeDefined();
-    expect(res.body.data.csrfToken).toBeDefined();
+    expect(res.headers['x-csrf-token']).toBeDefined();
   });
 
   it('allows safe methods without CSRF token', async () => {

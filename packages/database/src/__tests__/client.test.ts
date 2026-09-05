@@ -53,7 +53,7 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
     const contextAfterTransaction = await db.execute(
       sql`SELECT current_setting('app.current_tenant_id', true) AS tenant_id`,
     );
-    expect(contextAfterTransaction[0].tenant_id).toBeFalsy();
+    expect(contextAfterTransaction[0].tenant_id).toBeNull();
   });
 
   it("should fail closed for invalid tenant context values", async () => {
@@ -125,7 +125,7 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
     const after = await db.execute(
       sql`select current_setting('app.current_tenant_id', true) as tenant_id`,
     );
-    expect(after[0].tenant_id).toBeFalsy();
+    expect(after[0].tenant_id).toBeNull();
 
     await db.delete(tenants).where(eq(tenants.id, tenantA.id));
     await db.delete(tenants).where(eq(tenants.id, tenantB.id));
@@ -154,7 +154,7 @@ describe("Database Client & Multi-Tenant RLS Integration", () => {
     const after = await db.execute(
       sql`select current_setting('app.current_tenant_id', true) as tenant_id`,
     );
-    expect(after[0].tenant_id).toBeFalsy();
+    expect(after[0].tenant_id).toBeNull();
     await db.delete(tenants).where(eq(tenants.id, tenant.id));
   });
 });
