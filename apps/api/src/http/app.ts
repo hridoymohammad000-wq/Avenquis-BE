@@ -49,6 +49,7 @@ import { regulatoryPacksRouter } from "./routes/regulatory-packs.js";
 import { enterpriseSecurityRouter } from "./routes/enterprise-security.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { infrastructureRouter } from "./routes/infrastructure.js";
+import { aiPetRouter } from "./routes/ai-pet.js";
 
 export function createApp(testRouter?: express.Router) {
   const app = express();
@@ -110,6 +111,7 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/security", enterpriseSecurityRouter); // Enterprise Security & SSO (Phase 36)
   app.use("/api/v1/integrations", integrationsRouter); // Global ERP APIs (Phase 37)
   app.use("/api/v1/infrastructure", infrastructureRouter); // SaaS Readiness (Phase 38)
+  app.use("/api/v1/ai/pet", aiPetRouter);
 
   if (testRouter) {
     app.use("/test", testRouter);
