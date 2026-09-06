@@ -19,3 +19,21 @@ adminAiRouter.post("/approvals/:id/reject", ...write, async (req, res, next) => 
 adminAiRouter.get("/automations", ...read, async (_req, res) => { res.json({ success: true, data: [], unavailable: "No platform automation records are configured." }); });
 adminAiRouter.get("/policies", ...read, async (_req, res, next) => { try { res.json({ success: true, data: await AiAdminService.listPolicies() }); } catch (e) { next(e); } });
 adminAiRouter.get("/usage", ...read, async (_req, res, next) => { try { res.json({ success: true, data: await AiAdminService.listUsage() }); } catch (e) { next(e); } });
+const executeToolSchema = z.object({
+  agentId: z.string().uuid(),
+  toolName: z.string().trim().min(1),
+  approvalId: z.string().uuid().optional(),
+});
+adminAiRouter.post("/runs/:runId/execute-tool", ...write, async (req, res, next) => {
+  try {
+    const parsed = executeToolSchema.safeParse(req.body);
+    if (!parsed.success) throw new ApiError(400, "Invalid tool execution payload", "INVALID_PAYLOAD", parsed.error.flatten());
+    const result = await AiAdminService.executeAgentTool({
+      agentId: parsed.data.agentId,
+      runId: req.params.runId,
+      toolName: parsed.data.toolName,
+      approvalId: parsed.data.approvalId,
+    });
+    res.json({ success: true, data: result });
+  } catch (e) { next(e); }
+});

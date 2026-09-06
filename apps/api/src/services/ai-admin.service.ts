@@ -17,12 +17,18 @@ export function requiresApproval(autonomyLevel: string, riskLevel: string) {
 }
 
 export interface AiExecutionTarget {
+  agentId: string;
+  runId: string;
+  toolName: string;
   autonomyLevel: string;
   riskLevel: string;
-  tool?: string;
 }
 
 export interface AiApprovalRecord {
+  id?: string;
+  agentId: string;
+  runId: string;
+  requestedAction: string;
   status: "PENDING" | "APPROVED" | "REJECTED" | string;
 }
 
@@ -30,16 +36,20 @@ export function assertCanExecuteAiAction(
   target: AiExecutionTarget,
   approval?: AiApprovalRecord | null,
 ): void {
-  if (target.tool) {
-    assertAllowedTool(target.tool);
-  }
+  assertAllowedTool(target.toolName);
 
   const needsApproval = requiresApproval(target.autonomyLevel, target.riskLevel);
   if (needsApproval) {
-    if (!approval || approval.status !== "APPROVED") {
+    if (
+      !approval ||
+      approval.status !== "APPROVED" ||
+      approval.agentId !== target.agentId ||
+      approval.runId !== target.runId ||
+      approval.requestedAction !== target.toolName
+    ) {
       throw new ApiError(
         403,
-        "L3 or high-risk AI actions require explicit human approval before execution",
+        "L3 or high-risk AI actions require explicit human approval matching agent, run, action, and APPROVED status",
         "AI_APPROVAL_REQUIRED",
       );
     }
@@ -80,6 +90,7 @@ export class AiAdminService {
 
   static async executeAgentTool(input: {
     agentId: string;
+    runId: string;
     toolName: string;
     approvalId?: string;
   }) {
@@ -88,17 +99,42 @@ export class AiAdminService {
     if (!agent) throw new ApiError(404, "AI agent not found", "NOT_FOUND");
     if (!agent.enabled) throw new ApiError(400, "AI agent is disabled", "AGENT_DISABLED");
 
-    let approval: { status: string } | null = null;
+    const [run] = await db.select().from(aiAgentRuns).where(eq(aiAgentRuns.id, input.runId));
+    if (!run || run.agentId !== input.agentId) {
+      throw new ApiError(400, "AI agent run not found or does not belong to agent", "INVALID_RUN");
+    }
+
+    let approval: AiApprovalRecord | null = null;
     if (input.approvalId) {
       const [found] = await db.select().from(aiApprovals).where(eq(aiApprovals.id, input.approvalId));
-      if (found) approval = found;
+      if (found) {
+        approval = {
+          id: found.id,
+          agentId: found.agentId,
+          runId: found.runId,
+          requestedAction: found.requestedAction,
+          status: found.status,
+        };
+      }
     }
 
     assertCanExecuteAiAction(
-      { autonomyLevel: agent.autonomyLevel, riskLevel: agent.riskLevel, tool: input.toolName },
+      {
+        agentId: input.agentId,
+        runId: input.runId,
+        toolName: input.toolName,
+        autonomyLevel: agent.autonomyLevel,
+        riskLevel: agent.riskLevel,
+      },
       approval,
     );
 
-    return { executed: true, toolName: input.toolName, status: "SUCCESS" };
+    return {
+      authorized: true,
+      status: "READY_FOR_EXECUTION",
+      agentId: input.agentId,
+      runId: input.runId,
+      toolName: input.toolName,
+    };
   }
 }
