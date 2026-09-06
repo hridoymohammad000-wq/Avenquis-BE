@@ -388,6 +388,7 @@ export const platformPlans = pgTable("platform_plans", {
   code: varchar("code", { length: 80 }).notNull().unique(),
   displayName: varchar("display_name", { length: 255 }).notNull(),
   proprietorSeats: integer("proprietor_seats").notNull().default(0),
+  partnerSeats: integer("partner_seats").notNull().default(0),
   studentSeats: integer("student_seats").notNull().default(0),
   seatRules: jsonb("seat_rules").notNull().default({}),
   isActive: boolean("is_active").notNull().default(true),

@@ -163,7 +163,7 @@ export class PlatformAdminService {
           workspaceSubdomain: subdomain,
           ownerUserId: input.ownerUserId ?? null,
           planId: plan.id,
-          seatLimit: plan.proprietorSeats + plan.studentSeats,
+          seatLimit: plan.proprietorSeats + (plan.partnerSeats ?? 0) + plan.studentSeats,
         })
         .returning();
       await AuditService.logPlatformAction({
@@ -222,10 +222,12 @@ export class PlatformAdminService {
       if (!plan || !firm.ownerUserId) {
         throw new ApiError(409, "Owner and plan are required before provisioning", "PROVISIONING_INPUT_REQUIRED");
       }
-      assertSeatAllocation(
-        plan,
-        { proprietorSeats: plan.proprietorSeats > 0 ? 1 : 0, studentSeats: 0 },
-      );
+      const initialAllocation = {
+        proprietorSeats: plan.proprietorSeats > 0 ? 1 : 0,
+        partnerSeats: plan.partnerSeats > 0 ? 1 : 0,
+        studentSeats: (plan.proprietorSeats === 0 && plan.partnerSeats === 0) ? 1 : 0,
+      };
+      assertSeatAllocation(plan, initialAllocation);
       const owner = single(
         await tx.select({ id: userProfiles.id }).from(userProfiles).where(eq(userProfiles.id, firm.ownerUserId)),
         "Firm owner not found",
@@ -256,7 +258,7 @@ export class PlatformAdminService {
         action: "FIRM_PROVISIONED",
         targetType: "platform_firm_onboarding",
         targetId: id,
-        afterMetadata: { planCode: plan.code, seatLimit: plan.proprietorSeats + plan.studentSeats },
+        afterMetadata: { planCode: plan.code, seatLimit: plan.proprietorSeats + (plan.partnerSeats ?? 0) + plan.studentSeats },
       });
       return updated;
     });

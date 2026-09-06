@@ -46,14 +46,36 @@ describe("platform admin foundation policy", () => {
     expect(() => normalizeWorkspaceSubdomain("bad value")).toThrow();
   });
 
-  it("enforces plan seat limits server-side", () => {
-    expect(() => assertSeatAllocation(
-      { proprietorSeats: 1, studentSeats: 5 },
-      { proprietorSeats: 1, studentSeats: 5 },
-    )).not.toThrow();
-    expect(() => assertSeatAllocation(
-      { proprietorSeats: 1, studentSeats: 5 },
-      { proprietorSeats: 2, studentSeats: 5 },
-    )).toThrow();
+  it("enforces plan seat limits server-side including partnership firm seats", () => {
+    // 1. SINGLE_ARTICLE_STUDENT = 1 student
+    const singleStudentPlan = { proprietorSeats: 0, partnerSeats: 0, studentSeats: 1 };
+    expect(() => assertSeatAllocation(singleStudentPlan, { studentSeats: 1 })).not.toThrow();
+    expect(() => assertSeatAllocation(singleStudentPlan, { proprietorSeats: 1 })).toThrow();
+
+    // 2. INDIVIDUAL_PROPRIETOR = 1 proprietor
+    const proprietorPlan = { proprietorSeats: 1, partnerSeats: 0, studentSeats: 0 };
+    expect(() => assertSeatAllocation(proprietorPlan, { proprietorSeats: 1 })).not.toThrow();
+    expect(() => assertSeatAllocation(proprietorPlan, { studentSeats: 1 })).toThrow();
+
+    // 3. PROPRIETOR_5_STUDENTS = 1 proprietor + 5 students
+    const prop5StudentsPlan = { proprietorSeats: 1, partnerSeats: 0, studentSeats: 5 };
+    expect(() => assertSeatAllocation(prop5StudentsPlan, { proprietorSeats: 1, studentSeats: 5 })).not.toThrow();
+    expect(() => assertSeatAllocation(prop5StudentsPlan, { proprietorSeats: 1, studentSeats: 6 })).toThrow();
+
+    // 4. PARTNERSHIP_FIRM = 4 partners + 10 students
+    const partnershipPlan = { proprietorSeats: 0, partnerSeats: 4, studentSeats: 10 };
+    expect(() => assertSeatAllocation(partnershipPlan, { partnerSeats: 4, studentSeats: 10 })).not.toThrow();
+    expect(() => assertSeatAllocation(partnershipPlan, { partnerSeats: 5, studentSeats: 10 })).toThrow();
+    expect(() => assertSeatAllocation(partnershipPlan, { partnerSeats: 4, studentSeats: 11 })).toThrow();
+    expect(() => assertSeatAllocation(partnershipPlan, { proprietorSeats: 1 })).toThrow();
+  });
+
+  it("denies low-privilege platform roles from privileged platform routes", () => {
+    expect(canAccessPlatformRoute(["SUPPORT"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
+    expect(canAccessPlatformRoute(["SALES"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
+    expect(canAccessPlatformRoute(["MARKETING"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
+    expect(canAccessPlatformRoute(["FINANCE"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
+    expect(canAccessPlatformRoute(["OPS"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
+    expect(canAccessPlatformRoute(["PLATFORM_ADMIN"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(true);
   });
 });

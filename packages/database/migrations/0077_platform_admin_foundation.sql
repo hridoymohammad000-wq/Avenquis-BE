@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS platform_plans (
   code varchar(80) NOT NULL UNIQUE,
   display_name varchar(255) NOT NULL,
   proprietor_seats integer NOT NULL DEFAULT 0 CHECK (proprietor_seats >= 0),
+  partner_seats integer NOT NULL DEFAULT 0 CHECK (partner_seats >= 0),
   student_seats integer NOT NULL DEFAULT 0 CHECK (student_seats >= 0),
   seat_rules jsonb NOT NULL DEFAULT '{}'::jsonb,
   is_active boolean NOT NULL DEFAULT true,
@@ -27,12 +28,12 @@ CREATE TABLE IF NOT EXISTS platform_plans (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-INSERT INTO platform_plans (code, display_name, proprietor_seats, student_seats, seat_rules)
+INSERT INTO platform_plans (code, display_name, proprietor_seats, partner_seats, student_seats, seat_rules)
 VALUES
-  ('SINGLE_ARTICLE_STUDENT', 'Single Article Student', 0, 1, '{"student":1}'::jsonb),
-  ('INDIVIDUAL_PROPRIETOR', 'Individual Proprietor / Firm Owner', 1, 0, '{"proprietor":1}'::jsonb),
-  ('PROPRIETOR_5_STUDENTS', 'Proprietor Firm with 5 Student Login', 1, 5, '{"proprietor":1,"student":5}'::jsonb),
-  ('PARTNERSHIP_FIRM', 'Partnership Firm', 4, 10, '{"partner":4,"student":10}'::jsonb)
+  ('SINGLE_ARTICLE_STUDENT', 'Single Article Student', 0, 0, 1, '{"student":1}'::jsonb),
+  ('INDIVIDUAL_PROPRIETOR', 'Individual Proprietor / Firm Owner', 1, 0, 0, '{"proprietor":1}'::jsonb),
+  ('PROPRIETOR_5_STUDENTS', 'Proprietor Firm with 5 Student Login', 1, 0, 5, '{"proprietor":1,"student":5}'::jsonb),
+  ('PARTNERSHIP_FIRM', 'Partnership Firm', 0, 4, 10, '{"partner":4,"student":10}'::jsonb)
 ON CONFLICT (code) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS platform_firm_onboarding (
@@ -170,21 +171,41 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, app;
 
+CREATE OR REPLACE FUNCTION app.has_platform_role(VARIADIC roles_list text[]) RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM platform_user_roles
+    WHERE user_id = app.current_user_id()
+      AND role = ANY(roles_list)
+  );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, app;
+
+CREATE OR REPLACE FUNCTION app.is_privileged_platform_user() RETURNS boolean AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM platform_user_roles
+    WHERE user_id = app.current_user_id()
+      AND role IN ('PLATFORM_SUPER_ADMIN', 'PLATFORM_ADMIN')
+  );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, app;
+
 ALTER POLICY tenant_isolation_tenants ON tenants
-  USING (id = app.current_tenant_id() OR app.is_platform_user())
-  WITH CHECK (id = app.current_tenant_id() OR app.is_platform_user());
+  USING (id = app.current_tenant_id() OR app.is_privileged_platform_user())
+  WITH CHECK (id = app.current_tenant_id() OR app.is_privileged_platform_user());
 
 ALTER POLICY tenant_isolation_memberships ON memberships
   USING (tenant_id = app.current_tenant_id()
     OR user_id = app.current_user_id()
-    OR app.is_platform_user())
-  WITH CHECK (tenant_id = app.current_tenant_id() OR app.is_platform_user());
+    OR app.is_privileged_platform_user())
+  WITH CHECK (tenant_id = app.current_tenant_id() OR app.is_privileged_platform_user());
 
 ALTER POLICY tenant_isolation_roles ON roles
   USING (tenant_id = app.current_tenant_id()
     OR tenant_id IN (SELECT tenant_id FROM memberships WHERE user_id = app.current_user_id())
-    OR app.is_platform_user())
-  WITH CHECK (tenant_id = app.current_tenant_id() OR app.is_platform_user());
+    OR app.is_privileged_platform_user())
+  WITH CHECK (tenant_id = app.current_tenant_id() OR app.is_privileged_platform_user());
 
 ALTER TABLE platform_user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_plans ENABLE ROW LEVEL SECURITY;

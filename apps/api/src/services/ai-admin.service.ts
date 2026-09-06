@@ -16,6 +16,36 @@ export function requiresApproval(autonomyLevel: string, riskLevel: string) {
   return autonomyLevel === "L3" || riskLevel === "high";
 }
 
+export interface AiExecutionTarget {
+  autonomyLevel: string;
+  riskLevel: string;
+  tool?: string;
+}
+
+export interface AiApprovalRecord {
+  status: "PENDING" | "APPROVED" | "REJECTED" | string;
+}
+
+export function assertCanExecuteAiAction(
+  target: AiExecutionTarget,
+  approval?: AiApprovalRecord | null,
+): void {
+  if (target.tool) {
+    assertAllowedTool(target.tool);
+  }
+
+  const needsApproval = requiresApproval(target.autonomyLevel, target.riskLevel);
+  if (needsApproval) {
+    if (!approval || approval.status !== "APPROVED") {
+      throw new ApiError(
+        403,
+        "L3 or high-risk AI actions require explicit human approval before execution",
+        "AI_APPROVAL_REQUIRED",
+      );
+    }
+  }
+}
+
 export class AiAdminService {
   static async summary() {
     const [agents, runs, approvals, usage] = await Promise.all([
@@ -46,5 +76,29 @@ export class AiAdminService {
     if (!approval) throw new ApiError(404, "Pending AI approval not found", "NOT_FOUND");
     await AuditService.logPlatformAction({ actorUserId: actor.userId, platformRole: actor.role, action: `AI_APPROVAL_${decision}`, targetType: "ai_approval", targetId: id });
     return approval;
+  }
+
+  static async executeAgentTool(input: {
+    agentId: string;
+    toolName: string;
+    approvalId?: string;
+  }) {
+    assertAllowedTool(input.toolName);
+    const [agent] = await db.select().from(aiAgents).where(eq(aiAgents.id, input.agentId));
+    if (!agent) throw new ApiError(404, "AI agent not found", "NOT_FOUND");
+    if (!agent.enabled) throw new ApiError(400, "AI agent is disabled", "AGENT_DISABLED");
+
+    let approval: { status: string } | null = null;
+    if (input.approvalId) {
+      const [found] = await db.select().from(aiApprovals).where(eq(aiApprovals.id, input.approvalId));
+      if (found) approval = found;
+    }
+
+    assertCanExecuteAiAction(
+      { autonomyLevel: agent.autonomyLevel, riskLevel: agent.riskLevel, tool: input.toolName },
+      approval,
+    );
+
+    return { executed: true, toolName: input.toolName, status: "SUCCESS" };
   }
 }
