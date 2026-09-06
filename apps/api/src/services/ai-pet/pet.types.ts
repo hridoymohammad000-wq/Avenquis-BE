@@ -6,8 +6,8 @@ export type PetContextType = "FIRM" | "PLATFORM_ADMIN";
 
 export interface PetContext {
   userId: string;
-  membershipId: string;
-  tenantId: string;
+  membershipId?: string;
+  tenantId?: string;
   role: string;
   workspaceType: PetContextType;
   permissions: string[];
