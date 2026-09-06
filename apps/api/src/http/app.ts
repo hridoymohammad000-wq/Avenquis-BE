@@ -50,6 +50,7 @@ import { regulatoryPacksRouter } from "./routes/regulatory-packs.js";
 import { enterpriseSecurityRouter } from "./routes/enterprise-security.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { infrastructureRouter } from "./routes/infrastructure.js";
+import { adminAiRouter } from "./routes/admin-ai.js";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -90,6 +91,7 @@ export function createApp(testRouter?: express.Router) {
   app.use("/api/v1/notifications", notificationRouter);
   app.use("/api/v1/analytics", analyticsRouter);
   app.use("/api/v1/admin", adminRouter);
+  app.use("/api/v1/admin/ai", adminAiRouter);
   app.use("/api/v1/trial-balances", trialBalanceRouter);
   app.use("/api/v1/audit", materialityRouter); // Materiality & Risks (Phase 15)
   app.use("/api/v1/audit/programs", auditProgramRouter); // Programs (Phase 16)

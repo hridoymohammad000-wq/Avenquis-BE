@@ -610,6 +610,91 @@ export const platformAuditLogs = pgTable(
   }),
 );
 
+// Platform AI administration is intentionally separate from tenant AI data.
+export const aiAgents = pgTable("ai_agents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 80 }).notNull().unique(),
+  name: varchar("name", { length: 160 }).notNull(),
+  purpose: text("purpose").notNull(),
+  allowedTools: jsonb("allowed_tools").notNull().default([]),
+  autonomyLevel: varchar("autonomy_level", { length: 2 }).notNull().default("L0"),
+  riskLevel: varchar("risk_level", { length: 20 }).notNull().default("low"),
+  provider: varchar("provider", { length: 50 }),
+  model: varchar("model", { length: 100 }),
+  enabled: boolean("enabled").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentRuns = pgTable("ai_agent_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 30 }).notNull().default("CREATED"),
+  requestedByUserId: uuid("requested_by_user_id").notNull().references(() => userProfiles.id),
+  requestSummary: text("request_summary").notNull(),
+  rationale: text("rationale"),
+  errorCode: varchar("error_code", { length: 80 }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentSteps = pgTable("ai_agent_steps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  stepIndex: integer("step_index").notNull(),
+  action: varchar("action", { length: 120 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull(),
+  rationale: text("rationale"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentToolCalls = pgTable("ai_agent_tool_calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  toolName: varchar("tool_name", { length: 120 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull(),
+  inputMetadata: jsonb("input_metadata").notNull().default({}),
+  outputMetadata: jsonb("output_metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiApprovals = pgTable("ai_approvals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  requestedAction: text("requested_action").notNull(),
+  riskLevel: varchar("risk_level", { length: 20 }).notNull(),
+  requestedByUserId: uuid("requested_by_user_id").notNull().references(() => userProfiles.id),
+  rationale: text("rationale").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("PENDING"),
+  reviewedByUserId: uuid("reviewed_by_user_id").references(() => userProfiles.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiUsageRecords = pgTable("ai_usage_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  estimatedCost: numeric("estimated_cost", { precision: 18, scale: 6 }),
+  latencyMs: integer("latency_ms"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAdminPolicies = pgTable("ai_admin_policies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  policyKey: varchar("policy_key", { length: 100 }).notNull().unique(),
+  value: jsonb("value").notNull(),
+  updatedByUserId: uuid("updated_by_user_id").references(() => userProfiles.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ============================================================================
 // PHASE 4: PEOPLE & STAFF MANAGEMENT
 // ============================================================================
