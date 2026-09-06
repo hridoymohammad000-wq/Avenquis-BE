@@ -84,6 +84,15 @@ export class GeminiAiAdapter implements IAiProviderAdapter {
     });
   }
 
+  async chat(req: { prompt: string }) {
+    const providerStatus = await this.getProviderState();
+    if (providerStatus === "NOT_CONFIGURED") return { message: "", providerStatus };
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.config.model}:generateContent?key=${this.config.apiKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: req.prompt }] }] }) });
+    if (!response.ok) throw new Error("Gemini chat request failed");
+    const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    return { message: data.candidates?.[0]?.content?.parts?.[0]?.text || "", providerStatus };
+  }
+
   private handleMockAnalysis(
     req: AiAnalysisRequest,
     providerStatus: AiProviderStatus,

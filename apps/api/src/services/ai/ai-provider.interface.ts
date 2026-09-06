@@ -76,9 +76,12 @@ export interface AiReviewResult {
   isTestProvider?: boolean;
 }
 
+export interface AiChatResult { message: string; providerStatus: AiProviderStatus; }
+
 export interface IAiProviderAdapter {
   providerName: string;
   getProviderState(): Promise<AiProviderStatus>;
   analyzeDocument(req: AiAnalysisRequest): Promise<AiAnalysisResult>;
   reviewEngagement(req: AiReviewRequest): Promise<AiReviewResult>;
+  chat(req: { prompt: string }): Promise<AiChatResult>;
 }
