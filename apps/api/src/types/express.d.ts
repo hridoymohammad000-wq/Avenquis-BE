@@ -13,6 +13,7 @@ declare global {
       tenant?: typeof tenants.$inferSelect;
       membership?: typeof memberships.$inferSelect;
       permissions?: string[];
+      platformRoles?: string[];
     }
   }
 }

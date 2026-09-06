@@ -1,7 +1,29 @@
-import { db, activityEvents, securityEvents } from "@avenquis/database";
+import { db, activityEvents, securityEvents, platformAuditLogs } from "@avenquis/database";
 import { logger } from "../logging/logger.js";
 
 export class AuditService {
+  static async logPlatformAction(params: {
+    actorUserId: string;
+    platformRole: string;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    beforeMetadata?: Record<string, unknown> | null;
+    afterMetadata?: Record<string, unknown> | null;
+    requestId?: string;
+  }) {
+    await db.insert(platformAuditLogs).values({
+      actorUserId: params.actorUserId,
+      platformRole: params.platformRole,
+      action: params.action,
+      targetType: params.targetType,
+      targetId: params.targetId ?? null,
+      beforeMetadata: params.beforeMetadata ?? null,
+      afterMetadata: params.afterMetadata ?? null,
+      requestId: params.requestId ?? null,
+    });
+  }
+
   static async logActivity(params: {
     tenantId: string;
     membershipId?: string | null;
