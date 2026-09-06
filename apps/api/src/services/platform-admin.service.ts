@@ -310,8 +310,30 @@ export class PlatformAdminService {
     const overview = await this.getOverview();
     return { leads: overview.leads, demoRequests: overview.demoRequests, accessRequests: overview.accessRequests, conversions: overview.conversions, mrr: overview.mrr, arr: overview.arr, churnIndicators: overview.churnIndicators };
   }
-  static async listSupportCases() { return db.select().from(platformSupportCases).orderBy(desc(platformSupportCases.createdAt)); }
-  static async getSupportCase(id: string) { return single(await db.select().from(platformSupportCases).where(eq(platformSupportCases.id, id)), "Support case not found"); }
+  static async listSupportCases() {
+    return db.select({
+      id: platformSupportCases.id,
+      tenantId: platformSupportCases.tenantId,
+      subject: platformSupportCases.subject,
+      priority: platformSupportCases.priority,
+      status: platformSupportCases.status,
+      assignedToUserId: platformSupportCases.assignedToUserId,
+      createdAt: platformSupportCases.createdAt,
+      updatedAt: platformSupportCases.updatedAt,
+    }).from(platformSupportCases).orderBy(desc(platformSupportCases.createdAt));
+  }
+  static async getSupportCase(id: string) {
+    return single(await db.select({
+      id: platformSupportCases.id,
+      tenantId: platformSupportCases.tenantId,
+      subject: platformSupportCases.subject,
+      priority: platformSupportCases.priority,
+      status: platformSupportCases.status,
+      assignedToUserId: platformSupportCases.assignedToUserId,
+      createdAt: platformSupportCases.createdAt,
+      updatedAt: platformSupportCases.updatedAt,
+    }).from(platformSupportCases).where(eq(platformSupportCases.id, id)), "Support case not found");
+  }
   static async listSettings() {
     const rows = await db.select().from(settings);
     return rows.map((setting) => ({ ...setting, value: /(secret|token|password|private|key)/i.test(setting.key) ? { redacted: true } : setting.value }));
