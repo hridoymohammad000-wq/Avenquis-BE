@@ -3,6 +3,7 @@ import { requirePlatformRole } from "../http/middlewares/platform-admin.js";
 import {
   assertSeatAllocation,
   canAccessPlatformRoute,
+  classifyMemberRoleCode,
   normalizePlatformRoles,
 } from "../services/platform-admin.policy.js";
 import {
@@ -77,5 +78,21 @@ describe("platform admin foundation policy", () => {
     expect(canAccessPlatformRoute(["FINANCE"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
     expect(canAccessPlatformRoute(["OPS"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(false);
     expect(canAccessPlatformRoute(["PLATFORM_ADMIN"], ["PLATFORM_SUPER_ADMIN", "PLATFORM_ADMIN"])).toBe(true);
+  });
+
+  it("classifies owner role dynamically per platform plan", () => {
+    const singleStudentPlan = { proprietorSeats: 0, partnerSeats: 0, studentSeats: 1 };
+    const proprietorPlan = { proprietorSeats: 1, partnerSeats: 0, studentSeats: 0 };
+    const prop5StudentsPlan = { proprietorSeats: 1, partnerSeats: 0, studentSeats: 5 };
+    const partnershipPlan = { proprietorSeats: 0, partnerSeats: 4, studentSeats: 10 };
+
+    expect(classifyMemberRoleCode("owner", singleStudentPlan)).toBe("student");
+    expect(classifyMemberRoleCode("owner", proprietorPlan)).toBe("proprietor");
+    expect(classifyMemberRoleCode("owner", prop5StudentsPlan)).toBe("proprietor");
+    expect(classifyMemberRoleCode("owner", partnershipPlan)).toBe("partner");
+
+    expect(classifyMemberRoleCode("proprietor", partnershipPlan)).toBe("proprietor");
+    expect(classifyMemberRoleCode("partner", partnershipPlan)).toBe("partner");
+    expect(classifyMemberRoleCode("student", partnershipPlan)).toBe("student");
   });
 });

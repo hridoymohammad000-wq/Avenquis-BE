@@ -23,7 +23,7 @@ import {
 } from "@avenquis/database";
 import { ApiError } from "../errors/api-error.js";
 import { AuditService } from "./audit.service.js";
-import { assertSeatAllocation } from "./platform-admin.policy.js";
+import { assertSeatAllocation, classifyMemberRoleCode } from "./platform-admin.policy.js";
 
 export const RESERVED_SUBDOMAINS = new Set([
   "www",
@@ -297,19 +297,31 @@ export class PlatformAdminService {
       .leftJoin(roles, eq(membershipRoles.roleId, roles.id))
       .where(and(eq(memberships.tenantId, tenantId), eq(memberships.status, "active")));
 
+    const memberCategories = new Map<string, "proprietor" | "partner" | "student">();
+
+    for (const r of existingRows) {
+      if (!r.membershipId) continue;
+      const category = classifyMemberRoleCode(r.roleCode, plan);
+      if (!category) continue;
+
+      const current = memberCategories.get(r.membershipId);
+      if (!current) {
+        memberCategories.set(r.membershipId, category);
+      } else if (category === "proprietor" && current !== "proprietor") {
+        memberCategories.set(r.membershipId, "proprietor");
+      } else if (category === "partner" && current === "student") {
+        memberCategories.set(r.membershipId, "partner");
+      }
+    }
+
     let proprietorSeats = 0;
     let partnerSeats = 0;
     let studentSeats = 0;
 
-    for (const r of existingRows) {
-      const code = (r.roleCode || "").toLowerCase();
-      if (code === "owner" || code === "proprietor") {
-        proprietorSeats++;
-      } else if (code === "partner" || code === "lead_partner") {
-        partnerSeats++;
-      } else if (code === "student" || code === "articled_student") {
-        studentSeats++;
-      }
+    for (const category of memberCategories.values()) {
+      if (category === "proprietor") proprietorSeats++;
+      else if (category === "partner") partnerSeats++;
+      else if (category === "student") studentSeats++;
     }
 
     if (newMemberRoleType === "proprietor") proprietorSeats++;

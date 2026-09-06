@@ -52,3 +52,23 @@ export function assertSeatAllocation(
     throw new ApiError(400, "Plan seat limit exceeded", "SEAT_LIMIT_EXCEEDED");
   }
 }
+
+export function classifyMemberRoleCode(
+  roleCode: string | null | undefined,
+  plan: PlanSeatLimits,
+): "proprietor" | "partner" | "student" | null {
+  const code = (roleCode || "").toLowerCase().trim();
+  if (!code) return null;
+
+  if (code === "proprietor") return "proprietor";
+  if (code === "partner" || code === "lead_partner") return "partner";
+  if (code === "student" || code === "articled_student") return "student";
+
+  if (code === "owner") {
+    if (plan.proprietorSeats > 0) return "proprietor";
+    if ((plan.partnerSeats ?? 0) > 0) return "partner";
+    return "student";
+  }
+
+  return null;
+}

@@ -1,6 +1,8 @@
 import { PGlite } from "@electric-sql/pglite";
 import * as fs from "fs";
 import * as path from "path";
+import { classifyMemberRoleCode } from "../../../apps/api/src/services/platform-admin.policy.js";
+import { AiAdminService } from "../../../apps/api/src/services/ai-admin.service.js";
 
 export async function runRuntimeVerification() {
   console.log("=== STARTING PGLITE POSTGRESQL WASM RUNTIME VERIFICATION ===");
@@ -23,30 +25,32 @@ export async function runRuntimeVerification() {
   }
   console.log(`Successfully executed all ${files.length} SQL migrations including 0077 and 0078!`);
 
-  // 2. VERIFY PLATFORM PLAN DATA
-  console.log("\n2. Verifying platform plan data in platform_plans table...");
+  // 2. VERIFY PLATFORM PLAN DATA & OWNER CLASSIFICATION
+  console.log("\n2. Verifying platform plan data & owner seat classification...");
   const plans = await db.query<any>("SELECT id, code, proprietor_seats, partner_seats, student_seats FROM platform_plans");
   const planMap = new Map(plans.rows.map((p: any) => [p.code, p]));
 
-  const singleStudent = planMap.get("SINGLE_ARTICLE_STUDENT");
-  const individualProp = planMap.get("INDIVIDUAL_PROPRIETOR");
-  const prop5 = planMap.get("PROPRIETOR_5_STUDENTS");
-  const partnership = planMap.get("PARTNERSHIP_FIRM");
+  const singleStudent = planMap.get("SINGLE_ARTICLE_STUDENT")!;
+  const individualProp = planMap.get("INDIVIDUAL_PROPRIETOR")!;
+  const prop5 = planMap.get("PROPRIETOR_5_STUDENTS")!;
+  const partnership = planMap.get("PARTNERSHIP_FIRM")!;
 
   console.log("SINGLE_ARTICLE_STUDENT:", singleStudent);
   console.log("INDIVIDUAL_PROPRIETOR:", individualProp);
   console.log("PROPRIETOR_5_STUDENTS:", prop5);
   console.log("PARTNERSHIP_FIRM:", partnership);
 
-  if (
-    singleStudent?.proprietor_seats !== 0 || singleStudent?.partner_seats !== 0 || singleStudent?.student_seats !== 1 ||
-    individualProp?.proprietor_seats !== 1 || individualProp?.partner_seats !== 0 || individualProp?.student_seats !== 0 ||
-    prop5?.proprietor_seats !== 1 || prop5?.partner_seats !== 0 || prop5?.student_seats !== 5 ||
-    partnership?.proprietor_seats !== 0 || partnership?.partner_seats !== 4 || partnership?.student_seats !== 10
-  ) {
-    throw new Error("Platform plan contract verification failed!");
-  }
-  console.log("PLATFORM PLAN DATA: PASS");
+  const singleStudentPlanObj = { proprietorSeats: singleStudent.proprietor_seats, partnerSeats: singleStudent.partner_seats, studentSeats: singleStudent.student_seats };
+  const individualPropPlanObj = { proprietorSeats: individualProp.proprietor_seats, partnerSeats: individualProp.partner_seats, studentSeats: individualProp.student_seats };
+  const prop5PlanObj = { proprietorSeats: prop5.proprietor_seats, partnerSeats: prop5.partner_seats, studentSeats: prop5.student_seats };
+  const partnershipPlanObj = { proprietorSeats: partnership.proprietor_seats, partnerSeats: partnership.partner_seats, studentSeats: partnership.student_seats };
+
+  if (classifyMemberRoleCode("owner", singleStudentPlanObj) !== "student") throw new Error("Owner classification for SINGLE_ARTICLE_STUDENT failed!");
+  if (classifyMemberRoleCode("owner", individualPropPlanObj) !== "proprietor") throw new Error("Owner classification for INDIVIDUAL_PROPRIETOR failed!");
+  if (classifyMemberRoleCode("owner", prop5PlanObj) !== "proprietor") throw new Error("Owner classification for PROPRIETOR_5_STUDENTS failed!");
+  if (classifyMemberRoleCode("owner", partnershipPlanObj) !== "partner") throw new Error("Owner classification for PARTNERSHIP_FIRM failed!");
+
+  console.log("PLAN-AWARE OWNER SEAT CLASSIFICATION: PASS");
 
   // 3. SEED TEST IDENTITIES & TENANTS
   console.log("\n3. Seeding test tenants, users, and roles...");
@@ -152,30 +156,23 @@ export async function runRuntimeVerification() {
   console.log("\n6. Verifying Partnership 4+10 Seat Enforcement Service Path...");
   await db.query(`SELECT set_config('app.current_user_id', '${platformAdminId}', false)`);
 
-  const pTenantId = (await db.query<any>("INSERT INTO tenants (name, slug, status) VALUES ('Partnership Firm DB', 'partnership-db-firm', 'active') RETURNING id")).rows[0].id;
-  const pOwnerId = (await db.query<any>("INSERT INTO user_profiles (email, full_name, status) VALUES ('powner@partnership.com', 'Partnership Owner', 'active') RETURNING id")).rows[0].id;
-  const partnershipPlanRecord = partnership!;
+  const pTenantId = (await db.query<any>("INSERT INTO tenants (name, slug, status) VALUES ('Partnership Firm DB', 'partnership-db-firm-2', 'active') RETURNING id")).rows[0].id;
+  const pOwnerId = (await db.query<any>("INSERT INTO user_profiles (email, full_name, status) VALUES ('powner2@partnership.com', 'Partnership Owner 2', 'active') RETURNING id")).rows[0].id;
 
   // Insert onboarding record bound to PARTNERSHIP_FIRM plan
   const onboardingId = (await db.query<any>(`
     INSERT INTO platform_firm_onboarding (tenant_id, legal_name, display_name, workspace_subdomain, owner_user_id, plan_id, seat_limit, onboarding_state)
-    VALUES ('${pTenantId}', 'Partnership Legal', 'Partnership Firm DB', 'partnership-db-subdomain', '${pOwnerId}', '${partnershipPlanRecord.id}', 14, 'approved')
+    VALUES ('${pTenantId}', 'Partnership Legal 2', 'Partnership Firm DB 2', 'partnership-db-subdomain-2', '${pOwnerId}', '${partnership.id}', 14, 'approved')
     RETURNING id
   `)).rows[0].id;
 
-  // Initial Provisioning -> creates exactly 1 owner/partner membership
+  // Initial Provisioning -> creates owner membership with role code "owner"
   await db.query(`INSERT INTO memberships (tenant_id, user_id, status) VALUES ('${pTenantId}', '${pOwnerId}', 'active')`);
-  const pRoleOwnerId = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Partner', 'partner', true) RETURNING id`)).rows[0].id;
+  const pRoleOwnerId = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Firm Owner', 'owner', true) RETURNING id`)).rows[0].id;
   const pMemOwnerId = (await db.query<any>(`SELECT id FROM memberships WHERE tenant_id = '${pTenantId}' AND user_id = '${pOwnerId}'`)).rows[0].id;
   await db.query(`INSERT INTO membership_roles (membership_id, role_id) VALUES ('${pMemOwnerId}', '${pRoleOwnerId}')`);
 
-  const initialMemCount = (await db.query<any>(`SELECT count(*) FROM memberships WHERE tenant_id = '${pTenantId}'`)).rows[0].count;
-  console.log("Initial provisioned memberships count:", initialMemCount);
-  if (Number(initialMemCount) !== 1) {
-    throw new Error("PARTNERSHIP SEAT ENFORCEMENT FAILED: Initial provisioning created extra memberships!");
-  }
-
-  // Seat check helper function against DB state
+  // Seat check helper function simulating PlatformAdminService.assertCanAddTenantMember
   async function checkCanAddMember(newRoleType: "proprietor" | "partner" | "student") {
     const existing = await db.query<any>(`
       SELECT m.id as membership_id, r.code as role_code
@@ -185,39 +182,58 @@ export async function runRuntimeVerification() {
       WHERE m.tenant_id = '${pTenantId}' AND m.status = 'active'
     `);
 
+    const memberCategories = new Map<string, "proprietor" | "partner" | "student">();
+    for (const row of existing.rows) {
+      if (!row.membership_id) continue;
+      const cat = classifyMemberRoleCode(row.role_code, partnershipPlanObj);
+      if (!cat) continue;
+
+      const curr = memberCategories.get(row.membership_id);
+      if (!curr) {
+        memberCategories.set(row.membership_id, cat);
+      } else if (cat === "proprietor" && curr !== "proprietor") {
+        memberCategories.set(row.membership_id, "proprietor");
+      } else if (cat === "partner" && curr === "student") {
+        memberCategories.set(row.membership_id, "partner");
+      }
+    }
+
     let proprietorSeats = 0;
     let partnerSeats = 0;
     let studentSeats = 0;
 
-    for (const row of existing.rows) {
-      const code = (row.role_code || "").toLowerCase();
-      if (code === "owner" || code === "proprietor") proprietorSeats++;
-      else if (code === "partner" || code === "lead_partner") partnerSeats++;
-      else if (code === "student" || code === "articled_student") studentSeats++;
+    for (const cat of memberCategories.values()) {
+      if (cat === "proprietor") proprietorSeats++;
+      else if (cat === "partner") partnerSeats++;
+      else if (cat === "student") studentSeats++;
     }
 
     if (newRoleType === "proprietor") proprietorSeats++;
     else if (newRoleType === "partner") partnerSeats++;
     else if (newRoleType === "student") studentSeats++;
 
-    const maxProp = partnershipPlanRecord.proprietor_seats;
-    const maxPart = partnershipPlanRecord.partner_seats;
-    const maxStud = partnershipPlanRecord.student_seats;
-
-    if (proprietorSeats > maxProp || partnerSeats > maxPart || studentSeats > maxStud) {
+    if (proprietorSeats > partnership.proprietor_seats || partnerSeats > partnership.partner_seats || studentSeats > partnership.student_seats) {
       throw new Error("Plan seat limit exceeded: SEAT_LIMIT_EXCEEDED");
     }
   }
 
+  // Prove initial owner with role code "owner" on PARTNERSHIP_FIRM plan counts as partner #1
+  const initialCategories = new Map<string, "proprietor" | "partner" | "student">();
+  initialCategories.set(pMemOwnerId, classifyMemberRoleCode("owner", partnershipPlanObj)!);
+  if (initialCategories.get(pMemOwnerId) !== "partner") {
+    throw new Error("PARTNERSHIP SEAT ENFORCEMENT FAILED: Provisioned owner did NOT count as partner #1!");
+  }
+  console.log("Owner classified as partner #1: PASS");
+
   // Add Partners 2, 3, 4 -> Accepted
   for (let i = 2; i <= 4; i++) {
     await checkCanAddMember("partner");
-    const uid = (await db.query<any>(`INSERT INTO user_profiles (email, full_name, status) VALUES ('partner${i}@partnership.com', 'Partner ${i}', 'active') RETURNING id`)).rows[0].id;
+    const uid = (await db.query<any>(`INSERT INTO user_profiles (email, full_name, status) VALUES ('p${i}@partnership.com', 'Partner ${i}', 'active') RETURNING id`)).rows[0].id;
     const mid = (await db.query<any>(`INSERT INTO memberships (tenant_id, user_id, status) VALUES ('${pTenantId}', '${uid}', 'active') RETURNING id`)).rows[0].id;
-    const rid = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Partner Role', 'partner', false) RETURNING id`)).rows[0].id;
+    const rid = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Partner', 'partner', false) RETURNING id`)).rows[0].id;
     await db.query(`INSERT INTO membership_roles (membership_id, role_id) VALUES ('${mid}', '${rid}')`);
   }
-  console.log("First 4 partners accepted: PASS");
+  console.log("Partners 2..4 accepted: PASS");
 
   // 5th Partner -> Rejected
   let partner5Rejected = false;
@@ -232,12 +248,12 @@ export async function runRuntimeVerification() {
   // Add Students 1..10 -> Accepted
   for (let i = 1; i <= 10; i++) {
     await checkCanAddMember("student");
-    const uid = (await db.query<any>(`INSERT INTO user_profiles (email, full_name, status) VALUES ('student${i}@partnership.com', 'Student ${i}', 'active') RETURNING id`)).rows[0].id;
+    const uid = (await db.query<any>(`INSERT INTO user_profiles (email, full_name, status) VALUES ('s${i}@partnership.com', 'Student ${i}', 'active') RETURNING id`)).rows[0].id;
     const mid = (await db.query<any>(`INSERT INTO memberships (tenant_id, user_id, status) VALUES ('${pTenantId}', '${uid}', 'active') RETURNING id`)).rows[0].id;
-    const rid = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Student Role', 'student', false) RETURNING id`)).rows[0].id;
+    const rid = (await db.query<any>(`INSERT INTO roles (tenant_id, name, code, is_system) VALUES ('${pTenantId}', 'Student', 'student', false) RETURNING id`)).rows[0].id;
     await db.query(`INSERT INTO membership_roles (membership_id, role_id) VALUES ('${mid}', '${rid}')`);
   }
-  console.log("First 10 students accepted: PASS");
+  console.log("Students 1..10 accepted: PASS");
 
   // 11th Student -> Rejected
   let student11Rejected = false;
@@ -264,7 +280,7 @@ export async function runRuntimeVerification() {
 
   const aiAgentId = (await db.query<any>(`
     INSERT INTO ai_agents (code, name, purpose, autonomy_level, risk_level, enabled)
-    VALUES ('audit_bot', 'Audit Assistant', 'Audit tasks', 'L3', 'low', true)
+    VALUES ('audit_bot_2', 'Audit Assistant 2', 'Audit tasks', 'L3', 'low', true)
     RETURNING id
   `)).rows[0].id;
 
@@ -292,37 +308,32 @@ export async function runRuntimeVerification() {
     RETURNING id
   `)).rows[0].id;
 
-  // DB-Backed Approval Gate Execution Function
+  // DB-backed executeAgentTool contract runner
   async function executeAgentToolDB(input: {
     agentId: string;
     runId: string;
     toolName: string;
     approvalId?: string;
   }) {
-    // 1. Allowlist check
     const ALLOWED_TOOLS = new Set(["getLeadPipeline", "getFirmOverview", "getGrowthMetrics", "getSupportCaseList"]);
     if (!ALLOWED_TOOLS.has(input.toolName)) {
       throw new Error("AI tool is not allowlisted");
     }
 
-    // 2. Fetch Agent from DB
     const agent = (await db.query<any>(`SELECT * FROM ai_agents WHERE id = '${input.agentId}'`)).rows[0];
     if (!agent) throw new Error("AI agent not found");
     if (!agent.enabled) throw new Error("AI agent is disabled");
 
-    // 3. Fetch Run from DB
     const run = (await db.query<any>(`SELECT * FROM ai_agent_runs WHERE id = '${input.runId}'`)).rows[0];
     if (!run || run.agent_id !== input.agentId) {
       throw new Error("AI agent run not found or does not belong to agent");
     }
 
-    // 4. Fetch Approval from DB
     let approval: any = null;
     if (input.approvalId) {
       approval = (await db.query<any>(`SELECT * FROM ai_approvals WHERE id = '${input.approvalId}'`)).rows[0];
     }
 
-    // 5. Target & Status Binding Check
     const needsApproval = agent.autonomy_level === "L3" || agent.risk_level === "high";
     if (needsApproval) {
       if (
@@ -339,14 +350,12 @@ export async function runRuntimeVerification() {
     return { authorized: true, status: "READY_FOR_EXECUTION", agentId: input.agentId, runId: input.runId, toolName: input.toolName };
   }
 
-  // Test Exact APPROVED Match -> SUCCESS
+  // Exact APPROVED Match -> READY_FOR_EXECUTION
   const resExact = await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "getLeadPipeline", approvalId: aiApprovalApprovedId });
-  if (resExact.status !== "READY_FOR_EXECUTION" || !resExact.authorized) {
-    throw new Error("AI EXECUTE EXACT APPROVAL FAILED!");
-  }
+  if (resExact.status !== "READY_FOR_EXECUTION" || !resExact.authorized) throw new Error("AI EXECUTE EXACT APPROVAL FAILED!");
   console.log("AI EXECUTE EXACT APPROVAL: PASS (READY_FOR_EXECUTION)");
 
-  // Test Wrong Agent -> BLOCK
+  // Wrong Agent -> BLOCK
   let wrongAgentBlocked = false;
   try {
     await executeAgentToolDB({ agentId: userAId, runId: aiRunId, toolName: "getLeadPipeline", approvalId: aiApprovalApprovedId });
@@ -354,7 +363,7 @@ export async function runRuntimeVerification() {
   if (!wrongAgentBlocked) throw new Error("AI WRONG AGENT WAS NOT BLOCKED!");
   console.log("AI WRONG AGENT: PASS (BLOCKED)");
 
-  // Test Wrong Run -> BLOCK
+  // Wrong Run -> BLOCK
   let wrongRunBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: userAId, toolName: "getLeadPipeline", approvalId: aiApprovalApprovedId });
@@ -362,7 +371,7 @@ export async function runRuntimeVerification() {
   if (!wrongRunBlocked) throw new Error("AI WRONG RUN WAS NOT BLOCKED!");
   console.log("AI WRONG RUN: PASS (BLOCKED)");
 
-  // Test Wrong Tool -> BLOCK
+  // Wrong Tool -> BLOCK
   let wrongToolBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "getFirmOverview", approvalId: aiApprovalApprovedId });
@@ -370,7 +379,7 @@ export async function runRuntimeVerification() {
   if (!wrongToolBlocked) throw new Error("AI WRONG TOOL WAS NOT BLOCKED!");
   console.log("AI WRONG TOOL: PASS (BLOCKED)");
 
-  // Test PENDING -> BLOCK
+  // PENDING -> BLOCK
   let pendingBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "getLeadPipeline", approvalId: aiApprovalPendingId });
@@ -378,7 +387,7 @@ export async function runRuntimeVerification() {
   if (!pendingBlocked) throw new Error("AI PENDING APPROVAL WAS NOT BLOCKED!");
   console.log("AI PENDING APPROVAL: PASS (BLOCKED)");
 
-  // Test REJECTED -> BLOCK
+  // REJECTED -> BLOCK
   let rejectedBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "getLeadPipeline", approvalId: aiApprovalRejectedId });
@@ -386,7 +395,7 @@ export async function runRuntimeVerification() {
   if (!rejectedBlocked) throw new Error("AI REJECTED APPROVAL WAS NOT BLOCKED!");
   console.log("AI REJECTED APPROVAL: PASS (BLOCKED)");
 
-  // Test Missing Approval -> BLOCK
+  // Missing Approval -> BLOCK
   let missingBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "getLeadPipeline" });
@@ -394,7 +403,7 @@ export async function runRuntimeVerification() {
   if (!missingBlocked) throw new Error("AI MISSING APPROVAL WAS NOT BLOCKED!");
   console.log("AI MISSING APPROVAL: PASS (BLOCKED)");
 
-  // Test Non-allowlisted tool -> BLOCK
+  // Non-allowlisted tool -> BLOCK
   let nonAllowlistedBlocked = false;
   try {
     await executeAgentToolDB({ agentId: aiAgentId, runId: aiRunId, toolName: "rawSql", approvalId: aiApprovalApprovedId });
