@@ -49,7 +49,7 @@ importers:
     dependencies:
       '@avenquis/database':
         specifier: file:../../packages/database
-        version: file:packages/database(@opentelemetry/api@1.9.1)(react@19.2.8)
+        version: file:packages/database(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(react@19.2.8)
       '@sentry/node':
         specifier: ^10.73.0
         version: 10.73.0(@opentelemetry/core@2.11.0(@opentelemetry/api@1.9.1))
@@ -61,7 +61,7 @@ importers:
         version: 1.4.7
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
+        version: 0.33.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
       express:
         specifier: ^4.21.0
         version: 4.22.2
@@ -165,7 +165,7 @@ importers:
     dependencies:
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
+        version: 0.33.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
       pino:
         specifier: ^10.3.1
         version: 10.3.1
@@ -179,6 +179,9 @@ importers:
         specifier: ^4.5.4
         version: 4.5.4
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.5.8
+        version: 0.5.8
       '@types/node':
         specifier: ^22.5.5
         version: 22.20.1
@@ -282,6 +285,9 @@ packages:
 
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
+
+  '@electric-sql/pglite@0.5.8':
+    resolution: {integrity: sha512-n9tsbUOhwx2epK1V0ZG9Ar4SHWUju04dhmzZXiSBXwBoleOvIfals33NAaWgagQVAL4Rbvx/Ptsu3P+pA09f6Q==}
 
   '@esbuild-kit/core-utils@3.3.2':
     resolution: {integrity: sha512-sPRAnw9CdSsRmEtnsl2WXWdyquogVpB3yZ3dgwJfe8zrOzTsV7cJvmwrKVa+0ma5BoiGJ+BoqkMvawbayKUsqQ==}
@@ -3281,9 +3287,9 @@ packages:
 
 snapshots:
 
-  '@avenquis/database@file:packages/database(@opentelemetry/api@1.9.1)(react@19.2.8)':
+  '@avenquis/database@file:packages/database(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(react@19.2.8)':
     dependencies:
-      drizzle-orm: 0.33.0(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
+      drizzle-orm: 0.33.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8)
       pino: 10.3.1
       postgres: 3.4.9
       typescript: 5.8.3
@@ -3430,6 +3436,8 @@ snapshots:
       '@babel/helper-validator-identifier': 7.29.7
 
   '@drizzle-team/brocli@0.10.2': {}
+
+  '@electric-sql/pglite@0.5.8': {}
 
   '@esbuild-kit/core-utils@3.3.2':
     dependencies:
@@ -4654,8 +4662,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.33.0(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8):
+  drizzle-orm@0.33.0(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(postgres@3.4.9)(react@19.2.8):
     optionalDependencies:
+      '@electric-sql/pglite': 0.5.8
       '@opentelemetry/api': 1.9.1
       postgres: 3.4.9
       react: 19.2.8
