@@ -264,6 +264,98 @@ export class PlatformAdminService {
     });
   }
 
+  static async assertCanAddTenantMember(
+    txOrDb: any,
+    tenantId: string,
+    newMemberRoleType: "proprietor" | "partner" | "student",
+  ): Promise<void> {
+    const firm = (
+      await txOrDb
+        .select({ planId: platformFirmOnboarding.planId })
+        .from(platformFirmOnboarding)
+        .where(eq(platformFirmOnboarding.tenantId, tenantId))
+    )[0];
+
+    if (!firm || !firm.planId) return;
+
+    const plan = (
+      await txOrDb
+        .select()
+        .from(platformPlans)
+        .where(eq(platformPlans.id, firm.planId))
+    )[0];
+
+    if (!plan) return;
+
+    const existingRows = await txOrDb
+      .select({
+        membershipId: memberships.id,
+        roleCode: roles.code,
+      })
+      .from(memberships)
+      .leftJoin(membershipRoles, eq(memberships.id, membershipRoles.membershipId))
+      .leftJoin(roles, eq(membershipRoles.roleId, roles.id))
+      .where(and(eq(memberships.tenantId, tenantId), eq(memberships.status, "active")));
+
+    let proprietorSeats = 0;
+    let partnerSeats = 0;
+    let studentSeats = 0;
+
+    for (const r of existingRows) {
+      const code = (r.roleCode || "").toLowerCase();
+      if (code === "owner" || code === "proprietor") {
+        proprietorSeats++;
+      } else if (code === "partner" || code === "lead_partner") {
+        partnerSeats++;
+      } else if (code === "student" || code === "articled_student") {
+        studentSeats++;
+      }
+    }
+
+    if (newMemberRoleType === "proprietor") proprietorSeats++;
+    else if (newMemberRoleType === "partner") partnerSeats++;
+    else if (newMemberRoleType === "student") studentSeats++;
+
+    assertSeatAllocation(plan, { proprietorSeats, partnerSeats, studentSeats });
+  }
+
+  static async addTenantMember(input: {
+    tenantId: string;
+    userId: string;
+    roleCode: string;
+    roleType: "proprietor" | "partner" | "student";
+  }) {
+    return db.transaction(async (tx) => {
+      await this.assertCanAddTenantMember(tx, input.tenantId, input.roleType);
+
+      const [membership] = await tx
+        .insert(memberships)
+        .values({ tenantId: input.tenantId, userId: input.userId, status: "active" })
+        .returning();
+
+      let [role] = await tx
+        .select({ id: roles.id })
+        .from(roles)
+        .where(and(eq(roles.tenantId, input.tenantId), eq(roles.code, input.roleCode)));
+
+      if (!role) {
+        [role] = await tx
+          .insert(roles)
+          .values({
+            tenantId: input.tenantId,
+            code: input.roleCode,
+            name: input.roleCode,
+            description: `${input.roleCode} role`,
+            isSystem: false,
+          })
+          .returning({ id: roles.id });
+      }
+
+      await tx.insert(membershipRoles).values({ membershipId: membership.id, roleId: role.id });
+      return membership;
+    });
+  }
+
   static async createLead(input: {
     email: string; contactName: string; companyName?: string; phone?: string;
     source?: string; notes?: string; actorUserId: string; actorRole: string; requestId: string;
