@@ -359,6 +359,344 @@ export const featureFlags = pgTable(
 );
 
 // ============================================================================
+// PLATFORM ADMIN FOUNDATION
+// ============================================================================
+
+export const platformUserRoles = pgTable(
+  "platform_user_roles",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    role: varchar("role", { length: 50 }).notNull(),
+    grantedByUserId: uuid("granted_by_user_id").references(
+      () => userProfiles.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.userId, table.role] }),
+    roleIdx: index("platform_user_roles_role_idx").on(table.role),
+  }),
+);
+
+export const platformPlans = pgTable("platform_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 80 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  proprietorSeats: integer("proprietor_seats").notNull().default(0),
+  partnerSeats: integer("partner_seats").notNull().default(0),
+  studentSeats: integer("student_seats").notNull().default(0),
+  seatRules: jsonb("seat_rules").notNull().default({}),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformFirmOnboarding = pgTable(
+  "platform_firm_onboarding",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .unique()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    legalName: varchar("legal_name", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }).notNull(),
+    workspaceSubdomain: varchar("workspace_subdomain", { length: 63 })
+      .notNull()
+      .unique(),
+    ownerUserId: uuid("owner_user_id").references(() => userProfiles.id, {
+      onDelete: "set null",
+    }),
+    planId: uuid("plan_id").references(() => platformPlans.id, {
+      onDelete: "restrict",
+    }),
+    seatLimit: integer("seat_limit").notNull().default(0),
+    onboardingState: varchar("onboarding_state", { length: 50 })
+      .notNull()
+      .default("pending_approval"),
+    provisioningState: varchar("provisioning_state", { length: 50 })
+      .notNull()
+      .default("not_started"),
+    activationState: varchar("activation_state", { length: 50 })
+      .notNull()
+      .default("inactive"),
+    billingState: varchar("billing_state", { length: 50 })
+      .notNull()
+      .default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index("platform_firm_onboarding_owner_idx").on(table.ownerUserId),
+    stateIdx: index("platform_firm_onboarding_state_idx").on(
+      table.onboardingState,
+      table.provisioningState,
+    ),
+  }),
+);
+
+export const platformLeads = pgTable("platform_leads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  source: varchar("source", { length: 80 }),
+  status: varchar("status", { length: 50 }).notNull().default("new"),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => userProfiles.id, {
+    onDelete: "set null",
+  }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformDemoRequests = pgTable("platform_demo_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  leadId: uuid("lead_id").references(() => platformLeads.id, {
+    onDelete: "set null",
+  }),
+  email: varchar("email", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  requestedAt: timestamp("requested_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  status: varchar("status", { length: 50 }).notNull().default("requested"),
+  source: varchar("source", { length: 80 }),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => userProfiles.id, {
+    onDelete: "set null",
+  }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformAccessRequests = pgTable("platform_access_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  leadId: uuid("lead_id").references(() => platformLeads.id, {
+    onDelete: "set null",
+  }),
+  email: varchar("email", { length: 255 }).notNull(),
+  requestedFirmName: varchar("requested_firm_name", { length: 255 }).notNull(),
+  requestedPlanCode: varchar("requested_plan_code", { length: 80 }),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  source: varchar("source", { length: 80 }),
+  reviewedByUserId: uuid("reviewed_by_user_id").references(() => userProfiles.id, {
+    onDelete: "set null",
+  }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformSubscriptions = pgTable("platform_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .unique()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => platformPlans.id, { onDelete: "restrict" }),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  seatCount: integer("seat_count").notNull().default(0),
+  provider: varchar("provider", { length: 50 }).notNull().default("pending"),
+  providerSubscriptionId: varchar("provider_subscription_id", { length: 255 }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformInvoices = pgTable("platform_invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => tenants.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").references(() => platformSubscriptions.id, {
+    onDelete: "set null",
+  }),
+  invoiceNumber: varchar("invoice_number", { length: 80 }).notNull().unique(),
+  amount: numeric("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default("BDT"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"),
+  dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
+  collectionState: varchar("collection_state", { length: 50 })
+    .notNull()
+    .default("open"),
+  issuedAt: timestamp("issued_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformSupportCases = pgTable("platform_support_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").references(() => tenants.id, {
+    onDelete: "set null",
+  }),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  priority: varchar("priority", { length: 30 }).notNull().default("normal"),
+  status: varchar("status", { length: 50 }).notNull().default("open"),
+  assignedToUserId: uuid("assigned_to_user_id").references(() => userProfiles.id, {
+    onDelete: "set null",
+  }),
+  resolutionMetadata: jsonb("resolution_metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const platformAuditLogs = pgTable(
+  "platform_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: uuid("actor_user_id").references(() => userProfiles.id, {
+      onDelete: "set null",
+    }),
+    platformRole: varchar("platform_role", { length: 50 }).notNull(),
+    action: varchar("action", { length: 120 }).notNull(),
+    targetType: varchar("target_type", { length: 80 }).notNull(),
+    targetId: varchar("target_id", { length: 255 }),
+    beforeMetadata: jsonb("before_metadata"),
+    afterMetadata: jsonb("after_metadata"),
+    requestId: varchar("request_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    actorIdx: index("platform_audit_logs_actor_idx").on(table.actorUserId),
+    actionIdx: index("platform_audit_logs_action_idx").on(table.action),
+    createdAtIdx: index("platform_audit_logs_created_at_idx").on(table.createdAt),
+  }),
+);
+
+// Platform AI administration is intentionally separate from tenant AI data.
+export const aiAgents = pgTable("ai_agents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: varchar("code", { length: 80 }).notNull().unique(),
+  name: varchar("name", { length: 160 }).notNull(),
+  purpose: text("purpose").notNull(),
+  allowedTools: jsonb("allowed_tools").notNull().default([]),
+  autonomyLevel: varchar("autonomy_level", { length: 2 }).notNull().default("L0"),
+  riskLevel: varchar("risk_level", { length: 20 }).notNull().default("low"),
+  provider: varchar("provider", { length: 50 }),
+  model: varchar("model", { length: 100 }),
+  enabled: boolean("enabled").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentRuns = pgTable("ai_agent_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 30 }).notNull().default("CREATED"),
+  requestedByUserId: uuid("requested_by_user_id").notNull().references(() => userProfiles.id),
+  requestSummary: text("request_summary").notNull(),
+  rationale: text("rationale"),
+  errorCode: varchar("error_code", { length: 80 }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentSteps = pgTable("ai_agent_steps", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  stepIndex: integer("step_index").notNull(),
+  action: varchar("action", { length: 120 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull(),
+  rationale: text("rationale"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAgentToolCalls = pgTable("ai_agent_tool_calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  toolName: varchar("tool_name", { length: 120 }).notNull(),
+  status: varchar("status", { length: 30 }).notNull(),
+  inputMetadata: jsonb("input_metadata").notNull().default({}),
+  outputMetadata: jsonb("output_metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiApprovals = pgTable("ai_approvals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  requestedAction: text("requested_action").notNull(),
+  riskLevel: varchar("risk_level", { length: 20 }).notNull(),
+  requestedByUserId: uuid("requested_by_user_id").notNull().references(() => userProfiles.id),
+  rationale: text("rationale").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("PENDING"),
+  reviewedByUserId: uuid("reviewed_by_user_id").references(() => userProfiles.id),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiUsageRecords = pgTable("ai_usage_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").notNull().references(() => aiAgentRuns.id, { onDelete: "cascade" }),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id, { onDelete: "cascade" }),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  estimatedCost: numeric("estimated_cost", { precision: 18, scale: 6 }),
+  latencyMs: integer("latency_ms"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const aiAdminPolicies = pgTable("ai_admin_policies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  policyKey: varchar("policy_key", { length: 100 }).notNull().unique(),
+  value: jsonb("value").notNull(),
+  updatedByUserId: uuid("updated_by_user_id").references(() => userProfiles.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ============================================================================
 // PHASE 4: PEOPLE & STAFF MANAGEMENT
 // ============================================================================
 
