@@ -77,6 +77,15 @@ export class OpenAiAdapter implements IAiProviderAdapter {
     });
   }
 
+  async chat(req: { prompt: string }) {
+    const providerStatus = await this.getProviderState();
+    if (providerStatus === "NOT_CONFIGURED") return { message: "", providerStatus };
+    const response = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${this.config.apiKey}` }, body: JSON.stringify({ model: this.config.model, messages: [{ role: "user", content: req.prompt }] }) });
+    if (!response.ok) throw new Error("OpenAI chat request failed");
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    return { message: data.choices?.[0]?.message?.content || "", providerStatus };
+  }
+
   private handleMockAnalysis(
     req: AiAnalysisRequest,
     providerStatus: AiProviderStatus,
