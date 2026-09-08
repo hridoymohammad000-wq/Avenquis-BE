@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, userProfiles, eq } from "@avenquis/database";
+import {
+  db,
+  userProfiles,
+  platformUserRoles,
+  eq,
+  withUserBootstrapContext,
+} from "@avenquis/database";
 import { AuthService } from "../../services/auth.service.js";
 import { AuditService } from "../../services/audit.service.js";
 import { authenticate } from "../middlewares/auth.js";
@@ -250,6 +256,15 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
       throw new ApiError(404, "User not found", "USER_NOT_FOUND");
     }
 
+    const platformRoleRows = await withUserBootstrapContext(
+      { userId: user.id },
+      async (tx) =>
+        tx
+          .select({ role: platformUserRoles.role })
+          .from(platformUserRoles)
+          .where(eq(platformUserRoles.userId, user.id)),
+    );
+
     res.json({
       success: true,
       data: {
@@ -260,6 +275,7 @@ authRouter.get("/me", authenticate, async (req, res, next) => {
           status: user.status,
           mfaEnabled: user.mfaEnabled,
           avatarUrl: user.avatarUrl,
+          platformRoles: platformRoleRows.map((row) => row.role),
         },
         aal: req.user!.aal,
       },
