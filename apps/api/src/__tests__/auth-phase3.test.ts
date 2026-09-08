@@ -6,6 +6,7 @@ import {
   userProfiles,
   tenants,
   memberships,
+  platformUserRoles,
   closeDatabaseConnection,
   eq,
 } from "@avenquis/database";
@@ -108,6 +109,21 @@ describe("Phase 3 Authentication, Authorization & Tenant Isolation API", () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.user.email).toBe(testEmail);
+      expect(res.body.data.user.platformRoles).toEqual([]);
+    });
+
+    it("should return the authenticated user's platform roles from platform_user_roles", async () => {
+      await db.insert(platformUserRoles).values({
+        userId,
+        role: "SUPPORT",
+      });
+
+      const res = await request(app)
+        .get("/api/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.user.platformRoles).toEqual(["SUPPORT"]);
     });
 
     it("should reject unauthenticated request to /me", async () => {
